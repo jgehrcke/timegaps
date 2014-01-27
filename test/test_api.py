@@ -7,7 +7,7 @@ import datetime
 import tempfile
 
 sys.path.insert(0, os.path.abspath('..'))
-from deletebytime import Filter, FileSystemEntry, TimegapsError
+from timegaps import Filter, FileSystemEntry, TimegapsError
 
 WINDOWS = sys.platform == "win32"
 
@@ -48,6 +48,10 @@ class TestBasicFSEntry(object):
 
     def teardown(self):
         pass
+
+    def test_invalid_path(self):
+        fse = FileSystemEntry(path='gibtsgarantiertnichthier')
+        assert fse is None
 
     def test_dir(self):
         fse = FileSystemEntry(path='.')

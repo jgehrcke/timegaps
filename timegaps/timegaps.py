@@ -19,23 +19,24 @@ class FileSystemEntry(object):
     """ Represents file system entry for later filtering. Validates path and
     extracts information from inode upon construction and stores inode data
     for later usage. Public interface attributes:
-        - self.modtime: last content change (mtime)
+        - self.modtime: last content change (mtime) as local datetime object
         - self.type: "dir", "file", or "symlink"
         - self.path: path to file system entry
     """
     def __init__(self, path, modtime=None):
         try:
             statobj = os.stat(path)
-        except XXX, XXX as e:
-            handleerror
+        except OSError as e:
+            log.warning("Ignoring invalid path: '%s' ('%s')", path, e)
+            return None
         self._set_type(statobj)
         if modtime is None:
-            self.modtime = statobj.timeblabla
-        elif isinstance(modtime, datetime.datetime) :
-            self.modtime = modtime
+            self._modtime = statobj.st_mtime
+        elif isinstance(modtime, float) :
+            self._modtime = modtime
         else:
             raise TimegapsError(
-                "`modtime` parameter must be `datetime` object or `None`.")
+                "`modtime` parameter must be `float` object or `None`.")
         self.path = path
         self._stat = statobj
 
@@ -46,8 +47,13 @@ class FileSystemEntry(object):
         # Either follow symbolic link or not, this should be user-given         .
         self.type  = "dir" or others
 
+    @property
+    def modtime(self):
+        # Content modification time is internally stored as POSIX timestamp.
+        # Return datetime object corresponding to local time.
+        return datetime.fromtimestamp(self._modtime)
 
-class FilterRule(dict):
+
 
 
 
@@ -84,7 +90,6 @@ class Filter(object):
         """
         accepted = []
         rejected = []
-        ...
         return accepted, rejected
 
 
@@ -186,5 +191,4 @@ def time_from_dirname(d):
 
 def dirname_from_time(t):
     return time.strftime("%Y.%m.%d_%H.%M.%S", t)
-
 
