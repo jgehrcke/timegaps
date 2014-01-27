@@ -3,7 +3,7 @@
 
 import os
 import sys
-import datetime
+from datetime import datetime
 import tempfile
 
 sys.path.insert(0, os.path.abspath('..'))
@@ -62,12 +62,14 @@ class TestBasicFSEntry(object):
         with tempfile.NamedTemporaryFile() as t:
             fse = FileSystemEntry(path=t.name)
             assert fse.type == 'file'
-            assert isinstance(f.modtime, datetime)
+            assert isinstance(fse.modtime, datetime)
 
+    @mark.skipif('WINDOWS')
     def test_symlink(self):
         # set up symlink
+        assert False
         fse.type == 'symlink'
-        assert isinstance(f.modtime, datetime)
+        assert isinstance(fse.modtime, datetime)
 
 
 class TestBasicFilter(object):
@@ -87,7 +89,10 @@ class TestBasicFilter(object):
         f = Filter(rules={})
         assert f.rules["days"] == 10
         assert f.rules["years"] == 4
-        ...
+        assert f.rules["months"] == 12
+        assert f.rules["weeks"] == 6
+        assert f.rules["hours"] == 48
+        assert f.rules["zerohours"] == 5
 
     def test_fillup_rules(self):
         f = Filter(rules={"days": 20})
@@ -99,5 +104,3 @@ class TestBasicFilter(object):
             )
         f = Filter()
         accepted, rejected = f.filter([fse])
-        ...
-

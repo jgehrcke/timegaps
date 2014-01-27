@@ -4,6 +4,7 @@
 import os
 import sys
 import time
+import stat
 import datetime
 import logging
 from collections import defaultdict
@@ -11,11 +12,24 @@ from collections import OrderedDict
 from operator import itemgetter
 
 
+log = logging.getLogger("timegaps")
+
+
 class TimegapsError(Exception):
     pass
 
 
 class FileSystemEntry(object):
+    def __new__(cls, path, modtime=None):
+        try:
+            statobj = os.stat(path)
+        except OSError as e:
+            log.warning("Ignoring invalid path: '%s' ('%s')", path, e)
+            return None
+        return _FileSystemEntry(statobj, path, modtime)
+
+
+class _FileSystemEntry(object):
     """ Represents file system entry for later filtering. Validates path and
     extracts information from inode upon construction and stores inode data
     for later usage. Public interface attributes:
@@ -23,12 +37,8 @@ class FileSystemEntry(object):
         - self.type: "dir", "file", or "symlink"
         - self.path: path to file system entry
     """
-    def __init__(self, path, modtime=None):
-        try:
-            statobj = os.stat(path)
-        except OSError as e:
-            log.warning("Ignoring invalid path: '%s' ('%s')", path, e)
-            return None
+    def __init__(self, statobj, path, modtime=None):
+        self.path = path
         self._set_type(statobj)
         if modtime is None:
             self._modtime = statobj.st_mtime
@@ -37,21 +47,26 @@ class FileSystemEntry(object):
         else:
             raise TimegapsError(
                 "`modtime` parameter must be `float` object or `None`.")
-        self.path = path
         self._stat = statobj
 
-
-    def _set_type(self, statobj ):
+    def _set_type(self, statobj):
         # Determine type from stat object `statobj`.
         # Distinguish file, dir, symbolic link
-        # Either follow symbolic link or not, this should be user-given         .
-        self.type  = "dir" or others
+        # Either follow symbolic link or not, this should be user-given.
+        if stat.S_ISREG(statobj.st_mode):
+            self.type  = "file"
+        elif stat.S_ISDIR(statobj.st_mode):
+            self.type  = "dir"
+        elif stat.S_ISLNK(statobj.st_mode):
+            self.type  = "symlink"
+        else:
+            raise TimegapsError("Unsupported file type: '%s'", self.path)
 
     @property
     def modtime(self):
         # Content modification time is internally stored as POSIX timestamp.
         # Return datetime object corresponding to local time.
-        return datetime.fromtimestamp(self._modtime)
+        return datetime.datetime.fromtimestamp(self._modtime)
 
 
 
@@ -61,7 +76,7 @@ class Filter(object):
     """ Implements concrete filter rules. Allows for filtering a list of
     `FileSystemEntry` objects.
     """
-    def __init__(self, rules):
+    def __init__(self, rules=None):
         defaults = {
             "years": 4,
             "months": 12,
@@ -71,6 +86,9 @@ class Filter(object):
             "zerohours": 5,
             }
 
+        if rules is None:
+            rules = dict()
+
         # Check given rules for invalid time labels.
         for key in rules:
             if not key in defaults:
@@ -78,7 +96,7 @@ class Filter(object):
                     "Invalid key in rules dictionary: '%s'" % key)
 
         # Set missing rules to defaults.
-        for label, count in detaults.items():
+        for label, count in defaults.items():
             if not label in rules:
                 rules[label] = count
 
