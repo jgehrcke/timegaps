@@ -7,7 +7,7 @@ import datetime
 import tempfile
 
 sys.path.insert(0, os.path.abspath('..'))
-from deletebytime import Filter, FileSystemEntry
+from deletebytime import Filter, FileSystemEntry, TimegapsError
 
 WINDOWS = sys.platform == "win32"
 
@@ -75,10 +75,25 @@ class TestBasicFilter(object):
     def teardown(self):
         pass
 
+    def test_invalid_rule_key(self):
+        with raises(TimegapsError):
+            Filter(rules={"days": 1, "wrong": 1})
+
+    def test_default_rules(self):
+        f = Filter(rules={})
+        assert f.rules["days"] == 10
+        assert f.rules["years"] == 4
+        ...
+
+    def test_fillup_rules(self):
+        f = Filter(rules={"days": 20})
+        assert f.rules["days"] == 20
+
     def test_singlemsg_short_bin(self):
         fse = FileSystemEntry(
             path='',
             )
-        f = Filter(....)
-        reject = f.filter([fse])
+        f = Filter()
+        accepted, rejected = f.filter([fse])
         ...
+
