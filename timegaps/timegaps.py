@@ -69,9 +69,6 @@ class _FileSystemEntry(object):
         return datetime.datetime.fromtimestamp(self._modtime)
 
 
-
-
-
 class Filter(object):
     """ Implements concrete filter rules. Allows for filtering a list of
     `FileSystemEntry` objects.
@@ -108,6 +105,9 @@ class Filter(object):
         """
         accepted = []
         rejected = []
+        fses = [f for f in fses if isinstance(f, _FileSystemEntry)]
+        if not fses:
+            raise TimegapsError("`fses` must contain valid entries.")
         return accepted, rejected
 
 

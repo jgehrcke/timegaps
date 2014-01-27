@@ -50,7 +50,7 @@ class TestBasicFSEntry(object):
         pass
 
     def test_invalid_path(self):
-        fse = FileSystemEntry(path='gibtsgarantiertnichthier')
+        fse = FileSystemEntry(path="gibtsgarantiertnichthier")
         assert fse is None
 
     def test_dir(self):
@@ -98,9 +98,8 @@ class TestBasicFilter(object):
         f = Filter(rules={"days": 20})
         assert f.rules["days"] == 20
 
-    def test_singlemsg_short_bin(self):
-        fse = FileSystemEntry(
-            path='',
-            )
+    def test_none_fse(self):
+        fse = FileSystemEntry(path="gibtsgarantiertnichthier")
         f = Filter()
-        accepted, rejected = f.filter([fse])
+        with raises(TimegapsError):
+            accepted, rejected = f.filter([fse])
