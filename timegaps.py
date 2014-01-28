@@ -12,9 +12,10 @@ Feature brainstorm:
     - symlink support (elaborate specifics)
     - file system entry input via positional cmdline args or via null-character
       separated paths at stdin
+    - add a mode where time-encoding nullchar-separated strings are read as
+      input and then filtered. The output is a set of rejected strings (no
+      involvement of the file system at all, just timestamp filtering)
 
-TODO:
-    - rename to timegaps
 """
 
 import os
