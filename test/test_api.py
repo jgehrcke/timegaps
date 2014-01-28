@@ -3,6 +3,7 @@
 
 import os
 import sys
+from base64 import b64encode
 from datetime import datetime
 import tempfile
 
@@ -26,6 +27,10 @@ log.setLevel(logging.DEBUG)
 #SHORTTIME = 0.01
 #ALMOSTZERO = 0.00001
 #LONGERTHANBUFFER = "A" * 9999999
+
+
+def randstring_fssafe():
+    return b64encode(os.urandom(6)).replace('/','!')
 
 
 class TestBasicFSEntry(object):
@@ -66,9 +71,13 @@ class TestBasicFSEntry(object):
 
     @mark.skipif('WINDOWS')
     def test_symlink(self):
-        # set up symlink
-        assert False
-        fse.type == 'symlink'
+        linkname = "/tmp/%s" % randstring_fssafe()
+        try:
+            os.symlink("target", linkname)
+            fse = FileSystemEntry(path=linkname)
+        finally:
+            os.unlink(linkname)
+        assert fse.type == 'symlink'
         assert isinstance(fse.modtime, datetime)
 
 

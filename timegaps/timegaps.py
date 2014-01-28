@@ -22,7 +22,12 @@ class TimegapsError(Exception):
 class FileSystemEntry(object):
     def __new__(cls, path, modtime=None):
         try:
-            statobj = os.stat(path)
+            # os.lstat(path)
+            # Perform the equivalent of an lstat() system call on the given
+            # path. Similar to stat(), but does not follow symbolic links.
+            # On platforms that do not support symbolic links, this is an alias
+            # for stat().
+            statobj = os.lstat(path)
         except OSError as e:
             log.warning("Ignoring invalid path: '%s' ('%s')", path, e)
             return None
@@ -38,6 +43,7 @@ class _FileSystemEntry(object):
         - self.path: path to file system entry
     """
     def __init__(self, statobj, path, modtime=None):
+        log.debug("Creating FSE with path '%s'", path)
         self.path = path
         self._set_type(statobj)
         if modtime is None:
@@ -61,6 +67,7 @@ class _FileSystemEntry(object):
             self.type  = "symlink"
         else:
             raise TimegapsError("Unsupported file type: '%s'", self.path)
+        log.debug("Detected type %s", self.type)
 
     @property
     def modtime(self):
