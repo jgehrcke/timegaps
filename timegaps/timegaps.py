@@ -41,6 +41,7 @@ class _FileSystemEntry(object):
         - self.modtime: last content change (mtime) as local datetime object
         - self.type: "dir", "file", or "symlink"
         - self.path: path to file system entry
+        - self.timedelta: `None` or `_Timedelta` object
     """
     def __init__(self, statobj, path, modtime=None):
         log.debug("Creating FSE with path '%s'", path)
@@ -54,6 +55,7 @@ class _FileSystemEntry(object):
             raise TimegapsError(
                 "`modtime` parameter must be `float` object or `None`.")
         self._stat = statobj
+        self.timedelta = None
 
     def _set_type(self, statobj):
         # Determine type from stat object `statobj`.
@@ -68,6 +70,9 @@ class _FileSystemEntry(object):
         else:
             raise TimegapsError("Unsupported file type: '%s'", self.path)
         log.debug("Detected type %s", self.type)
+
+    def build_timedelta(self, reftime):
+        self.timedelta = _Timedelta(self._modtime, reftime)
 
     @property
     def modtime(self):
@@ -121,7 +126,7 @@ class Filter(object):
             raise TimegapsError("`fses` must contain valid entries.")
         # Add `_Timedelta` object to each object in `fses`.
         for f in fses:
-            f.td
+            f.build_timedelta(self.reftime)
 
         return accepted, rejected
 
