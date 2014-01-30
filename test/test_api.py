@@ -149,10 +149,50 @@ class TestTimedelta(object):
         with raises(TimegapsError):
             _Timedelta(t=1.0, ref=0)
 
-    def test_year(self):
+    def test_types_math_year(self):
         year_seconds =  60 * 60 * 24 * 365
         d = _Timedelta(t=0.0, ref=year_seconds)
         assert d.years == 1
         assert isinstance(d.years, int)
         assert d.years_exact == 1.0
         assert isinstance(d.years_exact, float)
+        assert d.months == 12
+        assert isinstance(d.months, int)
+        assert d.months_exact == 365.0 / 30
+        assert isinstance(d.months_exact, float)
+        assert d.weeks == 52
+        assert isinstance(d.weeks, int)
+        assert d.weeks_exact == 365.0 / 7
+        assert isinstance(d.weeks_exact, float)
+        assert d.days == 365
+        assert isinstance(d.days, int)
+        assert d.days_exact == 365.0
+        assert isinstance(d.days_exact, float)
+        assert d.hours == 365 * 24
+        assert isinstance(d.hours, int)
+        assert d.hours_exact == 365 * 24.0
+        assert isinstance(d.hours_exact, float)
+
+    def test_types_math_hour(self):
+        hour_seconds =  60 * 60
+        d = _Timedelta(t=0.0, ref=hour_seconds)
+        assert d.years == 0
+        assert isinstance(d.years, int)
+        assert d.years_exact == 1.0 / (365 * 24)
+        assert isinstance(d.years_exact, float)
+        assert d.months == 0
+        assert isinstance(d.months, int)
+        assert d.months_exact == 1.0 / (30 * 24)
+        assert isinstance(d.months_exact, float)
+        assert d.weeks == 0
+        assert isinstance(d.weeks, int)
+        assert d.weeks_exact == 1.0 / (7 * 24)
+        assert isinstance(d.weeks_exact, float)
+        assert d.days == 0
+        assert isinstance(d.days, int)
+        assert d.days_exact == 1.0 / 24
+        assert isinstance(d.days_exact, float)
+        assert d.hours == 1
+        assert isinstance(d.hours, int)
+        assert d.hours_exact == 1.0
+        assert isinstance(d.hours_exact, float)
