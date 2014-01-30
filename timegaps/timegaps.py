@@ -108,16 +108,23 @@ class Filter(object):
 
         self.rules = rules
 
+
     def filter(self, fses):
         """ Split list of `FileSystemEntry` objects into two lists, `accepted`
         and `rejected` according to the rules.
         """
         accepted = []
         rejected = []
+        #
         fses = [f for f in fses if isinstance(f, _FileSystemEntry)]
         if not fses:
             raise TimegapsError("`fses` must contain valid entries.")
+        # Add `_Timedelta` object to each object in `fses`.
+        for f in fses:
+            f.td
+
         return accepted, rejected
+
 
 
 class _Timedelta(object):

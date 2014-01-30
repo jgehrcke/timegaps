@@ -126,9 +126,11 @@ class TestBasicFilter(object):
 
     def test_no_fses(self):
         fse = FileSystemEntry(path="gibtsgarantiertnichthier")
+        assert fse is None
         f = Filter()
         with raises(TimegapsError):
-            accepted, rejected = f.filter([fse])
+            f.filter([fse])
+
 
 class TestTimedelta(object):
     """Test Timedelta logic and arithmetic.
