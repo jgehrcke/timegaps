@@ -80,7 +80,7 @@ class Filter(object):
     """ Implements concrete filter rules. Allows for filtering a list of
     `FileSystemEntry` objects.
     """
-    def __init__(self, rules=None):
+    def __init__(self, reftime=None, rules=None):
         defaults = {
             "years": 4,
             "months": 12,
@@ -92,6 +92,8 @@ class Filter(object):
 
         if rules is None:
             rules = dict()
+
+        self.reftime = time.time() if reftime is None else reftime
 
         # Check given rules for invalid time labels.
         for key in rules:
@@ -118,29 +120,39 @@ class Filter(object):
         return accepted, rejected
 
 
-class Timedelta(object):
+class _Timedelta(object):
     """
-    Represents how many years, months, weeks, days, hours time `t` (float,
-    seconds) is earlier than reference time `ref`. Show all this
+    Represent how many years, months, weeks, days, hours time `t` (float,
+    seconds) is earlier than reference time `ref`. Represent these metrics
     with integer attributes (floor division, numbers are cut, i.e. 1.9 years
     would be 1 year).
-    There is no implicit summation, each of the numbers can be considered
+    There is no implicit summation, each of the numbers is to be considered
     independently. Time units are considered strictly linear: months are
     30 days, years are 365 days, weeks are 7 days, one day is 24 hours.
     """
     def __init__(self, t, ref):
         # convert struct_time objects to a second-based representatio here for
-        # simpler math.
+        # simpler math. TODO: is this conversion still needed?
         if isinstance(t, time.struct_time):
             t = time.mktime(t)
         if isinstance (ref, time.struct_time):
             ref = time.mktime(ref)  + 5000000
         seconds_earlier = ref - t
-        self.hours = int(seconds_earlier // 3600)     # 60 * 60
-        self.days = int(seconds_earlier // 86400)     # 60 * 60 * 24
-        self.weeks = int(seconds_earlier // 604800)   # 60 * 60 * 24 * 7
-        self.months = int(seconds_earlier // 2592000) # 60 * 60 * 24 * 30
-        self.years = int(seconds_earlier // 31536000) # 60 * 60 * 24 * 365
+        # TODO: this check might be over-cautios in the future.
+        assert isinstance(seconds_earlier, float)
+        if seconds_earlier < 0:
+            raise TimegapsError("Time %s not earlier than reference %s" %
+                (t, ref))
+        self.hours_exact = seconds_earlier / 3600     # 60 * 60
+        self.hours = int(self.hours_exact)
+        self.days_exact = seconds_earlier / 86400     # 60 * 60 * 24
+        self.days = int(self.days_exact)
+        self.weeks_exact = seconds_earlier / 604800   # 60 * 60 * 24 * 7
+        self.weeks = int(self.weeks_exact)
+        self.months_exact = seconds_earlier / 2592000 # 60 * 60 * 24 * 30
+        self.months = int(self.months_exact)
+        self.years_exact = seconds_earlier / 31536000 # 60 * 60 * 24 * 365
+        self.years = int(self.years_exact)
 
 
 def filter_items(items_with_time):

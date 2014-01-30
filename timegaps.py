@@ -15,7 +15,8 @@ Feature brainstorm:
     - add a mode where time-encoding nullchar-separated strings are read as
       input and then filtered. The output is a set of rejected strings (no
       involvement of the file system at all, just timestamp filtering)
-
+    - add cmdline option for reference time input
+    - otherwise: reference time is time at program startup
 """
 
 import os

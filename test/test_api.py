@@ -3,12 +3,13 @@
 
 import os
 import sys
+import time
 from base64 import b64encode
 from datetime import datetime
 import tempfile
 
 sys.path.insert(0, os.path.abspath('..'))
-from timegaps import Filter, FileSystemEntry, TimegapsError
+from timegaps import Filter, FileSystemEntry, TimegapsError, _Timedelta
 
 WINDOWS = sys.platform == "win32"
 
@@ -90,12 +91,28 @@ class TestBasicFilter(object):
     def teardown(self):
         pass
 
+    def test_reftime(self):
+        t = time.time()
+        f = Filter(reftime=t)
+        assert f.reftime == t
+        f = Filter()
+        assert f.reftime >= t
+
     def test_invalid_rule_key(self):
         with raises(TimegapsError):
             Filter(rules={"days": 1, "wrong": 1})
 
-    def test_default_rules(self):
+    def test_default_rules1(self):
         f = Filter(rules={})
+        assert f.rules["days"] == 10
+        assert f.rules["years"] == 4
+        assert f.rules["months"] == 12
+        assert f.rules["weeks"] == 6
+        assert f.rules["hours"] == 48
+        assert f.rules["zerohours"] == 5
+
+    def test_default_rules2(self):
+        f = Filter()
         assert f.rules["days"] == 10
         assert f.rules["years"] == 4
         assert f.rules["months"] == 12
@@ -107,8 +124,35 @@ class TestBasicFilter(object):
         f = Filter(rules={"days": 20})
         assert f.rules["days"] == 20
 
-    def test_none_fse(self):
+    def test_no_fses(self):
         fse = FileSystemEntry(path="gibtsgarantiertnichthier")
         f = Filter()
         with raises(TimegapsError):
             accepted, rejected = f.filter([fse])
+
+class TestTimedelta(object):
+    """Test Timedelta logic and arithmetic.
+    """
+    def setup(self):
+        pass
+
+    def teardown(self):
+        pass
+
+    def test_floatdiff(self):
+        # Difference of time `t` and reference must be float.
+        with raises(AssertionError):
+            _Timedelta(t=0, ref=0)
+
+    def test_future(self):
+        # Time `t` later than reference.
+        with raises(TimegapsError):
+            _Timedelta(t=1.0, ref=0)
+
+    def test_year(self):
+        year_seconds =  60 * 60 * 24 * 365
+        d = _Timedelta(t=0.0, ref=year_seconds)
+        assert d.years == 1
+        assert isinstance(d.years, int)
+        assert d.years_exact == 1.0
+        assert isinstance(d.years_exact, float)
