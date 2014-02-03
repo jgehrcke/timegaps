@@ -7,6 +7,7 @@ import time
 import stat
 import datetime
 import logging
+import itertools
 from collections import defaultdict
 from collections import OrderedDict
 from operator import itemgetter
@@ -38,7 +39,7 @@ class _FileSystemEntry(object):
     """Represents file system entry for later filtering. Validates path upon
     initialization, extracts information from inode, and stores inode data
     for later usage. Public interface:
-        - self.modtime: last content change (mtime) as local datetime object
+        - self.moddate: last content change (mtime) as local datetime object
         - self.type: "dir", "file", or "symlink"
         - self.path: path to file system entry
     """
@@ -77,7 +78,7 @@ class _FileSystemEntry(object):
     #    self.timedelta = _Timedelta(self._modtime, reftime)
 
     @property
-    def modtime(self):
+    def moddate(self):
         # Content modification time is internally stored as POSIX timestamp.
         # Return datetime object corresponding to local time.
         return datetime.datetime.fromtimestamp(self.modtime)
@@ -89,18 +90,18 @@ class Filter(object):
     """
     def __init__(self, reftime=None, rules=None):
         # Define time categories (their labels) and their default filter
-        # values.
-        time_categories = {
-            "years": 4,
-            "months": 12,
-            "weeks": 6,
-            "days": 10,
-            "hours": 48,
-            "zerohours": 5, #TODO: rename zerohours.
-            }
+        # values. Must be in order past -> future.
+        time_categories = OrderedDict((
+                ("years", 4),
+                ("months", 12),
+                ("weeks", 6),
+                ("days", 10),
+                ("hours", 48),
+                ("recent", 5),
+            ))
 
         if rules is None:
-            rules = dict()
+            rules = OrderedDict()
 
         # If the reference time is not provided by the user, use current time
         # (Unix timestamp, seconds since epoch, no localization -- this is
@@ -131,12 +132,59 @@ class Filter(object):
         fses = [f for f in fses if isinstance(f, _FileSystemEntry)]
         if not fses:
             raise TimegapsError("`fses` must contain valid entries.")
-        # Get `_Timedelta` object for each object in `fses`.
-        # (Build up a list of 2-tuples: (timedelta, fse))
-        fses_deltas  = [(_Timedelta(f.modtime, self.reftime), f) for f in fses]
 
+        #self.years_dict = defaultdict(list)
+        #self.months_dict = defaultdict(list)
+        #self.weeks_dict = defaultdict(list)
+        #...
+        for c in self.time_categories:
+            setattr(self, "%s_dict" % c, defaultdict(list))
 
-        return accepted, rejected
+        accepted_fses = []
+        rejected_fses_lists = []
+
+        # Categorize all filesystem entries.
+        for fse in fses:
+            td = _Timedelta(fse.modtime, self.reftime)
+            # Automation of the following code, which uses time categories
+            # explicitly:
+            #       if td.years > 0:
+            #           self.years_dict[td.years].append(fse)
+            #       elif td.months > 0:
+            #           self.years_dict[td.months].append(fse)
+            #       ...
+            #       elif:
+            #           # Modification time later than ref - 1 hour.
+            #           # td.recent is always 0 (hack for unique treatment of
+            #           # categories).
+            #           self.recent_dict[td.recent].append(fse)
+            for catlabel in self.rules:
+                timecount = getattr(td, catlabel)
+                if timecount > 0:
+                    # Get category dictionary, use timecount as key. This
+                    # retrieves the list for all fses that are e.g. 2 years
+                    # old (this would translate to years_dict[2]). Append fse
+                    # to this list. Create key and list if it doesn't exist so
+                    # far (this is handled by defaultdict).
+                    getattr(self, "%s_dict" % catlabel)[timecount].append(fse)
+
+        for catlabel in self.rules:
+            catdict = getattr(self, "%s_dict" % catlabel)
+            for timecount in catdict:
+                if timecount in xrange(1, self.rules[catlabel] + 1):
+                    # According to the rules given, this time category is to
+                    # be kept (e.g. 2 years). Sort all items in this time
+                    # category and select the newest for acceptance. Reject
+                    # all other items.
+                    catdict[timecount].sort(key=lambda f: f.modtime)
+                    # Accept newest (i.e. last) item. Remove it from the list.
+                    # pop should be O(1) for the last item.
+                    accept_fses.append(catdict[timecount].pop())
+                    # Reject the rest of the list.
+                    rejected_fses_lists.append(catdict[timecount])
+
+        rejected_fses = itertools.chain.from_iterable(rejected_fses_lists)
+        return accepted_fses, rejected_fes
 
 
 class _Timedelta(object):
@@ -173,6 +221,8 @@ class _Timedelta(object):
         self.years_exact = seconds_earlier / 31536000 # 60 * 60 * 24 * 365
         self.years = int(self.years_exact)
 
+        # TODO: that's hacky, can we improve?
+        self.recent = 0
 
 def filter_items(items_with_time):
     """

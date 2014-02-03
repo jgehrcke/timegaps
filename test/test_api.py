@@ -62,13 +62,13 @@ class TestBasicFSEntry(object):
     def test_dir(self):
         fse = FileSystemEntry(path='.')
         assert fse.type == 'dir'
-        assert isinstance(fse.modtime, datetime)
+        assert isinstance(fse.moddate, datetime)
 
     def test_file(self):
         with tempfile.NamedTemporaryFile() as t:
             fse = FileSystemEntry(path=t.name)
             assert fse.type == 'file'
-            assert isinstance(fse.modtime, datetime)
+            assert isinstance(fse.moddate, datetime)
 
     @mark.skipif('WINDOWS')
     def test_symlink(self):
@@ -79,10 +79,10 @@ class TestBasicFSEntry(object):
         finally:
             os.unlink(linkname)
         assert fse.type == 'symlink'
-        assert isinstance(fse.modtime, datetime)
+        assert isinstance(fse.moddate, datetime)
 
 
-class TestBasicFilter(object):
+class TestFilterInit(object):
     """Test basic Filter logic.
     """
     def setup(self):
@@ -109,7 +109,7 @@ class TestBasicFilter(object):
         assert f.rules["months"] == 12
         assert f.rules["weeks"] == 6
         assert f.rules["hours"] == 48
-        assert f.rules["zerohours"] == 5
+        assert f.rules["recent"] == 5
 
     def test_default_rules2(self):
         f = Filter()
@@ -118,7 +118,7 @@ class TestBasicFilter(object):
         assert f.rules["months"] == 12
         assert f.rules["weeks"] == 6
         assert f.rules["hours"] == 48
-        assert f.rules["zerohours"] == 5
+        assert f.rules["recent"] == 5
 
     def test_fillup_rules(self):
         f = Filter(rules={"days": 20})
