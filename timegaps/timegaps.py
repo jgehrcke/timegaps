@@ -35,22 +35,24 @@ class FileSystemEntry(object):
 
 
 class _FileSystemEntry(object):
-    """ Represents file system entry for later filtering. Validates path and
-    extracts information from inode upon construction and stores inode data
-    for later usage. Public interface attributes:
+    """Represents file system entry for later filtering. Validates path upon
+    initialization, extracts information from inode, and stores inode data
+    for later usage. Public interface:
         - self.modtime: last content change (mtime) as local datetime object
         - self.type: "dir", "file", or "symlink"
         - self.path: path to file system entry
-        - self.timedelta: `None` or `_Timedelta` object
     """
     def __init__(self, statobj, path, modtime=None):
         log.debug("Creating FSE with path '%s'", path)
         self.path = path
         self._set_type(statobj)
         if modtime is None:
-            self._modtime = statobj.st_mtime
+            # User may provide modification time -- if not, extract it from
+            # inode. This is a Unix timestamp, seconds since epoch. Not
+            # localized.
+            self.modtime = statobj.st_mtime
         elif isinstance(modtime, float) :
-            self._modtime = modtime
+            self.modtime = modtime
         else:
             raise TimegapsError(
                 "`modtime` parameter must be `float` object or `None`.")
@@ -71,43 +73,48 @@ class _FileSystemEntry(object):
             raise TimegapsError("Unsupported file type: '%s'", self.path)
         log.debug("Detected type %s", self.type)
 
-    def build_timedelta(self, reftime):
-        self.timedelta = _Timedelta(self._modtime, reftime)
+    #def build_timedelta(self, reftime):
+    #    self.timedelta = _Timedelta(self._modtime, reftime)
 
     @property
     def modtime(self):
         # Content modification time is internally stored as POSIX timestamp.
         # Return datetime object corresponding to local time.
-        return datetime.datetime.fromtimestamp(self._modtime)
+        return datetime.datetime.fromtimestamp(self.modtime)
 
 
 class Filter(object):
-    """ Implements concrete filter rules. Allows for filtering a list of
+    """ Represents concrete filter rules. Allows for filtering a list of
     `FileSystemEntry` objects.
     """
     def __init__(self, reftime=None, rules=None):
-        defaults = {
+        # Define time categories (their labels) and their default filter
+        # values.
+        time_categories = {
             "years": 4,
             "months": 12,
             "weeks": 6,
             "days": 10,
             "hours": 48,
-            "zerohours": 5,
+            "zerohours": 5, #TODO: rename zerohours.
             }
 
         if rules is None:
             rules = dict()
 
+        # If the reference time is not provided by the user, use current time
+        # (Unix timestamp, seconds since epoch, no localization -- this is
+        # directly comparable to the st_mtime inode data).
         self.reftime = time.time() if reftime is None else reftime
 
         # Check given rules for invalid time labels.
         for key in rules:
-            if not key in defaults:
+            if not key in time_categories:
                 raise TimegapsError(
                     "Invalid key in rules dictionary: '%s'" % key)
 
         # Set missing rules to defaults.
-        for label, count in defaults.items():
+        for label, count in time_categories.items():
             if not label in rules:
                 rules[label] = count
 
@@ -124,12 +131,12 @@ class Filter(object):
         fses = [f for f in fses if isinstance(f, _FileSystemEntry)]
         if not fses:
             raise TimegapsError("`fses` must contain valid entries.")
-        # Add `_Timedelta` object to each object in `fses`.
-        for f in fses:
-            f.build_timedelta(self.reftime)
+        # Get `_Timedelta` object for each object in `fses`.
+        # (Build up a list of 2-tuples: (timedelta, fse))
+        fses_deltas  = [(_Timedelta(f.modtime, self.reftime), f) for f in fses]
+
 
         return accepted, rejected
-
 
 
 class _Timedelta(object):
