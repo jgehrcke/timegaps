@@ -6,10 +6,12 @@ import sys
 import time
 from base64 import b64encode
 from datetime import datetime
+import collections
 import tempfile
 
 sys.path.insert(0, os.path.abspath('..'))
-from timegaps import Filter, FileSystemEntry, TimegapsError, _Timedelta
+from timegaps.timegaps import (Filter, FileSystemEntry, TimegapsError,
+    _Timedelta, _FileSystemEntry)
 
 WINDOWS = sys.platform == "win32"
 
@@ -28,6 +30,11 @@ log.setLevel(logging.DEBUG)
 #SHORTTIME = 0.01
 #ALMOSTZERO = 0.00001
 #LONGERTHANBUFFER = "A" * 9999999
+
+
+class FileSystemEntryMock(_FileSystemEntry):
+    def __init__(self, modtime):
+        self.modtime = modtime
 
 
 def randstring_fssafe():
@@ -83,7 +90,7 @@ class TestBasicFSEntry(object):
 
 
 class TestFilterInit(object):
-    """Test basic Filter logic.
+    """Test Filter initialization logic.
     """
     def setup(self):
         pass
@@ -198,3 +205,44 @@ class TestTimedelta(object):
         assert isinstance(d.hours, int)
         assert d.hours_exact == 1.0
         assert isinstance(d.hours_exact, float)
+
+
+class TestFilter(object):
+    """Test Filter logics and arithmetics.
+    """
+    rules_hour_1 = {"years":0, "months":0, "weeks":0, "days":0, "hours":1}
+
+    def setup(self):
+        pass
+
+    def teardown(self):
+        pass
+
+    def test_minimal_functionality_and_types(self):
+        # Create filter with reftime NOW (if not specified otherwise)
+        # and simple rules.
+        f = Filter(rules=self.rules_hour_1)
+        # Create mock that is 1.5 hours old. Must end up in accepted list,
+        # since it's 1 hour old and one item should be kept from the 1-hour-
+        # old-category
+        fse = FileSystemEntryMock(modtime=time.time()-60*60*1.5)
+        a, r = f.filter(fses=[fse])
+        # http://stackoverflow.com/a/1952655/145400
+        assert isinstance(a, collections.Iterable)
+        assert isinstance(r, collections.Iterable)
+        assert a[0] == fse
+        # Rejected list `r` is expected to be an interator, so convert to
+        # list before evaluating length.
+        assert len(list(r)) == 0
+
+    def test_one_accepted_one_rejected(self):
+        f = Filter(rules=self.rules_hour_1)
+        fse1 = FileSystemEntryMock(modtime=time.time()-60*60*1.5)
+        fse2 = FileSystemEntryMock(modtime=time.time()-60*60*1.6)
+        a, r = f.filter(fses=[fse1, fse2])
+        r = list(r)
+        # The younger one must be accepted.
+        assert a[0] == fse1
+        assert len(a) == 1
+        assert r[0] == fse2
+        assert len(r) == 1

@@ -1,1 +1,1 @@
-from timegaps import Filter, FileSystemEntry, TimegapsError, _Timedelta
+from timegaps import Filter, FileSystemEntry, TimegapsError

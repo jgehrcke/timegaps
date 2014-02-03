@@ -128,7 +128,8 @@ class Filter(object):
         """
         accepted = []
         rejected = []
-        #
+        # TODO: for the sake of performance, this check might better be
+        # simplified or removed.
         fses = [f for f in fses if isinstance(f, _FileSystemEntry)]
         if not fses:
             raise TimegapsError("`fses` must contain valid entries.")
@@ -137,8 +138,8 @@ class Filter(object):
         #self.months_dict = defaultdict(list)
         #self.weeks_dict = defaultdict(list)
         #...
-        for c in self.time_categories:
-            setattr(self, "%s_dict" % c, defaultdict(list))
+        for catlabel in self.rules:
+            setattr(self, "%s_dict" % catlabel, defaultdict(list))
 
         accepted_fses = []
         rejected_fses_lists = []
@@ -179,12 +180,12 @@ class Filter(object):
                     catdict[timecount].sort(key=lambda f: f.modtime)
                     # Accept newest (i.e. last) item. Remove it from the list.
                     # pop should be O(1) for the last item.
-                    accept_fses.append(catdict[timecount].pop())
+                    accepted_fses.append(catdict[timecount].pop())
                     # Reject the rest of the list.
                     rejected_fses_lists.append(catdict[timecount])
 
         rejected_fses = itertools.chain.from_iterable(rejected_fses_lists)
-        return accepted_fses, rejected_fes
+        return accepted_fses, rejected_fses
 
 
 class _Timedelta(object):
