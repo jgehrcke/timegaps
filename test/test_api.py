@@ -7,6 +7,7 @@ import time
 from base64 import b64encode
 from datetime import datetime
 from itertools import chain
+from random import randint
 import collections
 import tempfile
 
@@ -42,6 +43,11 @@ class FileSystemEntryMock(FileSystemEntry):
 
     def __repr__(self):
         return "%s(modtime=%s)" % (self.__class__.__name__, self.modtime)
+
+
+def nrandint(n, min, max):
+    for _ in xrange(n):
+        yield randint(min, max)
 
 
 def randstring_fssafe():
@@ -369,3 +375,54 @@ class TestTimeFilter(object):
         for fse in rfses:
             assert fse in r
         assert len(r) == 6
+
+    def test_10_days(self):
+        # Category 'overlap' must be possible (10 days > 1 week).
+        now = time.time()
+        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,15))
+        fses = (FileSystemEntryMock(modtime=t) for t in nowminusXdays)
+        rules = {"days": 10}
+        a, r = TimeFilter(rules, now).filter(fses)
+        r = list(r)
+        assert len(a) == 10
+        print a
+
+    def test_random_times_fixed_rules(self):
+        now = time.time()
+        N = 20000
+        return
+        #print (list(nrandint(100, 0, 17)))
+        #return
+        def fsegen():
+            nowminusXyears =   (now-60*60*24*365*i for i in nrandint(N, 1, 17))
+            nowminusXmonths =  (now-60*60*24*30 *i for i in nrandint(N, 1, 11))
+            nowminusXweeks =   (now-60*60*24*7  *i for i in nrandint(N, 1, 3))
+            nowminusXdays =    (now-60*60*24    *i for i in nrandint(N, 1, 6))
+            nowminusXhours =   (now-60*60       *i for i in nrandint(N, 1, 17))
+            nowminusXseconds = (now-1           *i for i in nrandint(N, 1, 17))
+            times = chain(
+                nowminusXyears,
+                nowminusXmonths,
+                nowminusXweeks,
+                nowminusXdays,
+                nowminusXhours,
+                nowminusXseconds,
+                )
+            return (FileSystemEntryMock(modtime=t) for t in times)
+        n = 15
+        rules = {
+            "years": 0,
+            "months": 0,
+            "weeks": 0,
+            "days": 0,
+            "hours": 0,
+            "recent": 0
+            }
+        # Perform categorizing 10 times with different sets of randomly
+        # generated fses.
+        for _ in xrange(1):
+            a, r = TimeFilter(rules, now).filter(fsegen())
+            r = list(r)
+            assert len(a) + len(r) == 6 * N
+            assert len(a) <= n * 6
+            print len(a)
