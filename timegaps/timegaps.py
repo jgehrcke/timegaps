@@ -21,66 +21,56 @@ class TimegapsError(Exception):
 
 
 class FileSystemEntry(object):
-    def __new__(cls, path, modtime=None):
+    """Represents file system entry (for later filtering). Validates path upon
+    initialization, extracts information from inode, and stores inode data
+    for later usage. Public interface:
+        - self.moddate: last content change (mtime) as local datetime object.
+        - self.type: "dir", "file", or "symlink".
+        - self.path: path to file system entry.
+    """
+    def __init__(self, path, modtime=None):
+        log.debug("Creating FileSystemEntry from path '%s'.", path)
         try:
             # os.lstat(path)
             # Perform the equivalent of an lstat() system call on the given
             # path. Similar to stat(), but does not follow symbolic links.
             # On platforms that do not support symbolic links, this is an alias
             # for stat().
-            statobj = os.lstat(path)
+            self._stat = os.lstat(path)
         except OSError as e:
-            log.warning("Ignoring invalid path: '%s' ('%s')", path, e)
-            return None
-        return _FileSystemEntry(statobj, path, modtime)
-
-
-class _FileSystemEntry(object):
-    """Represents file system entry for later filtering. Validates path upon
-    initialization, extracts information from inode, and stores inode data
-    for later usage. Public interface:
-        - self.moddate: last content change (mtime) as local datetime object
-        - self.type: "dir", "file", or "symlink"
-        - self.path: path to file system entry
-    """
-    def __init__(self, statobj, path, modtime=None):
-        log.debug("Creating FSE with path '%s'", path)
-        self.path = path
-        self._set_type(statobj)
+            log.error("stat() failed on path: '%s' (%s).", path, e)
+            raise
+        self.type = self._get_type(self._stat)
+        log.debug("Detected type %s", self.type)
         if modtime is None:
             # User may provide modification time -- if not, extract it from
             # inode. This is a Unix timestamp, seconds since epoch. Not
             # localized.
-            self.modtime = statobj.st_mtime
+            self.modtime = self._stat.st_mtime
         elif isinstance(modtime, float) :
             self.modtime = modtime
         else:
             raise TimegapsError(
-                "`modtime` parameter must be `float` object or `None`.")
-        self._stat = statobj
-        self.timedelta = None
+                "`modtime` parameter must be `float` type or `None`.")
+        self.path = path
 
-    def _set_type(self, statobj):
-        # Determine type from stat object `statobj`.
-        # Distinguish file, dir, symbolic link
-        # Either follow symbolic link or not, this should be user-given.
+    def _get_type(self, statobj):
+        """Determine file type from stat object `statobj`.
+        Distinguish file, dir, symbolic link.
+        """
         if stat.S_ISREG(statobj.st_mode):
-            self.type  = "file"
-        elif stat.S_ISDIR(statobj.st_mode):
-            self.type  = "dir"
-        elif stat.S_ISLNK(statobj.st_mode):
-            self.type  = "symlink"
-        else:
-            raise TimegapsError("Unsupported file type: '%s'", self.path)
-        log.debug("Detected type %s", self.type)
-
-    #def build_timedelta(self, reftime):
-    #    self.timedelta = _Timedelta(self._modtime, reftime)
+            return "file"
+        if stat.S_ISDIR(statobj.st_mode):
+            return "dir"
+        if stat.S_ISLNK(statobj.st_mode):
+            return "symlink"
+        raise TimegapsError("Unsupported file type: '%s'", self.path)
 
     @property
     def moddate(self):
-        # Content modification time is internally stored as POSIX timestamp.
-        # Return datetime object corresponding to local time.
+        """Content modification time is internally stored as Unix timestamp.
+        Return datetime object corresponding to local time.
+        """
         return datetime.datetime.fromtimestamp(self.modtime)
 
 

@@ -11,7 +11,7 @@ import tempfile
 
 sys.path.insert(0, os.path.abspath('..'))
 from timegaps.timegaps import (TimeFilter, FileSystemEntry, TimegapsError,
-    _Timedelta, _FileSystemEntry)
+    _Timedelta)
 
 WINDOWS = sys.platform == "win32"
 
@@ -32,7 +32,7 @@ log.setLevel(logging.DEBUG)
 #LONGERTHANBUFFER = "A" * 9999999
 
 
-class FileSystemEntryMock(_FileSystemEntry):
+class FileSystemEntryMock(object):
     def __init__(self, modtime):
         self.modtime = modtime
 
@@ -63,8 +63,8 @@ class TestBasicFSEntry(object):
         pass
 
     def test_invalid_path(self):
-        fse = FileSystemEntry(path="gibtsgarantiertnichthier")
-        assert fse is None
+        with raises(OSError):
+            fse = FileSystemEntry(path="gibtsgarantiertnichthier")
 
     def test_dir(self):
         fse = FileSystemEntry(path='.')
@@ -131,12 +131,17 @@ class TestTimeFilterInit(object):
         f = TimeFilter(rules={"days": 20})
         assert f.rules["days"] == 20
 
-    def test_no_fses(self):
-        fse = FileSystemEntry(path="gibtsgarantiertnichthier")
-        assert fse is None
+    def test_invalid_object(self):
         f = TimeFilter()
-        with raises(TimegapsError):
-            f.filter([fse])
+        with raises(AttributeError):
+            # AttributeError: 'NoneType' object has no attribute 'modtime'
+            f.filter([None])
+
+    def test_not_iterable(self):
+        f = TimeFilter()
+        with raises(TypeError):
+            # TypeError: 'NoneType' object is not iterable
+            f.filter(None)
 
 
 class TestTimedelta(object):
@@ -147,6 +152,11 @@ class TestTimedelta(object):
 
     def teardown(self):
         pass
+
+    def test_wrongtypes(self):
+        with raises(TypeError):
+            # unsupported operand type(s) for -: 'str' and 'NoneType'
+            _Timedelta(t=None, ref="a")
 
     def test_floatdiff(self):
         # Difference of time `t` and reference must be float.
