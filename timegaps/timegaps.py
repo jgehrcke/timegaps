@@ -84,9 +84,9 @@ class _FileSystemEntry(object):
         return datetime.datetime.fromtimestamp(self.modtime)
 
 
-class Filter(object):
-    """ Represents concrete filter rules. Allows for filtering a list of
-    `FileSystemEntry` objects.
+class TimeFilter(object):
+    """Represents concrete filter rules. Allows for filtering objects
+    providing a `modtime` attribute.
     """
     def __init__(self, reftime=None, rules=None):
         # Define time categories (their labels) and their default filter
@@ -122,17 +122,18 @@ class Filter(object):
         self.rules = rules
 
 
-    def filter(self, fses):
-        """ Split list of `FileSystemEntry` objects into two lists, `accepted`
-        and `rejected` according to the rules.
+    def filter(self, objs):
+        """Split list of objects into two lists, `accepted` and `rejected`,
+        according to the rules. A treatable object is required to have a
+        `modtime` attribute, carrying a Unix timestamp.
         """
         accepted = []
         rejected = []
         # TODO: for the sake of performance, this check might better be
         # simplified or removed.
-        fses = [f for f in fses if isinstance(f, _FileSystemEntry)]
-        if not fses:
-            raise TimegapsError("`fses` must contain valid entries.")
+        #objs = [o for o in objs if hasattr(o, "modtime")]
+        #if not fses:
+        #    raise TimegapsError("`fses` must contain valid entries.")
 
         #self.years_dict = defaultdict(list)
         #self.months_dict = defaultdict(list)
@@ -141,33 +142,35 @@ class Filter(object):
         for catlabel in self.rules:
             setattr(self, "%s_dict" % catlabel, defaultdict(list))
 
-        accepted_fses = []
-        rejected_fses_lists = []
+        accepted_objs = []
+        rejected_objs_lists = []
 
         # Categorize all filesystem entries.
-        for fse in fses:
-            td = _Timedelta(fse.modtime, self.reftime)
+        for obj in objs:
+            # Might raise AttributeError if `obj` does not have `modtime`
+            # attribute or TypeError upon _Timedelta creation.
+            td = _Timedelta(obj.modtime, self.reftime)
             # Automation of the following code, which uses time categories
             # explicitly:
             #       if td.years > 0:
-            #           self.years_dict[td.years].append(fse)
+            #           self.years_dict[td.years].append(obj)
             #       elif td.months > 0:
-            #           self.years_dict[td.months].append(fse)
+            #           self.years_dict[td.months].append(obj)
             #       ...
             #       elif:
             #           # Modification time later than ref - 1 hour.
             #           # td.recent is always 0 (hack for unique treatment of
             #           # categories).
-            #           self.recent_dict[td.recent].append(fse)
+            #           self.recent_dict[td.recent].append(obj)
             for catlabel in self.rules:
                 timecount = getattr(td, catlabel)
                 if timecount > 0:
                     # Get category dictionary, use timecount as key. This
-                    # retrieves the list for all fses that are e.g. 2 years
-                    # old (this would translate to years_dict[2]). Append fse
+                    # retrieves the list for all objs that are e.g. 2 years
+                    # old (this would translate to years_dict[2]). Append obj
                     # to this list. Create key and list if it doesn't exist so
                     # far (this is handled by defaultdict).
-                    getattr(self, "%s_dict" % catlabel)[timecount].append(fse)
+                    getattr(self, "%s_dict" % catlabel)[timecount].append(obj)
 
         for catlabel in self.rules:
             catdict = getattr(self, "%s_dict" % catlabel)
@@ -180,12 +183,12 @@ class Filter(object):
                     catdict[timecount].sort(key=lambda f: f.modtime)
                     # Accept newest (i.e. last) item. Remove it from the list.
                     # pop should be O(1) for the last item.
-                    accepted_fses.append(catdict[timecount].pop())
+                    accepted_objs.append(catdict[timecount].pop())
                     # Reject the rest of the list.
-                    rejected_fses_lists.append(catdict[timecount])
+                    rejected_objs_lists.append(catdict[timecount])
 
-        rejected_fses = itertools.chain.from_iterable(rejected_fses_lists)
-        return accepted_fses, rejected_fses
+        rejected_objs = itertools.chain.from_iterable(rejected_objs_lists)
+        return accepted_objs, rejected_objs
 
 
 class _Timedelta(object):
@@ -201,10 +204,11 @@ class _Timedelta(object):
     def __init__(self, t, ref):
         # convert struct_time objects to a second-based representatio here for
         # simpler math. TODO: is this conversion still needed?
-        if isinstance(t, time.struct_time):
-            t = time.mktime(t)
-        if isinstance (ref, time.struct_time):
-            ref = time.mktime(ref)  + 5000000
+        #if isinstance(t, time.struct_time):
+        #    t = time.mktime(t)
+        #if isinstance (ref, time.struct_time):
+        #    ref = time.mktime(ref)
+        # Expect two numeric values. Might raise TypeError for other types.
         seconds_earlier = ref - t
         # TODO: this check might be over-cautios in the future.
         assert isinstance(seconds_earlier, float)

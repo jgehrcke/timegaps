@@ -3,7 +3,7 @@
 
 
 """
-Feature brainstorm:
+Feature / TODO brainstorm:
     - reference implementation with cmdline interface
     - comprehensive API for systematic unit testing and library usage
     - remove or move or noop mode
@@ -17,6 +17,9 @@ Feature brainstorm:
       involvement of the file system at all, just timestamp filtering)
     - add cmdline option for reference time input
     - otherwise: reference time is time at program startup
+    - define default rules in cmdline tool, not in underlying
+      implementation
+    - rework FileSystemEntry / _FileSystemEntry __new__ mechanism
 """
 
 import os

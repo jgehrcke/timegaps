@@ -10,7 +10,7 @@ import collections
 import tempfile
 
 sys.path.insert(0, os.path.abspath('..'))
-from timegaps.timegaps import (Filter, FileSystemEntry, TimegapsError,
+from timegaps.timegaps import (TimeFilter, FileSystemEntry, TimegapsError,
     _Timedelta, _FileSystemEntry)
 
 WINDOWS = sys.platform == "win32"
@@ -89,8 +89,8 @@ class TestBasicFSEntry(object):
         assert isinstance(fse.moddate, datetime)
 
 
-class TestFilterInit(object):
-    """Test Filter initialization logic.
+class TestTimeFilterInit(object):
+    """Test TimeFilter initialization logic.
     """
     def setup(self):
         pass
@@ -100,17 +100,17 @@ class TestFilterInit(object):
 
     def test_reftime(self):
         t = time.time()
-        f = Filter(reftime=t)
+        f = TimeFilter(reftime=t)
         assert f.reftime == t
-        f = Filter()
+        f = TimeFilter()
         assert f.reftime >= t
 
     def test_invalid_rule_key(self):
         with raises(TimegapsError):
-            Filter(rules={"days": 1, "wrong": 1})
+            TimeFilter(rules={"days": 1, "wrong": 1})
 
     def test_default_rules1(self):
-        f = Filter(rules={})
+        f = TimeFilter(rules={})
         assert f.rules["days"] == 10
         assert f.rules["years"] == 4
         assert f.rules["months"] == 12
@@ -119,7 +119,7 @@ class TestFilterInit(object):
         assert f.rules["recent"] == 5
 
     def test_default_rules2(self):
-        f = Filter()
+        f = TimeFilter()
         assert f.rules["days"] == 10
         assert f.rules["years"] == 4
         assert f.rules["months"] == 12
@@ -128,13 +128,13 @@ class TestFilterInit(object):
         assert f.rules["recent"] == 5
 
     def test_fillup_rules(self):
-        f = Filter(rules={"days": 20})
+        f = TimeFilter(rules={"days": 20})
         assert f.rules["days"] == 20
 
     def test_no_fses(self):
         fse = FileSystemEntry(path="gibtsgarantiertnichthier")
         assert fse is None
-        f = Filter()
+        f = TimeFilter()
         with raises(TimegapsError):
             f.filter([fse])
 
@@ -207,8 +207,8 @@ class TestTimedelta(object):
         assert isinstance(d.hours_exact, float)
 
 
-class TestFilter(object):
-    """Test Filter logics and arithmetics.
+class TestTimeFilter(object):
+    """Test TimeFilter logics and arithmetics.
     """
     rules_hour_1 = {"years":0, "months":0, "weeks":0, "days":0, "hours":1}
 
@@ -221,12 +221,12 @@ class TestFilter(object):
     def test_minimal_functionality_and_types(self):
         # Create filter with reftime NOW (if not specified otherwise)
         # and simple rules.
-        f = Filter(rules=self.rules_hour_1)
+        f = TimeFilter(rules=self.rules_hour_1)
         # Create mock that is 1.5 hours old. Must end up in accepted list,
         # since it's 1 hour old and one item should be kept from the 1-hour-
         # old-category
         fse = FileSystemEntryMock(modtime=time.time()-60*60*1.5)
-        a, r = f.filter(fses=[fse])
+        a, r = f.filter(objs=[fse])
         # http://stackoverflow.com/a/1952655/145400
         assert isinstance(a, collections.Iterable)
         assert isinstance(r, collections.Iterable)
@@ -236,10 +236,10 @@ class TestFilter(object):
         assert len(list(r)) == 0
 
     def test_one_accepted_one_rejected(self):
-        f = Filter(rules=self.rules_hour_1)
+        f = TimeFilter(rules=self.rules_hour_1)
         fse1 = FileSystemEntryMock(modtime=time.time()-60*60*1.5)
         fse2 = FileSystemEntryMock(modtime=time.time()-60*60*1.6)
-        a, r = f.filter(fses=[fse1, fse2])
+        a, r = f.filter(objs=[fse1, fse2])
         r = list(r)
         # The younger one must be accepted.
         assert a[0] == fse1
