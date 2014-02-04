@@ -80,14 +80,14 @@ class TimeFilter(object):
     """
     def __init__(self, reftime=None, rules=None):
         # Define time categories (their labels) and their default filter
-        # values. Must be in order past -> future.
+        # values. Must be in order from past to future.
         time_categories = OrderedDict((
-                ("years", 4),
-                ("months", 12),
-                ("weeks", 6),
-                ("days", 10),
-                ("hours", 48),
-                ("recent", 5),
+                ("years", 0),
+                ("months", 0),
+                ("weeks", 0),
+                ("days", 0),
+                ("hours", 0),
+                ("recent", 0),
             ))
 
         if rules is None:

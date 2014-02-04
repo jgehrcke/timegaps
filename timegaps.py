@@ -20,6 +20,13 @@ Feature / TODO brainstorm:
     - define default rules in cmdline tool, not in underlying
       implementation
     - rework FileSystemEntry / _FileSystemEntry __new__ mechanism
+    - set some meaningful filtering defaults, such as:
+        assert f.rules["days"] == 10
+        assert f.rules["years"] == 4
+        assert f.rules["months"] == 12
+        assert f.rules["weeks"] == 6
+        assert f.rules["hours"] == 48
+        assert f.rules["recent"] == 5
 """
 
 import os

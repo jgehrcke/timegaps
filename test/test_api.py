@@ -111,25 +111,19 @@ class TestTimeFilterInit(object):
 
     def test_default_rules1(self):
         f = TimeFilter(rules={})
-        assert f.rules["days"] == 10
-        assert f.rules["years"] == 4
-        assert f.rules["months"] == 12
-        assert f.rules["weeks"] == 6
-        assert f.rules["hours"] == 48
-        assert f.rules["recent"] == 5
+        for c in ("days", "years", "months", "weeks", "hours", "recent"):
+            assert f.rules[c] == 0
 
     def test_default_rules2(self):
         f = TimeFilter()
-        assert f.rules["days"] == 10
-        assert f.rules["years"] == 4
-        assert f.rules["months"] == 12
-        assert f.rules["weeks"] == 6
-        assert f.rules["hours"] == 48
-        assert f.rules["recent"] == 5
+        for c in ("days", "years", "months", "weeks", "hours", "recent"):
+            assert f.rules[c] == 0
 
     def test_fillup_rules(self):
         f = TimeFilter(rules={"days": 20})
         assert f.rules["days"] == 20
+        for c in ("years", "months", "weeks", "hours", "recent"):
+            assert f.rules[c] == 0
 
     def test_invalid_object(self):
         f = TimeFilter()
@@ -220,8 +214,6 @@ class TestTimedelta(object):
 class TestTimeFilter(object):
     """Test TimeFilter logics and arithmetics.
     """
-    rules_hour_1 = {"years":0, "months":0, "weeks":0, "days":0, "hours":1}
-
     def setup(self):
         pass
 
@@ -231,7 +223,7 @@ class TestTimeFilter(object):
     def test_minimal_functionality_and_types(self):
         # Create filter with reftime NOW (if not specified otherwise)
         # and simple rules.
-        f = TimeFilter(rules=self.rules_hour_1)
+        f = TimeFilter(rules={"hours": 1})
         # Create mock that is 1.5 hours old. Must end up in accepted list,
         # since it's 1 hour old and one item should be kept from the 1-hour-
         # old-category
@@ -246,7 +238,7 @@ class TestTimeFilter(object):
         assert len(list(r)) == 0
 
     def test_one_accepted_one_rejected(self):
-        f = TimeFilter(rules=self.rules_hour_1)
+        f = TimeFilter(rules={"hours": 1})
         fse1 = FileSystemEntryMock(modtime=time.time()-60*60*1.5)
         fse2 = FileSystemEntryMock(modtime=time.time()-60*60*1.6)
         a, r = f.filter(objs=[fse1, fse2])
