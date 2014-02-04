@@ -31,26 +31,32 @@ class TimeFilter(object):
                 ("recent", 0),
             ))
 
-        if rules is None:
-            rules = OrderedDict()
-
         # If the reference time is not provided by the user, use current time
         # (Unix timestamp, seconds since epoch, no localization -- this is
         # directly comparable to the st_mtime inode data).
         self.reftime = time.time() if reftime is None else reftime
 
-        # Check given rules for invalid time labels.
-        for key in rules:
-            if not key in time_categories:
-                raise TimeFilterError(
-                    "Invalid key in rules dictionary: '%s'" % key)
+        userrules = rules
+        if userrules is None:
+            # Create emtpy iterable (says: no rules defined).
+            userrules = ()
+        else:
+            # Check given rules for invalid time labels.
+            assert isinstance(userrules, dict)
+            for key in userrules:
+                if not key in time_categories:
+                    raise TimeFilterError(
+                        "Invalid key in rules dictionary: '%s'" % key)
 
-        # Set missing rules to defaults.
-        for label, count in time_categories.items():
-            if not label in rules:
-                rules[label] = count
-        self.rules = rules
-
+        # Build up `self.rules` dict (order is important).
+        # Set rules not given by user to defaults, keep order of
+        # `time_categories` dict.
+        self.rules = OrderedDict()
+        for label, defaultcount in time_categories.items():
+            if label in userrules:
+                self.rules[label] = userrules[label]
+            else:
+                self.rules[label] = defaultcount
 
     def filter(self, objs):
         """Split list of objects into two lists, `accepted` and `rejected`,

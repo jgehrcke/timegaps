@@ -375,9 +375,20 @@ class TestTimeFilter(object):
         a, r = TimeFilter(rules, now).filter(chain(afses, rfses))
         r = list(r)
         # All nowminus1* must be accepted, all nowminus2* must be rejected.
+        assert len(a) == 6
         for fse in afses:
             assert fse in a
+
+        print "accepted: %s" % a
+        print
+        print
+        print "rejected: %s" % r
+        print
+        print
+        print "rejected unique: %s" % list(set(r))
+
+
         for fse in rfses:
             assert fse in r
-        assert len(a) == 6
+
         assert len(r) == 6
