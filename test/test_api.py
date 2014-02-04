@@ -238,7 +238,7 @@ class TestTimeFilter(object):
         # list before evaluating length.
         assert len(list(r)) == 0
 
-    def test_one_accepted_one_rejected(self):
+    def test_hours_one_accepted_one_rejected(self):
         f = TimeFilter(rules={"hours": 1})
         fse1 = FileSystemEntryMock(modtime=time.time()-60*60*1.5)
         fse2 = FileSystemEntryMock(modtime=time.time()-60*60*1.6)
@@ -249,3 +249,33 @@ class TestTimeFilter(object):
         assert len(a) == 1
         assert r[0] == fse2
         assert len(r) == 1
+
+    def test_two_recent(self):
+        fse1 = FileSystemEntryMock(modtime=time.time())
+        time.sleep(SHORTTIME)
+        fse2 = FileSystemEntryMock(modtime=time.time())
+        # fse2 is a little younger than fse1.
+        time.sleep(SHORTTIME) # Make sure ref is newer than fse2.modtime.
+        a, r = TimeFilter(rules={"recent": 1}).filter(objs=[fse1, fse2])
+        r = list(r)
+        # The younger one must be accepted.
+        assert a[0] == fse2
+        assert len(a) == 1
+        assert r[0] == fse1
+        assert len(r) == 1
+
+    def test_2_recent_10_allowed(self):
+        # Request to keep more than available.
+        fse1 = FileSystemEntryMock(modtime=time.time())
+        time.sleep(SHORTTIME)
+        fse2 = FileSystemEntryMock(modtime=time.time())
+        time.sleep(SHORTTIME)
+        a, r = TimeFilter(rules={"recent": 10}).filter(objs=[fse1, fse2])
+        r = list(r)
+        # All should be accepted. Within one category (as `recent` is one),
+        # items must be sorted by modtime, with the newest element being the
+        # last element.
+        assert a[0] == fse1
+        assert a[1] == fse2
+        assert len(a) == 2
+        assert len(r) == 0
