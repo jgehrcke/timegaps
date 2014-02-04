@@ -296,11 +296,7 @@ class TestTimeFilter(object):
         fse2 = FileSystemEntryMock(modtime=nowminus09years)
         a, r = TimeFilter(rules={"years": 10}).filter(objs=[fse1, fse2])
         r = list(r)
-        # All should be accepted. Within categories not being `recent` (as
-        # `years` is one), younger items come before older ones. Here,
-        # fse2 is younger.
-        assert a[0] == fse2
-        assert a[1] == fse1
+        # All should be accepted.
         assert len(a) == 2
         assert len(r) == 0
 
@@ -313,11 +309,7 @@ class TestTimeFilter(object):
         fse2 = FileSystemEntryMock(modtime=nowminus09years)
         a, r = TimeFilter(rules={"years": 10}).filter(objs=[fse1, fse2])
         r = list(r)
-        # All should be accepted. Within categories not being `recent` (as
-        # `years` is one), younger items come before older ones. Here,
-        # fse2 is younger.
-        assert a[0] == fse2
-        assert a[1] == fse1
+        # All should be accepted.
         assert len(a) == 2
         assert len(r) == 0
 
@@ -330,11 +322,7 @@ class TestTimeFilter(object):
         fse2 = FileSystemEntryMock(modtime=nowminus09years)
         a, r = TimeFilter(rules={"years": 2}).filter(objs=[fse1, fse2])
         r = list(r)
-        # All should be accepted. Within categories not being `recent` (as
-        # `years` is one), younger items come before older ones. Here,
-        # fse2 is younger.
-        assert a[0] == fse2
-        assert a[1] == fse1
+        # All should be accepted.
         assert len(a) == 2
         assert len(r) == 0
 

@@ -57,6 +57,8 @@ class TimeFilter(object):
                 self.rules[label] = userrules[label]
             else:
                 self.rules[label] = defaultcount
+        log.debug("TimeFilter set up with reftime %s and rules %s",
+            self.reftime, self.rules)
 
     def filter(self, objs):
         """Split list of objects into two lists, `accepted` and `rejected`,
@@ -97,7 +99,9 @@ class TimeFilter(object):
             for catlabel in self.rules:
                 timecount = getattr(td, catlabel)
                 if timecount > 0:
+                    log.debug("Put %s into %s/%s.", obj, catlabel, timecount)
                     getattr(self, "_%s_dict" % catlabel)[timecount].append(obj)
+                    break
 
         # Go through categorized dataset and sort it into accepted and
         # rejected items, according to the rules given.
@@ -109,7 +113,8 @@ class TimeFilter(object):
             # recent items are in the list with key 1 (by convention).
             if catlabel == "recent" and self.rules[catlabel] > 0:
                 # Sort, accept the newest N elements, reject the others.
-                log.debug("recent N requested: %s", self.rules[catlabel])
+                log.debug("Accept recent: %s", self.rules[catlabel])
+                log.debug("Length recent: %s", len(catdict[1]))
                 catdict[1].sort(key=lambda f: f.modtime)
                 accepted_objs.extend(catdict[1][-self.rules[catlabel]:])
                 rejected_objs_lists.append(catdict[1][:-self.rules[catlabel]])
@@ -118,7 +123,7 @@ class TimeFilter(object):
                 # catdict[timecount] exists as a list with at least one item.
                 log.debug("catlabel: %s, timecount: %s", catlabel, timecount)
                 if timecount in xrange(1, self.rules[catlabel] + 1):
-                    log.debug("timecount requested, according to rules.")
+                    log.debug("Accept %s/%s.", catlabel, timecount)
                     # According to the rules given, this time category is to
                     # be kept (e.g. 2 years). Sort all items in this time
                     # category.
