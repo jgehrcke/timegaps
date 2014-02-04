@@ -49,7 +49,6 @@ class TimeFilter(object):
         for label, count in time_categories.items():
             if not label in rules:
                 rules[label] = count
-
         self.rules = rules
 
 
@@ -58,12 +57,8 @@ class TimeFilter(object):
         according to the rules. A treatable object is required to have a
         `modtime` attribute, carrying a Unix timestamp.
         """
-        accepted = []
-        rejected = []
-
         # self._years_dict = defaultdict(list)
         # self._months_dict = defaultdict(list)
-        # self._weeks_dict = defaultdict(list)
         # ...
         for catlabel in self.rules:
             setattr(self, "_%s_dict" % catlabel, defaultdict(list))
@@ -142,15 +137,15 @@ class _Timedelta(object):
         if seconds_earlier < 0:
             raise TimeFilterError("Time %s not earlier than reference %s" %
                 (t, ref))
-        self.hours_exact = seconds_earlier / 3600     # 60 * 60
+        #self.hours_exact = seconds_earlier / 3600     # 60 * 60
         self.hours = int(self.hours_exact)
-        self.days_exact = seconds_earlier / 86400     # 60 * 60 * 24
+        #self.days_exact = seconds_earlier / 86400     # 60 * 60 * 24
         self.days = int(self.days_exact)
-        self.weeks_exact = seconds_earlier / 604800   # 60 * 60 * 24 * 7
+        #self.weeks_exact = seconds_earlier / 604800   # 60 * 60 * 24 * 7
         self.weeks = int(self.weeks_exact)
-        self.months_exact = seconds_earlier / 2592000 # 60 * 60 * 24 * 30
+        #self.months_exact = seconds_earlier / 2592000 # 60 * 60 * 24 * 30
         self.months = int(self.months_exact)
-        self.years_exact = seconds_earlier / 31536000 # 60 * 60 * 24 * 365
+        #self.years_exact = seconds_earlier / 31536000 # 60 * 60 * 24 * 365
         self.years = int(self.years_exact)
 
         # That's hacky, can we improve? Currently, this `recent` attr is used
