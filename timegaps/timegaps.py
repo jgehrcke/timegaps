@@ -2,15 +2,9 @@
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 
 import os
-import sys
-import time
 import stat
 import datetime
 import logging
-import itertools
-from collections import defaultdict
-from collections import OrderedDict
-from operator import itemgetter
 
 
 log = logging.getLogger("timegaps")
