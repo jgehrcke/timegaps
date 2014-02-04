@@ -272,10 +272,44 @@ class TestTimeFilter(object):
         time.sleep(SHORTTIME)
         a, r = TimeFilter(rules={"recent": 10}).filter(objs=[fse1, fse2])
         r = list(r)
-        # All should be accepted. Within one category (as `recent` is one),
+        # All should be accepted. Within `recent` category,
         # items must be sorted by modtime, with the newest element being the
         # last element.
         assert a[0] == fse1
         assert a[1] == fse2
+        assert len(a) == 2
+        assert len(r) == 0
+
+    def test_2_years_10_allowed_past(self):
+        # Request to keep more than available.
+        # Produce one 9 year old, one 10 year old, keep 10 years.
+        nowminus10years = time.time() - (60*60*24*365 * 10 + 1)
+        nowminus09years = time.time() - (60*60*24*365 *  9 + 1)
+        fse1 = FileSystemEntryMock(modtime=nowminus10years)
+        fse2 = FileSystemEntryMock(modtime=nowminus09years)
+        a, r = TimeFilter(rules={"years": 10}).filter(objs=[fse1, fse2])
+        r = list(r)
+        # All should be accepted. Within categories not being `recent` (as
+        # `years` is one), younger items come before older ones. Here,
+        # fse2 is younger.
+        assert a[0] == fse2
+        assert a[1] == fse1
+        assert len(a) == 2
+        assert len(r) == 0
+
+    def test_2_years_10_allowed_recent(self):
+        # Request to keep more than available.
+        # Produce one 1 year old, one 2 year old, keep 10 years.
+        nowminus10years = time.time() - (60*60*24*365 * 2 + 1)
+        nowminus09years = time.time() - (60*60*24*365 * 1 + 1)
+        fse1 = FileSystemEntryMock(modtime=nowminus10years)
+        fse2 = FileSystemEntryMock(modtime=nowminus09years)
+        a, r = TimeFilter(rules={"years": 10}).filter(objs=[fse1, fse2])
+        r = list(r)
+        # All should be accepted. Within categories not being `recent` (as
+        # `years` is one), younger items come before older ones. Here,
+        # fse2 is younger.
+        assert a[0] == fse2
+        assert a[1] == fse1
         assert len(a) == 2
         assert len(r) == 0
