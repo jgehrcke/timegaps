@@ -3,6 +3,9 @@
 
 
 """
+This file still has no functionality. It's a notebook.
+
+
 Feature / TODO brainstorm:
     - reference implementation with cmdline interface
     - comprehensive API for systematic unit testing and library usage
@@ -65,6 +68,15 @@ def main():
 
     for p in delete_paths:
         delete_backup_dir(p)
+
+
+def time_from_dirname(d):
+    # dirs are of type 2013.08.15_20.29.31
+    return time.strptime(d, "%Y.%m.%d_%H.%M.%S")
+
+
+def dirname_from_time(t):
+    return time.strftime("%Y.%m.%d_%H.%M.%S", t)
 
 
 if __name__ == "__main__":
