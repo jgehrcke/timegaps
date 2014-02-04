@@ -99,7 +99,7 @@ class TimeFilter(object):
             for catlabel in self.rules:
                 timecount = getattr(td, catlabel)
                 if timecount > 0:
-                    log.debug("Put %s into %s/%s.", obj, catlabel, timecount)
+                    #log.debug("Put %s into %s/%s.", obj, catlabel, timecount)
                     getattr(self, "_%s_dict" % catlabel)[timecount].append(obj)
                     break
 
@@ -113,17 +113,19 @@ class TimeFilter(object):
             # recent items are in the list with key 1 (by convention).
             if catlabel == "recent" and self.rules[catlabel] > 0:
                 # Sort, accept the newest N elements, reject the others.
-                log.debug("Accept recent: %s", self.rules[catlabel])
-                log.debug("Length recent: %s", len(catdict[1]))
+                #log.debug("Accept recent: %s", self.rules[catlabel])
+                #log.debug("Length recent: %s", len(catdict[1]))
                 catdict[1].sort(key=lambda f: f.modtime)
+                #log.debug("Accept list:\n%s", catdict[1][-self.rules[catlabel]:])
+                #log.debug("Reject list:\n%s", catdict[1][:-self.rules[catlabel]])
                 accepted_objs.extend(catdict[1][-self.rules[catlabel]:])
                 rejected_objs_lists.append(catdict[1][:-self.rules[catlabel]])
                 break
             for timecount in catdict:
                 # catdict[timecount] exists as a list with at least one item.
-                log.debug("catlabel: %s, timecount: %s", catlabel, timecount)
+                #log.debug("catlabel: %s, timecount: %s", catlabel, timecount)
                 if timecount in xrange(1, self.rules[catlabel] + 1):
-                    log.debug("Accept %s/%s.", catlabel, timecount)
+                    #log.debug("Accept %s/%s.", catlabel, timecount)
                     # According to the rules given, this time category is to
                     # be kept (e.g. 2 years). Sort all items in this time
                     # category.
@@ -131,8 +133,9 @@ class TimeFilter(object):
                     # Accept newest (i.e. last) item. Remove it from the list.
                     # pop should be O(1) for the last item.
                     accepted_objs.append(catdict[timecount].pop())
-                    # Reject the rest of the list.
-                    rejected_objs_lists.append(catdict[timecount])
+                # Reject the (modified) list (accepted item has been popped).
+                #log.debug("Reject list:\n%s", catdict[timecount])
+                rejected_objs_lists.append(catdict[timecount])
 
         rejected_objs = itertools.chain.from_iterable(rejected_objs_lists)
         return accepted_objs, rejected_objs

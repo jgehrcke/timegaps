@@ -366,17 +366,6 @@ class TestTimeFilter(object):
         assert len(a) == 6
         for fse in afses:
             assert fse in a
-
-        print "accepted: %s" % a
-        print
-        print
-        print "rejected: %s" % r
-        print
-        print
-        print "rejected unique: %s" % list(set(r))
-
-
         for fse in rfses:
             assert fse in r
-
         assert len(r) == 6
