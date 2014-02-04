@@ -19,7 +19,7 @@ class TimeFilter(object):
     """Represents certain time filtering rules. Allows for filtering objects
     providing a `modtime` attribute.
     """
-    def __init__(self, reftime=None, rules=None):
+    def __init__(self, rules=None, reftime=None):
         # Define time categories (their labels) and their default filter
         # values. Must be in order from past to future.
         time_categories = OrderedDict((
@@ -103,6 +103,7 @@ class TimeFilter(object):
             # recent items are in the list with key 1 (by convention).
             if catlabel == "recent" and self.rules[catlabel] > 0:
                 # Sort, accept the newest N elements, reject the others.
+                log.debug("recent N requested: %s", self.rules[catlabel])
                 catdict[1].sort(key=lambda f: f.modtime)
                 accepted_objs.extend(catdict[1][-self.rules[catlabel]:])
                 rejected_objs_lists.append(catdict[1][:-self.rules[catlabel]])

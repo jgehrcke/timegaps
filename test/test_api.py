@@ -6,6 +6,7 @@ import sys
 import time
 from base64 import b64encode
 from datetime import datetime
+from itertools import chain
 import collections
 import tempfile
 
@@ -32,9 +33,15 @@ SHORTTIME = 0.01
 #LONGERTHANBUFFER = "A" * 9999999
 
 
-class FileSystemEntryMock(object):
+class FileSystemEntryMock(FileSystemEntry):
     def __init__(self, modtime):
         self.modtime = modtime
+
+    def __str__(self):
+        return "%s(moddate: %s)" % (self.__class__.__name__, self.moddate)
+
+    def __repr__(self):
+        return "%s(modtime=%s)" % (self.__class__.__name__, self.modtime)
 
 
 def randstring_fssafe():
@@ -213,7 +220,7 @@ class TestTimedelta(object):
 
 
 class TestTimeFilter(object):
-    """Test TimeFilter logics and arithmetics.
+    """Test TimeFilter logic and arithmetics.
     """
     def setup(self):
         pass
@@ -313,3 +320,64 @@ class TestTimeFilter(object):
         assert a[1] == fse1
         assert len(a) == 2
         assert len(r) == 0
+
+    def test_2_years_2_allowed(self):
+        # Request to keep more than available.
+        # Produce one 1 year old, one 2 year old, keep 10 years.
+        nowminus10years = time.time() - (60*60*24*365 * 2 + 1)
+        nowminus09years = time.time() - (60*60*24*365 * 1 + 1)
+        fse1 = FileSystemEntryMock(modtime=nowminus10years)
+        fse2 = FileSystemEntryMock(modtime=nowminus09years)
+        a, r = TimeFilter(rules={"years": 2}).filter(objs=[fse1, fse2])
+        r = list(r)
+        # All should be accepted. Within categories not being `recent` (as
+        # `years` is one), younger items come before older ones. Here,
+        # fse2 is younger.
+        assert a[0] == fse2
+        assert a[1] == fse1
+        assert len(a) == 2
+        assert len(r) == 0
+
+    def test_all_categories_1acc_1rej(self):
+        now = time.time()
+        nowminus1year = now -  (60*60*24*365 * 1 + 1)
+        nowminus1month = now - (60*60*24*30  * 1 + 1)
+        nowminus1week = now -  (60*60*24*7   * 1 + 1)
+        nowminus1day = now -   (60*60*24     * 1 + 1)
+        nowminus1hour = now -  (60*60        * 1 + 1)
+        nowminus1second = now - 1
+        nowminus2year = now -  (60*60*24*365 * 2 + 1)
+        nowminus2month = now - (60*60*24*30  * 2 + 1)
+        nowminus2week = now -  (60*60*24*7   * 2 + 1)
+        nowminus2day = now -   (60*60*24     * 2 + 1)
+        nowminus2hour = now -  (60*60        * 2 + 1)
+        nowminus2second = now - 2
+        atimes = (
+            nowminus1year,
+            nowminus1month,
+            nowminus1week,
+            nowminus1day,
+            nowminus1hour,
+            nowminus1second,
+            )
+        rtimes = (
+            nowminus2year,
+            nowminus2month,
+            nowminus2week,
+            nowminus2day,
+            nowminus2hour,
+            nowminus2second,
+            )
+        afses = [FileSystemEntryMock(modtime=t) for t in atimes]
+        rfses = [FileSystemEntryMock(modtime=t) for t in rtimes]
+        cats = ("days", "years", "months", "weeks", "hours", "recent")
+        rules = {c:1 for c in cats}
+        a, r = TimeFilter(rules, now).filter(chain(afses, rfses))
+        r = list(r)
+        # All nowminus1* must be accepted, all nowminus2* must be rejected.
+        for fse in afses:
+            assert fse in a
+        for fse in rfses:
+            assert fse in r
+        assert len(a) == 6
+        assert len(r) == 6
