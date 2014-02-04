@@ -27,7 +27,7 @@ log = logging.getLogger()
 log.setLevel(logging.DEBUG)
 
 #LONG = 999999
-#SHORTTIME = 0.01
+SHORTTIME = 0.01
 #ALMOSTZERO = 0.00001
 #LONGERTHANBUFFER = "A" * 9999999
 
@@ -102,8 +102,9 @@ class TestTimeFilterInit(object):
         t = time.time()
         f = TimeFilter(reftime=t)
         assert f.reftime == t
+        time.sleep(SHORTTIME)
         f = TimeFilter()
-        assert f.reftime >= t
+        assert f.reftime > t
 
     def test_invalid_rule_key(self):
         with raises(TimeFilterError):

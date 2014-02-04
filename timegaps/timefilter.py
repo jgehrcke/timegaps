@@ -153,5 +153,9 @@ class _Timedelta(object):
         self.years_exact = seconds_earlier / 31536000 # 60 * 60 * 24 * 365
         self.years = int(self.years_exact)
 
-        # TODO: that's hacky, can we improve?
+        # That's hacky, can we improve? Currently, this `recent` attr is used
+        # in the `TimeFilter.filter` method as key to the recent dict:
+        #   `self.recent_dict[td.recent].append(obj)`
+        # This happens automatically, in analogy to
+        #   `self.years_dict[td.years].append(obj)`
         self.recent = 0
