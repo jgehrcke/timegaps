@@ -10,8 +10,8 @@ import collections
 import tempfile
 
 sys.path.insert(0, os.path.abspath('..'))
-from timegaps.timegaps import (TimeFilter, FileSystemEntry, TimegapsError,
-    _Timedelta)
+from timegaps.timegaps import FileSystemEntry, TimegapsError
+from timegaps.timefilter import TimeFilter, _Timedelta, TimeFilterError
 
 WINDOWS = sys.platform == "win32"
 
@@ -106,7 +106,7 @@ class TestTimeFilterInit(object):
         assert f.reftime >= t
 
     def test_invalid_rule_key(self):
-        with raises(TimegapsError):
+        with raises(TimeFilterError):
             TimeFilter(rules={"days": 1, "wrong": 1})
 
     def test_default_rules1(self):
@@ -159,7 +159,7 @@ class TestTimedelta(object):
 
     def test_future(self):
         # Time `t` later than reference.
-        with raises(TimegapsError):
+        with raises(TimeFilterError):
             _Timedelta(t=1.0, ref=0)
 
     def test_types_math_year(self):
