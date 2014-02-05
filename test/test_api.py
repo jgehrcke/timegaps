@@ -54,6 +54,10 @@ def randstring_fssafe():
     return b64encode(os.urandom(6)).replace('/','!')
 
 
+# A simple valid filter rules dictionary .
+DAY1 = {"days": 1}
+
+
 class TestBasicFSEntry(object):
     """Test basic FileSystemEntry logic.
 
@@ -113,10 +117,10 @@ class TestTimeFilterInit(object):
 
     def test_reftime(self):
         t = time.time()
-        f = TimeFilter(reftime=t)
+        f = TimeFilter(rules=DAY1, reftime=t)
         assert f.reftime == t
         time.sleep(SHORTTIME)
-        f = TimeFilter()
+        f = TimeFilter(rules=DAY1)
         assert f.reftime > t
 
     def test_invalid_rule_key(self):
@@ -145,14 +149,18 @@ class TestTimeFilterInit(object):
         for c in ("years", "months", "weeks", "hours", "recent"):
             assert f.rules[c] == 0
 
+
+class TestTimeFilterFilter(object):
+    """Test TimeFilter.filter method call signature.
+    """
     def test_invalid_object(self):
-        f = TimeFilter()
+        f = TimeFilter(rules=DAY1)
         with raises(AttributeError):
             # AttributeError: 'NoneType' object has no attribute 'modtime'
             f.filter([None])
 
     def test_not_iterable(self):
-        f = TimeFilter()
+        f = TimeFilter(rules=DAY1)
         with raises(TypeError):
             # TypeError: 'NoneType' object is not iterable
             f.filter(None)
@@ -383,15 +391,57 @@ class TestTimeFilter(object):
         assert len(r) == 6
 
     def test_10_days(self):
-        # Category 'overlap' must be possible (10 days > 1 week).
+        # Category 'overlap' must be possible (10 days > 1 week). Create
+        # Having 15 FSEs, 1 to 15 days in age, the first 10 of them must be
+        # accepted according to the 10-day-rule. The last 5 must be rejected.
         now = time.time()
-        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,15))
-        fses = (FileSystemEntryMock(modtime=t) for t in nowminusXdays)
+        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXdays]
         rules = {"days": 10}
         a, r = TimeFilter(rules, now).filter(fses)
         r = list(r)
         assert len(a) == 10
-        print a
+        assert len(r) == 5
+        #assert fses[:10] == a # This test makes an assumption about the order.
+        for fse in fses[:10]:
+            assert fse in a
+        for fse in fses[10:]:
+            assert fse in r
+
+    def test_10_days_2_weeks(self):
+        # Further define category 'overlap' behavior. {"days": 10, "weeks": 2}
+        # -> week 0 is included in the 10 days, week 1 is only partially
+        # included in the 10 days, and week 2 (14 days and older) is not
+        # included in the 10 days.
+        # Having 15 FSEs, 1 to 15 days in age, the first 10 of them must be
+        # accepted according to the 10-day-rule. The 11th, 12th, 13th FSE (11,
+        # 12, 13 days old) are categorized as 1 week old (their age A fulfills
+        # 7 days <= A < 14 days). According to the 2-weeks-rule, the most
+        # recent 1-week-old not affected by younger categories has to be
+        # accepted, which is the 11th FSE. Also according to the 2-weeks-rule,
+        # the most recent 2-week-old (not affected by a younger category, this
+        # is always condition) has to be accepted, which is the 14th FSE.
+        # In total FSEs 1-11,14 must be accepted, i.e. 12 FSEs. 15 FSEs are
+        # used as input (1-15 days old), i.e. 3 are to be rejected (FSEs 12,
+        # 13, 15).
+        now = time.time()
+        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXdays]
+        rules = {"days": 10, "weeks": 2}
+        a, r = TimeFilter(rules, now).filter(fses)
+        r = list(r)
+        assert len(a) == 12
+        # Check if first 11 fses are in accepted list (order can be predicted
+        # according to current implementation, but should not tested, as it is
+        # not guaranteed according to the current specification).
+        for fse in fses[:11]:
+            assert fse in a
+        # Check if 14th FSE is accepted.
+        assert fses[13] in a
+        # Check if FSEs 12, 13, 15 are rejected.
+        assert len(r) == 3
+        for i in (11, 12, 14):
+            assert fses[i] in r
 
     def test_random_times_fixed_rules(self):
         now = time.time()
@@ -400,12 +450,12 @@ class TestTimeFilter(object):
         #print (list(nrandint(100, 0, 17)))
         #return
         def fsegen():
-            nowminusXyears =   (now-60*60*24*365*i for i in nrandint(N, 1, 17))
-            nowminusXmonths =  (now-60*60*24*30 *i for i in nrandint(N, 1, 11))
-            nowminusXweeks =   (now-60*60*24*7  *i for i in nrandint(N, 1, 3))
-            nowminusXdays =    (now-60*60*24    *i for i in nrandint(N, 1, 6))
-            nowminusXhours =   (now-60*60       *i for i in nrandint(N, 1, 17))
-            nowminusXseconds = (now-1           *i for i in nrandint(N, 1, 17))
+            nowminusXyears =   (now-60*60*24*365*i for i in nrandint(N, 1, 15))
+            nowminusXmonths =  (now-60*60*24*30 *i for i in nrandint(N, 1, 15))
+            nowminusXweeks =   (now-60*60*24*7  *i for i in nrandint(N, 1, 15))
+            nowminusXdays =    (now-60*60*24    *i for i in nrandint(N, 1, 15))
+            nowminusXhours =   (now-60*60       *i for i in nrandint(N, 1, 15))
+            nowminusXseconds = (now-1           *i for i in nrandint(N, 1, 15))
             times = chain(
                 nowminusXyears,
                 nowminusXmonths,
@@ -415,20 +465,46 @@ class TestTimeFilter(object):
                 nowminusXseconds,
                 )
             return (FileSystemEntryMock(modtime=t) for t in times)
-        n = 15
-        rules = {
-            "years": 0,
-            "months": 0,
-            "weeks": 0,
-            "days": 0,
-            "hours": 0,
-            "recent": 0
+        n = 0
+        ryears = {"years": n}
+        rmonths = {"months": n}
+        rweeks = {"weeks": n}
+        rdays = {"days": n}
+        rhours = {"hours": n}
+
+        rall = {
+            "years": n,
+            "months": n,
+            "weeks": n,
+            "days": n,
+            "hours": n,
+            "recent": n
             }
+
+        #somefses = list(fsegen())
+        # Run single-category filter on the fses.
+        #for rules in (ryears, rmonths, rweeks, rdays, rhours):
+        #    a, r = TimeFilter(rules, now).filter(somefses)
+        #    print len(a)
+        #    assert len(a) == n
+        # all all-category filter on the same fses.
+        #a, r = TimeFilter(rall, now).filter(somefses)
+
+        n = 0
+        rules = {
+            "years": n,
+            "months": n,
+            "weeks": 2,
+            "days": 10,
+            "hours": n,
+            "recent": n
+            }
+
         # Perform categorizing 10 times with different sets of randomly
         # generated fses.
         for _ in xrange(1):
             a, r = TimeFilter(rules, now).filter(fsegen())
             r = list(r)
-            assert len(a) + len(r) == 6 * N
-            assert len(a) <= n * 6
+            #assert len(a) + len(r) == 6 * N
+            #assert len(a) <= n * 6
             print len(a)

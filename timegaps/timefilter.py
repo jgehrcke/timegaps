@@ -44,7 +44,7 @@ class TimeFilter(object):
         if not len(userrules):
             raise TimeFilterError("Rules dictionary must not be emtpy.")
         greaterzerofound = False
-        for label, count in userrules:
+        for label, count in userrules.iteritems():
             assert isinstance(count, int), "`rules` dict values must be int."
             if count > 0:
                 greaterzerofound = True
@@ -86,7 +86,8 @@ class TimeFilter(object):
             # Might raise AttributeError if `obj` does not have `modtime`
             # attribute or TypeError upon _Timedelta creation.
             td = _Timedelta(obj.modtime, self.reftime)
-            for catlabel in ("hours", "days", "weeks", "months", "years")
+            # Iterate through all categories from young to old, w/o `recent`.
+            for catlabel in ("hours", "days", "weeks", "months", "years"):
                 timecount = getattr(td, catlabel)
                 if 0 < timecount <= self.rules[catlabel]:
                     # `obj` is X hours/days/weeks/months/years old with X > 1
@@ -94,11 +95,18 @@ class TimeFilter(object):
                     # requested (`self.rules[catlabel]` == 3), and category is
                     # days and X is 2, then put it into `_days_dict` with key
                     # 2.
-                    #log.debug("Put %s into %s/%s.", obj, catlabel, timecount)
+                    log.debug("Put %s into %s/%s.", obj, catlabel, timecount)
                     getattr(self, "_%s_dict" % catlabel)[timecount].append(obj)
                     break
             else:
-                # For loop did not break, `obj` was not categorized in any
+                # For loop did not break, `obj` is not older than youngest
+                # category. It's a recent one. TODO: Detecting a recent one
+                # might be improvable: requires youngest_cat_count == 0.
+                # Effect on program efficiency depends on time distribution of
+                # objects.
+                # Convention: timecount == 1 for all recent objects.
+                #log.debug("Put %s into recent.", obj)
+                self._recent_dict[1].append(obj)
 
         # Go through categorized dataset and sort it into accepted and
         # rejected items, according to the rules given.
