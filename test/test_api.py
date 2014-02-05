@@ -522,24 +522,30 @@ class TestTimeFilterMass(object):
         # weeks and months. All other category pairs do not overlap at all or
         # overlap without reduction. Explanation/specification:
         # 8 hours:
-        #   no overlap with days (0 days for all requested hours).
+        #   'Younger' categories can steal from older ones. The 'recent'
+        #   cat cannot steal anything:
+        #   -> 8 items expected for the hours category.
+        #   category. 8 hours have no overlap with days (8 hours are 0 days),
+        #   so the hours category cannot steal from the days category
+        #   -> 8 items expected for the days category.
         # 8 days:
         #   day 7 and 8 could be categorized as 1 week, but become categorized
         #   within the days dict (7 and 8 days are requested per days-rule).
         #   Non-reducing overlap: 9 to 13 days are categorized as 1 week, which
         #   is requested, and 9-day-old items actually are in the data set.
-        #   They are not affected by younger categories (than week) and end up
+        #   They are not stolen by younger categories (than week) and end up
         #   in the 1-week-list.
-        #   -> 8 items expected from each, the days and weeks categories.
+        #   -> 8 items expected from the weeks category.
         # 8 weeks:
+        #   1-month-olds are all stolen by the 8-weeks-rule.
         #   Items of age 8 weeks, i.e. 8*7 days = 56 days could be categorized
         #   as 1 month, but become categorized within the weeks dictionary
         #   (8 weeks old, which is requested per weeks-rule).
         #   Reducing overlap: 9-week-old items in the data set, which are not
         #   requested per weeks-rule are 9*7 days = 63 days old, i.e. 2 months
         #   (2 months are 2*30 days = 60 days). These 2-month-old items are
-        #   not affected by younger data sets (than months), so
-        #   they end up in the 2-months-list.
+        #   not affected by younger data sets (than months), so they end up in
+        #   the 2-months-list.
         #   -> In other words: there is no 1-month-list, since items of these
         #   ages are *entirely* consumed by the weeks-rule. The oldest item
         #   classified as 8 weeks old is already 2 months old:
