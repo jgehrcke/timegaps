@@ -19,7 +19,7 @@ class TimeFilter(object):
     """Represents certain time filtering rules. Allows for filtering objects
     providing a `modtime` attribute.
     """
-    def __init__(self, rules=None, reftime=None):
+    def __init__(self, rules, reftime=None):
         # Define time categories (their labels) and their default filter
         # values. Must be in order from past to future.
         time_categories = OrderedDict((
@@ -35,22 +35,29 @@ class TimeFilter(object):
         # (Unix timestamp, seconds since epoch, no localization -- this is
         # directly comparable to the st_mtime inode data).
         self.reftime = time.time() if reftime is None else reftime
+        assert isinstance(self.reftime, float)
 
+        # Give em a more descriptive name.
         userrules = rules
-        if userrules is None:
-            # Create emtpy iterable (says: no rules defined).
-            userrules = ()
-        else:
-            # Check given rules for invalid time labels.
-            assert isinstance(userrules, dict)
-            for key in userrules:
-                if not key in time_categories:
-                    raise TimeFilterError(
-                        "Invalid key in rules dictionary: '%s'" % key)
+        # Check given rules for invalid time labels.
+        assert isinstance(userrules, dict)
+        if not len(userrules):
+            raise TimeFilterError("Rules dictionary must not be emtpy.")
+        greaterzerofound = False
+        for label, count in userrules:
+            assert isinstance(count, int)
+            if count > 0:
+                greaterzerofound = True
+            if not label in time_categories:
+                raise TimeFilterError(
+                    "Invalid key in rules dictionary: '%s'" % label)
+        if not greaterzerofound:
+            raise TimeFilterError(
+                "Invalid rules dictionary: at least one count > 0 required.")
 
-        # Build up `self.rules` dict (order is important).
+        # Build up `self.rules` dict.
         # Set rules not given by user to defaults, keep order of
-        # `time_categories` dict.
+        # `time_categories` dict (order is crucial).
         self.rules = OrderedDict()
         for label, defaultcount in time_categories.items():
             if label in userrules:
@@ -74,34 +81,24 @@ class TimeFilter(object):
         accepted_objs = []
         rejected_objs_lists = []
 
-        # Categorize all objects. Algorithm:
-        # Test from longer towards shorter periods (e.g. years -> hours). Find
-        # 'longest' category in which the objects fits (timecount for this
-        # category > 0). Get category dictionary, use timecount as key. This
-        # retrieves the list for all objs that are e.g. 2 years old (this would
-        # translate to years_dict[2]). Append obj to this list. Create key and
-        # list if it doesn't exist (this is handled by defaultdict).
-        # Automation of the following code:
-        #       if td.years > 0:
-        #           self.years_dict[td.years].append(obj)
-        #       elif td.months > 0:
-        #           self.years_dict[td.months].append(obj)
-        #       ...
-        #       elif:
-        #           # Modification time later than ref - 1 [smallest unit].
-        #           # td.recent is always 0 (hack for unique treatment of
-        #           # categories).
-        #           self.recent_dict[td.recent].append(obj)
+        # Categorize all objects.
         for obj in objs:
             # Might raise AttributeError if `obj` does not have `modtime`
             # attribute or TypeError upon _Timedelta creation.
             td = _Timedelta(obj.modtime, self.reftime)
-            for catlabel in self.rules:
+            for catlabel in ("hours", "days", "weeks", "months", "years")
                 timecount = getattr(td, catlabel)
-                if timecount > 0:
+                if 0 < timecount <= self.rules[catlabel]:
+                    # `obj` is X hours/days/weeks/months/years old with X > 1
+                    # X is requested in current category, e.g. when 3 days are
+                    # requested (`self.rules[catlabel]` == 3), and category is
+                    # days and X is 2, then put it into `_days_dict` with key
+                    # 2.
                     #log.debug("Put %s into %s/%s.", obj, catlabel, timecount)
                     getattr(self, "_%s_dict" % catlabel)[timecount].append(obj)
                     break
+            else:
+                # For loop did not break, `obj` was not categorized in any
 
         # Go through categorized dataset and sort it into accepted and
         # rejected items, according to the rules given.
