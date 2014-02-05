@@ -39,13 +39,13 @@ class TimeFilter(object):
 
         # Give em a more descriptive name.
         userrules = rules
-        # Check given rules for invalid time labels.
-        assert isinstance(userrules, dict)
+        # Validate given rules.
+        assert isinstance(userrules, dict), "`rules` parameter must be dict."
         if not len(userrules):
             raise TimeFilterError("Rules dictionary must not be emtpy.")
         greaterzerofound = False
         for label, count in userrules:
-            assert isinstance(count, int)
+            assert isinstance(count, int), "`rules` dict values must be int."
             if count > 0:
                 greaterzerofound = True
             if not label in time_categories:

@@ -123,15 +123,13 @@ class TestTimeFilterInit(object):
         with raises(TimeFilterError):
             TimeFilter(rules={"days": 1, "wrong": 1})
 
-    def test_default_rules1(self):
-        f = TimeFilter(rules={})
-        for c in ("days", "years", "months", "weeks", "hours", "recent"):
+    def test_default_rules(self):
+        with raises(TimeFilterError):
+            f = TimeFilter(rules={})
+        f = TimeFilter(rules={"days": 1})
+        for c in ("years", "months", "weeks", "hours", "recent"):
             assert f.rules[c] == 0
-
-    def test_default_rules2(self):
-        f = TimeFilter()
-        for c in ("days", "years", "months", "weeks", "hours", "recent"):
-            assert f.rules[c] == 0
+        assert f.rules["days"] == 1
 
     def test_fillup_rules(self):
         f = TimeFilter(rules={"days": 20})
