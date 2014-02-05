@@ -123,15 +123,23 @@ class TestTimeFilterInit(object):
         with raises(TimeFilterError):
             TimeFilter(rules={"days": 1, "wrong": 1})
 
-    def test_default_rules(self):
+    def test_invalid_rule_value(self):
+        with raises(AssertionError):
+            f = TimeFilter(rules={"days": None})
+
+    def test_all_counts_zero(self):
+        with raises(TimeFilterError):
+            f = TimeFilter(rules={"days": 0})
+
+    def test_emtpy_rules_dict(self):
         with raises(TimeFilterError):
             f = TimeFilter(rules={})
-        f = TimeFilter(rules={"days": 1})
-        for c in ("years", "months", "weeks", "hours", "recent"):
-            assert f.rules[c] == 0
-        assert f.rules["days"] == 1
 
-    def test_fillup_rules(self):
+    def test_wrong_rules_type(self):
+        with raises(AssertionError):
+            f = TimeFilter(rules=None)
+
+    def test_fillup_rules_default_rules(self):
         f = TimeFilter(rules={"days": 20})
         assert f.rules["days"] == 20
         for c in ("years", "months", "weeks", "hours", "recent"):
