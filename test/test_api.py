@@ -7,7 +7,7 @@ import time
 from base64 import b64encode
 from datetime import datetime
 from itertools import chain
-from random import randint
+from random import randint, shuffle
 import collections
 import tempfile
 
@@ -56,6 +56,26 @@ def randstring_fssafe():
 
 # A simple valid filter rules dictionary .
 DAY1 = {"days": 1}
+
+
+def fsegen(ref, N_per_cat, max_timecount):
+    N = N_per_cat
+    c = max_timecount
+    nowminusXyears =   (ref-60*60*24*365*i for i in nrandint(N, 1, c))
+    nowminusXmonths =  (ref-60*60*24*30 *i for i in nrandint(N, 1, c))
+    nowminusXweeks =   (ref-60*60*24*7  *i for i in nrandint(N, 1, c))
+    nowminusXdays =    (ref-60*60*24    *i for i in nrandint(N, 1, c))
+    nowminusXhours =   (ref-60*60       *i for i in nrandint(N, 1, c))
+    nowminusXseconds = (ref-1           *i for i in nrandint(N, 1, c))
+    times = chain(
+        nowminusXyears,
+        nowminusXmonths,
+        nowminusXweeks,
+        nowminusXdays,
+        nowminusXhours,
+        nowminusXseconds,
+        )
+    return (FileSystemEntryMock(modtime=t) for t in times)
 
 
 class TestBasicFSEntry(object):
@@ -239,8 +259,9 @@ class TestTimedelta(object):
         assert isinstance(d.hours_exact, float)
 
 
-class TestTimeFilter(object):
-    """Test TimeFilter logic and arithmetics.
+class TestTimeFilterBasic(object):
+    """Test TimeFilter logic and arithmetics with small, well-defined mock
+    object lists.
     """
     def setup(self):
         pass
@@ -443,36 +464,51 @@ class TestTimeFilter(object):
         for i in (11, 12, 14):
             assert fses[i] in r
 
-    def test_random_times_fixed_rules(self):
+
+class TestTimeFilterMass(object):
+    """Test TimeFilter logic and arithmetics with largish mock object lists.
+    """
+    def setup(self):
+        pass
+
+    def teardown(self):
+        pass
+
+    def test_singlecat_rules(self):
+        # Evaluate generator, store FSEs, shuffle FSEs (make sure order does
+        # not play a role).
         now = time.time()
-        N = 20000
-        return
-        #print (list(nrandint(100, 0, 17)))
-        #return
-        def fsegen():
-            nowminusXyears =   (now-60*60*24*365*i for i in nrandint(N, 1, 15))
-            nowminusXmonths =  (now-60*60*24*30 *i for i in nrandint(N, 1, 15))
-            nowminusXweeks =   (now-60*60*24*7  *i for i in nrandint(N, 1, 15))
-            nowminusXdays =    (now-60*60*24    *i for i in nrandint(N, 1, 15))
-            nowminusXhours =   (now-60*60       *i for i in nrandint(N, 1, 15))
-            nowminusXseconds = (now-1           *i for i in nrandint(N, 1, 15))
-            times = chain(
-                nowminusXyears,
-                nowminusXmonths,
-                nowminusXweeks,
-                nowminusXdays,
-                nowminusXhours,
-                nowminusXseconds,
-                )
-            return (FileSystemEntryMock(modtime=t) for t in times)
-        n = 0
+        N = 1000
+        fses = list(fsegen(ref=now, N_per_cat=N, max_timecount=9))
+        shuffle(fses)
+        # In all likelihood, each time category is present with 9 different
+        # values (1-9). Request 8 of them (1-8).
+        # (Likelihood: dice with 9 eyes, N throws -- likelihood that there is
+        #  at least one 1: 1 - (8/9)^N = 1 - 7E-52 for N == 1000)
+        n = 8
         ryears = {"years": n}
         rmonths = {"months": n}
         rweeks = {"weeks": n}
         rdays = {"days": n}
         rhours = {"hours": n}
+        rrecent = {"recent": n}
+        # Run single-category filter on these fses.
+        for rules in (ryears, rmonths, rweeks, rdays, rhours, rrecent):
+            a, r = TimeFilter(rules, now).filter(fses)
+            # There must be 8 accepted items (e.g. 8 in hour category).
+            assert len(a) == n
+            # There are 6 time categories, N items for each category, and only
+            # n acceptances (for one single category), so N*6-n items must be
+            # rejected.
+            assert len(list(r)) == N * 6 - n
 
-        rall = {
+    def test_fixed_rules_week_month_overlap(self):
+        now = time.time()
+        N = 1000
+        fses = list(fsegen(ref=now, N_per_cat=N, max_timecount=9))
+        shuffle(fses)
+        n = 8
+        rules = {
             "years": n,
             "months": n,
             "weeks": n,
@@ -480,31 +516,38 @@ class TestTimeFilter(object):
             "hours": n,
             "recent": n
             }
-
-        #somefses = list(fsegen())
-        # Run single-category filter on the fses.
-        #for rules in (ryears, rmonths, rweeks, rdays, rhours):
-        #    a, r = TimeFilter(rules, now).filter(somefses)
-        #    print len(a)
-        #    assert len(a) == n
-        # all all-category filter on the same fses.
-        #a, r = TimeFilter(rall, now).filter(somefses)
-
-        n = 0
-        rules = {
-            "years": n,
-            "months": n,
-            "weeks": 2,
-            "days": 10,
-            "hours": n,
-            "recent": n
-            }
-
-        # Perform categorizing 10 times with different sets of randomly
-        # generated fses.
-        for _ in xrange(1):
-            a, r = TimeFilter(rules, now).filter(fsegen())
-            r = list(r)
-            #assert len(a) + len(r) == 6 * N
-            #assert len(a) <= n * 6
-            print len(a)
+        # See test_random_times_mass_singlecat_rules for likelihood discussion.
+        # The rules say that we want 8 items accepted of each time category.
+        # There are two time categories with a 'reducing overlap' in this case:
+        # weeks and months. All other category pairs do not overlap at all or
+        # overlap without reduction. Explanation/specification:
+        # 8 hours:
+        #   no overlap with days (0 days for all requested hours).
+        # 8 days:
+        #   day 7 and 8 could be categorized as 1 week, but become categorized
+        #   within the days dict (7 and 8 days are requested per days-rule).
+        #   Non-reducing overlap: 9 to 13 days are categorized as 1 week, which
+        #   is requested, and 9-day-old items actually are in the data set.
+        #   They are not affected by younger categories (than week) and end up
+        #   in the 1-week-list.
+        #   -> 8 items expected from each, the days and weeks categories.
+        # 8 weeks:
+        #   Items of age 8 weeks, i.e. 8*7 days = 56 days could be categorized
+        #   as 1 month, but become categorized within the weeks dictionary
+        #   (8 weeks old, which is requested per weeks-rule).
+        #   Reducing overlap: 9-week-old items in the data set, which are not
+        #   requested per weeks-rule are 9*7 days = 63 days old, i.e. 2 months
+        #   (2 months are 2*30 days = 60 days). These 2-month-old items are
+        #   not affected by younger data sets (than months), so
+        #   they end up in the 2-months-list.
+        #   -> In other words: there is no 1-month-list, since items of these
+        #   ages are *entirely* consumed by the weeks-rule. The oldest item
+        #   classified as 8 weeks old is already 2 months old:
+        #   8.99~ weeks == 62.00~ days > 60 days == 2 months.
+        #   -> the months-rule returns only 7 items (not 8, like the others)
+        # 8 months:
+        #   no overlap with years (0 years for all requested months)
+        a, r = TimeFilter(rules, now).filter(fses)
+        # 8 items for all categories except for months (7 items expected).
+        assert len(a) == 6*8-1
+        assert len(list(r)) == N*6 - (6*8-1)
