@@ -140,9 +140,10 @@ class TimeFilter(object):
                 rejected_objs_lists[0].append(obj)
                 #log.debug("Rejected %s during categorizing.", obj)
 
-        # Sort all category-timecount buckets internally and finish filtering.
-        # The `recent` list needs special treatment. Sort, accept the newest N
-        # elements, reject the others.
+        # Sort all category-timecount buckets internally and finish filtering:
+        # Accept the newest element from each bucket, reject all others.
+        # The 'recent' items list needs special treatment. Sort, accept the
+        # newest N elements, reject the others.
         self._recent_items.sort(key=lambda f: f.modtime)
         accepted_objs.extend(self._recent_items[-self.rules["recent"]:])
         rejected_objs_lists.append(self._recent_items[:-self.rules["recent"]])
