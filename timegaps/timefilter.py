@@ -48,6 +48,9 @@ class TimeFilter(object):
             assert isinstance(count, int), "`rules` dict values must be int."
             if count > 0:
                 greaterzerofound = True
+            if count < 0:
+                raise TimeFilterError(
+                    "'%s' count must be positive integer." % label)
             if not label in time_categories:
                 raise TimeFilterError(
                     "Invalid key in rules dictionary: '%s'" % label)

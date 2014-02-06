@@ -155,6 +155,10 @@ class TestTimeFilterInit(object):
         with raises(TimeFilterError):
             f = TimeFilter(rules={"days": 0})
 
+    def test_one_count_negative(self):
+        with raises(TimeFilterError):
+            f = TimeFilter(rules={"days": -1})
+
     def test_emtpy_rules_dict(self):
         with raises(TimeFilterError):
             f = TimeFilter(rules={})
@@ -170,7 +174,7 @@ class TestTimeFilterInit(object):
             assert f.rules[c] == 0
 
 
-class TestTimeFilterFilter(object):
+class TestTimeFilterFilterSig(object):
     """Test TimeFilter.filter method call signature.
     """
     def test_invalid_object(self):
