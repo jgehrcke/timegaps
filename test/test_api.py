@@ -610,3 +610,34 @@ class TestTimeFilterMass(object):
         # 2 months old.
         assert len(a) == 63
         assert len(list(r)) == self.N*6 - (63)
+
+    def test_1_day(self):
+        rules = {"days": 1}
+        a, r = TimeFilter(rules, self.now).filter(self.fses9)
+        assert len(a) == 1
+        assert len(list(r)) == self.N*6 - 1
+
+    def test_1_recent_1_years(self):
+        rules = {
+            "years": 1,
+            "recent": 1
+            }
+        a, r = TimeFilter(rules, self.now).filter(self.fses9)
+        assert len(a) == 2
+        assert len(list(r)) == self.N*6 - 2
+
+    def test_realistic_scheme(self):
+        rules = {
+            "years": 4,
+            "months": 12,
+            "weeks": 6,
+            "days": 10,
+            "hours": 48,
+            "recent": 5
+            }
+        a, r = TimeFilter(rules, self.now).filter(self.fses62)
+        # 4+12+6+10+48+5 = 85; there is 1 reducing overlap between hours and
+        # days -> 84 accepted items are expected.
+        assert len(a) == 84
+        assert len(list(r)) == self.N*6 - 84
+
