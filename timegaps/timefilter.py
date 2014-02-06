@@ -76,6 +76,10 @@ class TimeFilter(object):
         """
         for catlabel in self.rules:
             setattr(self, "_%s_dict" % catlabel, defaultdict(list))
+        # There is no timecount distinction in 'recent' category, use different
+        # data structure (list instead of dict of lists).
+        del self._recent_dict
+        self._recent_items = []
 
         accepted_objs = []
         rejected_objs_lists = [[]]
@@ -89,7 +93,7 @@ class TimeFilter(object):
             # If the timecount in youngest category after 'recent' is 0, then
             # this is a recent item.
             if td.hours == 0:
-                self._recent_dict[1].append(obj)
+                self._recent_items.append(obj)
                 continue
             # Iterate through all categories from young to old, w/o 'recent'.
             for catlabel in ("hours", "days", "weeks", "months", "years"):
@@ -139,19 +143,19 @@ class TimeFilter(object):
         # objects are in the same list: recent items are not, like items in
         # other categories, further categorized via dictionary key. All
         # recent items are in the list with key 1 (by convention).
-        r = self._recent_dict
+        r = self._recent_items
         if self.rules["recent"] > 0:
             # Sort, accept the newest N elements, reject the others.
             #log.debug("Accept recent: %s", self.rules["recent"])
             #log.debug("Length recent: %s", len(r[1]))
-            r[1].sort(key=lambda f: f.modtime)
+            r.sort(key=lambda f: f.modtime)
             #log.debug("Accept list:\n%s", r[1][-self.rules["recent"]:])
             #log.debug("Reject list:\n%s", r[1][:-self.rules["recent"]])
-            accepted_objs.extend(r[1][-self.rules["recent"]:])
-            rejected_objs_lists.append(r[1][:-self.rules["recent"]])
+            accepted_objs.extend(r[-self.rules["recent"]:])
+            rejected_objs_lists.append(r[:-self.rules["recent"]])
         else:
             # No recents requested, reject entire list.
-            rejected_objs_lists.append(r[1])
+            rejected_objs_lists.append(r)
 
         rejected_objs = itertools.chain.from_iterable(rejected_objs_lists)
         return accepted_objs, rejected_objs
