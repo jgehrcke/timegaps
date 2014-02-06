@@ -25,6 +25,7 @@ def test_fixed_rules_8_per_cat_with_N_items(N):
     now = time.time()
     fses = list(fsegen(ref=now, N_per_cat=N, max_timecount=9))
     shuffle(fses)
+    nbr_fses = len(fses)
     n = 8
     rules = {
         "years": n,
@@ -39,27 +40,41 @@ def test_fixed_rules_8_per_cat_with_N_items(N):
     t0 = time.time()
     a, r = TimeFilter(rules, now).filter(fses)
     duration = time.time() - t0
-    return duration
+    return nbr_fses, duration
 
 
 def bench(funcname, samplesize, Ns):
     log.info("Benching '%s' with Ns %s", funcname, Ns)
     durations = []
+    nbrs_fses = []
     for N in Ns:
         dursamples = []
+        nbrs_fses_samples = []
         durations.append(dursamples)
+        nbrs_fses.append(nbrs_fses_samples)
         for _ in xrange(samplesize):
-            dursamples.append(globals()[funcname](N))
+            nbr_fses, duration = globals()[funcname](N)
+            dursamples.append(duration)
+            nbrs_fses_samples.append(nbr_fses)
     log.info("Durations: %s", durations)
+    log.info("FSE numbers: %s", nbrs_fses)
     duration_means = [np.mean(_) for _ in durations]
     duration_stddevs = [np.std(_) for _ in durations]
-    n_per_sec = Ns[-1]/duration_means[-1]
+
+    # The nbrs_fses_samples should be boring, repetitive lists:
+    for l in nbrs_fses:
+        assert len(set(l)) == 1
+    # Reduce.
+    nbrs_fses = [l[0] for l in nbrs_fses]
+
+    n_per_sec = nbrs_fses[-1]/duration_means[-1]
     linstring = "If linear, from last value pair: %.3f items/s" % n_per_sec
     log.info(linstring)
     log.info("Plotting durations vs. Ns.")
-    plt.errorbar(x=Ns, y=duration_means, yerr=duration_stddevs, marker='o')
+    plt.errorbar(
+        x=nbrs_fses, y=duration_means, yerr=duration_stddevs, marker='o')
     plt.title("%s\n%s" % (funcname, linstring), fontsize=10)
-    plt.xlabel("N")
+    plt.xlabel("number of items")
     plt.ylabel("duration [s]")
     fname = "%s.png" % funcname
     log.info("Writing %s.", fname)
