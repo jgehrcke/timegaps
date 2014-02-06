@@ -469,11 +469,15 @@ class TestTimeFilterMass(object):
     """Test TimeFilter logic and arithmetics with largish mock object lists.
     """
     now = time.time()
-    N = 1000
-    # Evaluate generator, store FSEs, shuffle FSEs (make sure order does
-    # not play a role). This FSE list is used by multiple tests.
+    N = 1200
+    # In all likelihood, each time category is present with 9 different
+    # values (1-9). Probability for occurrence of at least 1 item of e.g. value
+    # 2: 1 - (8/9)^N = 1 - 4E-62 for N == 1200
     fses9 = list(fsegen(ref=now, N_per_cat=N, max_timecount=9))
     shuffle(fses9)
+    # Probability: 1 - (61/62)^N = 1 - 3E-9 for N == 1200
+    fses62 = list(fsegen(ref=now, N_per_cat=N, max_timecount=62))
+    shuffle(fses62)
     def setup(self):
         pass
 
@@ -481,10 +485,6 @@ class TestTimeFilterMass(object):
         pass
 
     def test_singlecat_rules(self):
-        # In all likelihood, each time category is present with 9 different
-        # values (1-9). Request 8 of them (1-8).
-        # (Likelihood: dice with 9 eyes, N throws -- likelihood that there is
-        #  at least one 1: 1 - (8/9)^N = 1 - 7E-52 for N == 1000)
         n = 8
         ryears = {"years": n}
         rmonths = {"months": n}
@@ -553,3 +553,22 @@ class TestTimeFilterMass(object):
         # 8 items for all categories except for months (7 items expected).
         assert len(a) == 6*8-1
         assert len(list(r)) == self.N*6 - (6*8-1)
+
+    def test_fixed_rules_days_months_overlap(self):
+        rules = {
+            "years": 0,
+            "months": 2,
+            "weeks": 0,
+            "days": 62,
+            "hours": 0,
+            "recent": 0
+            }
+        a, r = TimeFilter(rules, self.now).filter(self.fses62)
+        # 62 items are expected as of the 62-days-rule. No item is expected
+        # for 1-month-categorization. One item is expected for 2-month-catego-
+        # rization: items between 60 an 90 days can be categorized as 2 months
+        # old. A 9-week-old is in the data set, i.e. 63 days old, i.e. it's not
+        # collected by the 62-days rule, so it ends up being categorized as
+        # 2 months old.
+        assert len(a) == 63
+        assert len(list(r)) == self.N*6 - (63)
