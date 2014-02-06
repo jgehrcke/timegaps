@@ -120,6 +120,7 @@ class TimeFilter(object):
                     rejected_objs_lists[0].append(obj)
                 continue
             # Iterate through all categories from young to old, w/o 'recent'.
+            # Sign. performance impact, don't go with self.rules.keys()[-2::-1]
             for catlabel in ("hours", "days", "weeks", "months", "years"):
                 timecount = getattr(td, catlabel)
                 if 0 < timecount <= self.rules[catlabel]:
