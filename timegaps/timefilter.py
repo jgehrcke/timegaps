@@ -154,13 +154,11 @@ class TimeFilter(object):
         for catlabel in self.rules.keys()[:-1]:
             catdict = getattr(self, "_%s_dict" % catlabel)
             for timecount in catdict:
-                #log.debug("catlabel: %s, timecount: %s", catlabel, timecount)
-                if timecount in xrange(1, self.rules[catlabel] + 1):
-                    catdict[timecount].sort(key=lambda f: f.modtime)
-                    accepted_objs.append(catdict[timecount].pop())
-                    #log.debug("Accepted %s: %s/%s.",
-                    #    accepted_objs[-1], catlabel, timecount)
+                catdict[timecount].sort(key=lambda f: f.modtime)
+                accepted_objs.append(catdict[timecount].pop())
                 rejected_objs_lists.append(catdict[timecount])
+                #log.debug("Accepted %s: %s/%s.",
+                #    accepted_objs[-1], catlabel, timecount)
                 #log.debug("Rejected list:\n%s", catdict[timecount])
 
         return accepted_objs, chain.from_iterable(rejected_objs_lists)
