@@ -456,6 +456,17 @@ class TestTimeFilterBasic(object):
         assert len(a) == 0
         assert len(r) == 15
 
+    def test_create_recent_dont_request_recent(self):
+        # Create a few young items (recent ones). Then don't request any.
+        now = time.time()
+        nowminusXseconds = (now - (i + 1) for i in xrange(1,16))
+        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXseconds]
+        rules = {"years": 1, "recent": 0}
+        a, r = TimeFilter(rules, now).filter(fses)
+        r = list(r)
+        assert len(a) == 0
+        assert len(r) == 15
+
     def test_10_days_2_weeks(self):
         # Further define category 'overlap' behavior. {"days": 10, "weeks": 2}
         # -> week 0 is included in the 10 days, week 1 is only partially

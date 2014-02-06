@@ -111,26 +111,11 @@ class TimeFilter(object):
                 rejected_objs_lists[0].append(obj)
                 #log.debug("Rejected %s during categorizing.", obj)
 
-
-
         # Go through categorized dataset and sort it into accepted and
-        # rejected items, according to the rules given.
-        for catlabel in self.rules:
+        # rejected items, according to the rules given. Treat 'recent' category
+        # specially, so skip the last key in the rules dictionary.
+        for catlabel in self.rules.keys()[:-1]:
             catdict = getattr(self, "_%s_dict" % catlabel)
-            # The `recent` dictionary needs special treatment, since all recent
-            # objects are in the same list: recent items are not, like items in
-            # other categories, further categorized via dictionary key. All
-            # recent items are in the list with key 1 (by convention).
-            if catlabel == "recent" and self.rules[catlabel] > 0:
-                # Sort, accept the newest N elements, reject the others.
-                #log.debug("Accept recent: %s", self.rules[catlabel])
-                #log.debug("Length recent: %s", len(catdict[1]))
-                catdict[1].sort(key=lambda f: f.modtime)
-                #log.debug("Accept list:\n%s", catdict[1][-self.rules[catlabel]:])
-                #log.debug("Reject list:\n%s", catdict[1][:-self.rules[catlabel]])
-                accepted_objs.extend(catdict[1][-self.rules[catlabel]:])
-                rejected_objs_lists.append(catdict[1][:-self.rules[catlabel]])
-                break
             for timecount in catdict:
                 # catdict[timecount] exists as a list with at least one item.
                 #log.debug("catlabel: %s, timecount: %s", catlabel, timecount)
@@ -141,13 +126,32 @@ class TimeFilter(object):
                     # category.
                     catdict[timecount].sort(key=lambda f: f.modtime)
                     # Accept newest (i.e. last) item. Remove it from the list.
-                    # pop should be O(1) for the last item.
+                    # pop() should be of constant time complexity for the last
+                    # item of a list.
                     accepted_objs.append(catdict[timecount].pop())
                     #log.debug("Accepted %s: %s/%s.",
                     #    accepted_objs[-1], catlabel, timecount)
                 # Reject the (modified) list (accepted item has been popped).
                 #log.debug("Reject list:\n%s", catdict[timecount])
                 rejected_objs_lists.append(catdict[timecount])
+
+        # The `recent` dictionary needs special treatment, since all recent
+        # objects are in the same list: recent items are not, like items in
+        # other categories, further categorized via dictionary key. All
+        # recent items are in the list with key 1 (by convention).
+        r = self._recent_dict
+        if self.rules["recent"] > 0:
+            # Sort, accept the newest N elements, reject the others.
+            #log.debug("Accept recent: %s", self.rules["recent"])
+            #log.debug("Length recent: %s", len(r[1]))
+            r[1].sort(key=lambda f: f.modtime)
+            #log.debug("Accept list:\n%s", r[1][-self.rules["recent"]:])
+            #log.debug("Reject list:\n%s", r[1][:-self.rules["recent"]])
+            accepted_objs.extend(r[1][-self.rules["recent"]:])
+            rejected_objs_lists.append(r[1][:-self.rules["recent"]])
+        else:
+            # No recents requested, reject entire list.
+            rejected_objs_lists.append(r[1])
 
         rejected_objs = itertools.chain.from_iterable(rejected_objs_lists)
         return accepted_objs, rejected_objs
