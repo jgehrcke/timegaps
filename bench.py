@@ -82,9 +82,10 @@ def bench(funcname, samplesize, Ns):
 
 
 def main():
-    if sys.argv[1] == "--short":
-        bench("test_fixed_rules_8_per_cat_with_N_items", 2,
-        (3*10**4, ))#, 10**5, int(1.5*10**5), 2*10**5, 3*10**5))
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--short":
+            bench("test_fixed_rules_8_per_cat_with_N_items", 2,
+            (3*10**4, ))#, 10**5, int(1.5*10**5), 2*10**5, 3*10**5))
     else:
         bench("test_fixed_rules_8_per_cat_with_N_items", 10,
         (10**3, 10**4, 5*10**4, 10**5, int(1.5*10**5), 2*10**5, 3*10**5))
