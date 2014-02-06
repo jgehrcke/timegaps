@@ -21,7 +21,7 @@ class TimeFilter(object):
     """
     def __init__(self, rules, reftime=None):
         # Define time categories (their labels) and their default filter
-        # values. Must be in order from past to future.
+        # values. Must be in order from past to future (old -> young).
         time_categories = OrderedDict((
                 ("years", 0),
                 ("months", 0),
@@ -37,7 +37,7 @@ class TimeFilter(object):
         self.reftime = time.time() if reftime is None else reftime
         assert isinstance(self.reftime, float)
 
-        # Give em a more descriptive name.
+        # Give 'em a more descriptive name.
         userrules = rules
         # Validate given rules.
         assert isinstance(userrules, dict), "`rules` parameter must be dict."
@@ -55,9 +55,8 @@ class TimeFilter(object):
             raise TimeFilterError(
                 "Invalid rules dictionary: at least one count > 0 required.")
 
-        # Build up `self.rules` dict.
-        # Set rules not given by user to defaults, keep order of
-        # `time_categories` dict (order is crucial).
+        # Build up `self.rules` dict. Set rules not given by user to defaults,
+        # keep order of `time_categories` dict (order is crucial).
         self.rules = OrderedDict()
         for label, defaultcount in time_categories.items():
             if label in userrules:
@@ -72,34 +71,32 @@ class TimeFilter(object):
         according to the rules. A treatable object is required to have a
         `modtime` attribute, carrying a Unix timestamp.
         """
-        # self._years_dict = defaultdict(list)
-        # self._months_dict = defaultdict(list)
-        # ...
         for catlabel in self.rules:
             setattr(self, "_%s_dict" % catlabel, defaultdict(list))
 
         accepted_objs = []
         rejected_objs_lists = []
 
-        # Categorize all objects.
+        # Categorize given objects. Younger categories have higher priority
+        # than older ones.
         for obj in objs:
             # Might raise AttributeError if `obj` does not have `modtime`
-            # attribute or TypeError upon _Timedelta creation.
+            # attribute or other exceptions upon `_Timedelta` creation.
             td = _Timedelta(obj.modtime, self.reftime)
             # Iterate through all categories from young to old, w/o `recent`.
             for catlabel in ("hours", "days", "weeks", "months", "years"):
                 timecount = getattr(td, catlabel)
                 if 0 < timecount <= self.rules[catlabel]:
-                    # `obj` is X hours/days/weeks/months/years old with X > 1
+                    # `obj` is X hours/days/weeks/months/years old with X > 1.
                     # X is requested in current category, e.g. when 3 days are
                     # requested (`self.rules[catlabel]` == 3), and category is
-                    # days and X is 2, then put it into `_days_dict` with key
-                    # 2.
+                    # days and X is 2, then put it into `self._days_dict` with
+                    # key 2.
                     #log.debug("Put %s into %s/%s.", obj, catlabel, timecount)
                     getattr(self, "_%s_dict" % catlabel)[timecount].append(obj)
                     break
             else:
-                # For loop did not break, `obj` is not older than youngest
+                # For loop did not break, `obj` is younger than youngest
                 # category. It's a recent one. TODO: Detecting a recent one
                 # might be improvable: requires youngest_cat_count == 0.
                 # Effect on program efficiency depends on time distribution of
