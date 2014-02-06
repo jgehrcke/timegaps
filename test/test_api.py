@@ -429,6 +429,29 @@ class TestTimeFilterBasic(object):
         for fse in fses[10:]:
             assert fse in r
 
+    def test_create_recent_allow_old(self):
+        now = time.time()
+        nowminusXseconds = (now - (i + 1) for i in xrange(1,16))
+        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXseconds]
+        rules = {"years": 1}
+        a, r = TimeFilter(rules, now).filter(fses)
+        r = list(r)
+        assert len(a) == 0
+        assert len(r) == 15
+
+    def test_create_old_allow_recent(self):
+        # Create a few old items, between 1 and 15 years. Then only request one
+        # recent item. This discovered a mean bug, where items to be rejected
+        # ended up in the recent category.
+        now = time.time()
+        nowminusXyears = (now-(60*60*24*365 * i + 1) for i in xrange(1,16))
+        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXyears]
+        rules = {"recent": 1}
+        a, r = TimeFilter(rules, now).filter(fses)
+        r = list(r)
+        assert len(a) == 0
+        assert len(r) == 15
+
     def test_10_days_2_weeks(self):
         # Further define category 'overlap' behavior. {"days": 10, "weeks": 2}
         # -> week 0 is included in the 10 days, week 1 is only partially
