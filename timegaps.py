@@ -101,7 +101,8 @@ def main():
 
     log.debug("Decode rules string.")
     try:
-        rules = parse_rules(options.rules)
+        rules = parse_rules_from_cmdline(options.rules)
+        log.info("Using rules: %s", rules)
     except ValueError as e:
         err("Error while parsing rules: '%s'." % e)
 
@@ -109,17 +110,31 @@ def main():
     if options.reference_time is not None:
         pass
         # TODO: parse ref time from string
-
     log.info("Using reference time %s." % reference_time)
-
     timefilter = TimeFilter(rules, reference_time)
 
+    if options.time_from_string is not None:
+        pass
+        # TODO: change mode to pure string parsing, w/o item-wise filesystem
+        # interaction
 
+    fses = []
+    for i in options.item:
+        try:
+            fses.append(FileSystemEntry(path=i))
+        except OSError:
+            err("Cannot open '%s'." % i)
+
+    log.info("Filtering ...")
+    accepted, rejected = timefilter.filter(fses)
+    rejected = list(rejected)
+    log.debug("Accepted items:\n%s" % "\n".join("%s" % a for a in accepted))
+    log.debug("Rejected items:\n%s" % "\n".join("%s" % r for r in rejected))
 
     # Build object list to be filtered via TimeFilter.
 
 
-def parse_rules(s):
+def parse_rules_from_cmdline(s):
     tokens = s.split(",")
     if not tokens:
         raise ValueError("Error extracting rules from string '%s'" % s)
@@ -143,6 +158,7 @@ def parse_rules(s):
 
 def err(s):
     log.error(s)
+    log.info("Exit with code 1.")
     sys.exit(1)
 
 

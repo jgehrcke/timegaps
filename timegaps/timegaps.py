@@ -35,7 +35,7 @@ class FileSystemEntry(object):
             log.error("stat() failed on path: '%s' (%s).", path, e)
             raise
         self.type = self._get_type(self._stat)
-        log.debug("Detected type %s", self.type)
+        log.debug("Detected type %s.", self.type)
         if modtime is None:
             # User may provide modification time -- if not, extract it from
             # inode. This is a Unix timestamp, seconds since epoch. Not
@@ -68,7 +68,8 @@ class FileSystemEntry(object):
         return datetime.datetime.fromtimestamp(self.modtime)
 
     def __str__(self):
-        return "%s(moddate: %s)" % (self.__class__.__name__, self.moddate)
+        return "%s(path=%s, moddate: %s)" % (self.__class__.__name__,
+            self.path, self.moddate)
 
     def __repr__(self):
         return "%s(path=%s, modtime=%s)" % (self.__class__.__name__,
