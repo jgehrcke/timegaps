@@ -11,27 +11,27 @@ from random import randint, shuffle
 import collections
 import tempfile
 
+
+# py.test runs tests in order of definition. This is useful for running simple,
+# fundamental tests first and more complex tests later.
+from py.test import raises, mark
+
+
 sys.path.insert(0, os.path.abspath('..'))
 from timegaps.timegaps import FileSystemEntry, TimegapsError
 from timegaps.timefilter import TimeFilter, _Timedelta, TimeFilterError
 
-WINDOWS = sys.platform == "win32"
-
-# py.test runs tests by order of definition. This is useful for running simple,
-# fundamental tests first and more complex tests later.
-from py.test import raises, mark
 
 import logging
 logging.basicConfig(
-    format='%(asctime)s,%(msecs)-6.1f [%(process)-5d]%(funcName)s# %(message)s',
+    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
     datefmt='%H:%M:%S')
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
 
-#LONG = 999999
+
+WINDOWS = sys.platform == "win32"
 SHORTTIME = 0.01
-#ALMOSTZERO = 0.00001
-#LONGERTHANBUFFER = "A" * 9999999
 
 
 class FileSystemEntryMock(FileSystemEntry):
@@ -52,10 +52,6 @@ def nrandint(n, min, max):
 
 def randstring_fssafe():
     return b64encode(os.urandom(6)).replace('/','!')
-
-
-# A simple valid filter rules dictionary .
-DAY1 = {"days": 1}
 
 
 def fsegen(ref, N_per_cat, max_timecount):
@@ -150,10 +146,10 @@ class TestTimeFilterInit(object):
 
     def test_reftime(self):
         t = time.time()
-        f = TimeFilter(rules=DAY1, reftime=t)
+        f = TimeFilter(rules={"days": 1}, reftime=t)
         assert f.reftime == t
         time.sleep(SHORTTIME)
-        f = TimeFilter(rules=DAY1)
+        f = TimeFilter(rules={"days": 1})
         assert f.reftime > t
 
     def test_invalid_rule_key(self):
@@ -191,13 +187,13 @@ class TestTimeFilterFilterSig(object):
     """Test TimeFilter.filter method call signature.
     """
     def test_invalid_object(self):
-        f = TimeFilter(rules=DAY1)
+        f = TimeFilter(rules={"days": 1})
         with raises(AttributeError):
             # AttributeError: 'NoneType' object has no attribute 'modtime'
             f.filter([None])
 
     def test_not_iterable(self):
-        f = TimeFilter(rules=DAY1)
+        f = TimeFilter(rules={"days": 1})
         with raises(TypeError):
             # TypeError: 'NoneType' object is not iterable
             f.filter(None)
