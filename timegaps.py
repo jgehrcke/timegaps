@@ -41,9 +41,6 @@ Options:
                                 FMT (cf. bit.ly/strptime)
 
 
-"""
-
-"""
 Feature / TODO brainstorm:
     - reference implementation with cmdline interface
     - comprehensive API for systematic unit testing and library usage
@@ -73,9 +70,9 @@ import os
 import sys
 import argparse
 import logging
+import re
+import time
 from logging.handlers import RotatingFileHandler
-
-#from docopt import docopt
 from timegaps import TimeFilter, FileSystemEntry, __version__
 
 YEARS = 4
@@ -83,24 +80,87 @@ MONTHS = 12
 WEEKS = 6
 DAYS = 8
 HOURS = 48
-ZERO_HOURS_KEEP_COUNT = 5
+RECENT = 5
+
 
 # Global for options, to be populated by argparse from cmdline arguments.
 options = None
 
+
+
+
+
 def main():
+    parse_options()
+    log.debug("Options: %s", options)
+
+    # Validate options.
+    if len(options.item) == 0:
+        if not options.stdin:
+            err("At least one item must be provided (or set --stdin).")
+
+    log.debug("Decode rules string.")
+    try:
+        rules = parse_rules(options.rules)
+    except ValueError as e:
+        err("Error while parsing rules: '%s'." % e)
+
+    reference_time = time.time()
+    if options.reference_time is not None:
+        pass
+        # TODO: parse ref time from string
+
+    log.info("Using reference time %s." % reference_time)
+
+    timefilter = TimeFilter(rules, reference_time)
+
+
+
+    # Build object list to be filtered via TimeFilter.
+
+
+def parse_rules(s):
+    tokens = s.split(",")
+    if not tokens:
+        raise ValueError("Error extracting rules from string '%s'" % s)
+    rules = {}
+    for t in tokens:
+        log.debug("Analze token '%s'", t)
+        if not t:
+            raise ValueError("Token is empty")
+        match = re.search(r'([a-z]+)([0-9]+)', t)
+        if match:
+            catid = match.group(1)
+            timecount = match.group(2)
+            if catid not in TimeFilter.valid_categories:
+                raise ValueError("Time category '%s' invalid" % catid)
+            rules[catid] = int(timecount)
+            log.debug("Stored rule: %s: %s" % (catid, timecount))
+            continue
+        raise ValueError("Invalid token <%s>" % t)
+    return rules
+
+
+def err(s):
+    log.error(s)
+    sys.exit(1)
+
+
+def parse_options():
     global options
     parser = argparse.ArgumentParser(
         description=("Filter items by time categories."),
         epilog="Version %s" % __version__
         )
-
     parser.add_argument('--version', action='version', version=__version__)
 
-    parser.add_argument("rules", action="store", nargs=1,
+    parser.add_argument("rules", action="store",
         metavar="FILTER_RULES",
         help=("Filter rules as JSON string. Example: '{years:1, hours:2}.")
         )
+    # Require at least one arg if --stdin is not defined. Don't require any
+    # arg if --stdin is defined. Overall, allow an arbitrary number, and
+    # validate later.
     parser.add_argument("item", action="store", nargs='*',
         help=("Items for filtering. Interpreted as paths to filesystem "
             "entries by default.")
@@ -142,8 +202,6 @@ def main():
             "to formatstring FMT (cf. documentation of Python's strptime() at "
             "bit.ly/strptime).")
         )
-
-
     timeparsegroup.add_argument("--time-from-string", action="store",
         metavar="FMT",
         help=("Treat items as strings (don't validate paths) and parse time "
@@ -152,7 +210,6 @@ def main():
     #arguments = docopt(__doc__, version=__version__)
     #print(arguments)
     options = parser.parse_args()
-    print options
 
 
 def time_from_dirname(d):
