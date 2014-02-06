@@ -68,7 +68,7 @@ def bench(funcname, samplesize, Ns):
     nbrs_fses = [l[0] for l in nbrs_fses]
 
     n_per_sec = nbrs_fses[-1]/duration_means[-1]
-    linstring = "If linear, from last value pair: %.3f items/s" % n_per_sec
+    linstring = "If linear, from last value pair: %i items/s" % n_per_sec
     log.info(linstring)
     log.info("Plotting durations vs. Ns.")
     plt.errorbar(
@@ -82,7 +82,11 @@ def bench(funcname, samplesize, Ns):
 
 
 def main():
-    bench("test_fixed_rules_8_per_cat_with_N_items", 10,
+    if sys.argv[1] == "--short":
+        bench("test_fixed_rules_8_per_cat_with_N_items", 2,
+        (3*10**4, ))#, 10**5, int(1.5*10**5), 2*10**5, 3*10**5))
+    else:
+        bench("test_fixed_rules_8_per_cat_with_N_items", 10,
         (10**3, 10**4, 5*10**4, 10**5, int(1.5*10**5), 2*10**5, 3*10**5))
 
 
