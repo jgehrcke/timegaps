@@ -74,11 +74,11 @@ class TimeFilter(object):
         according to the rules. A treatable object is required to have a
         `modtime` attribute, carrying a Unix timestamp.
         """
-        # Upon categorization, items are put into category-timevalue buckets,
-        # for instance into the 2-year bucket (category: year, timevalue: 2).
+        # Upon categorization, items are put into category-timecount buckets,
+        # for instance into the 2-year bucket (category: year, timecount: 2).
         # Each bucket may contain multiple items. Therefore, each category
         # (years, months, etc) is represented as a dictionary, whereas the
-        # buckets are represented as lists. The timevalue for a certain bucket
+        # buckets are represented as lists. The timecount for a certain bucket
         # is used as a key for storing the list (value) in the dictionary.
         # For example, `self._years_dict[2]` stores the list representing the
         # 2-year bucket. These dictionaries and their key-value-paris are
@@ -140,7 +140,7 @@ class TimeFilter(object):
                 rejected_objs_lists[0].append(obj)
                 #log.debug("Rejected %s during categorizing.", obj)
 
-        # Sort all category-timevalue buckets internally and finish filtering.
+        # Sort all category-timecount buckets internally and finish filtering.
         # The `recent` list needs special treatment. Sort, accept the newest N
         # elements, reject the others.
         self._recent_items.sort(key=lambda f: f.modtime)
@@ -148,7 +148,7 @@ class TimeFilter(object):
         rejected_objs_lists.append(self._recent_items[:-self.rules["recent"]])
         # Iterate through all other categories except for 'recent'.
         # `catdict[timecount]` occurrences are lists with at least one item.
-        # The newest item in each of these category-timevalue buckets is to
+        # The newest item in each of these category-timecount buckets is to
         # be accepted. Remove newest from the list via pop() (should be of
         # constant time complexity for the last item of a list). Then reject
         #the (modified, if item has been popped) list.
