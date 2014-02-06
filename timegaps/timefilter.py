@@ -74,11 +74,10 @@ class TimeFilter(object):
         according to the rules. A treatable object is required to have a
         `modtime` attribute, carrying a Unix timestamp.
         """
-        for catlabel in self.rules:
+        for catlabel in self.rules.keys()[:-1]:
             setattr(self, "_%s_dict" % catlabel, defaultdict(list))
         # There is no timecount distinction in 'recent' category, use different
         # data structure (list instead of dict of lists).
-        del self._recent_dict
         self._recent_items = []
 
         accepted_objs = []
