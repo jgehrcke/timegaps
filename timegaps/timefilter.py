@@ -171,15 +171,8 @@ class _Timedelta(object):
     30 days, years are 365 days, weeks are 7 days, one day is 24 hours.
     """
     def __init__(self, t, ref):
-        # convert struct_time objects to a second-based representatio here for
-        # simpler math. TODO: is this conversion still needed?
-        #if isinstance(t, time.struct_time):
-        #    t = time.mktime(t)
-        #if isinstance (ref, time.struct_time):
-        #    ref = time.mktime(ref)
         # Expect two numeric values. Might raise TypeError for other types.
         seconds_earlier = ref - t
-        # TODO: this check might be over-cautios in the future.
         assert isinstance(seconds_earlier, float)
         if seconds_earlier < 0:
             raise TimeFilterError("Time %s not earlier than reference %s" %
