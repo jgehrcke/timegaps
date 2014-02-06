@@ -78,7 +78,7 @@ class TimeFilter(object):
             setattr(self, "_%s_dict" % catlabel, defaultdict(list))
 
         accepted_objs = []
-        rejected_objs_lists = []
+        rejected_objs_lists = [[]]
 
         # Categorize given objects. Younger categories have higher priority
         # than older ones.
@@ -86,7 +86,12 @@ class TimeFilter(object):
             # Might raise AttributeError if `obj` does not have `modtime`
             # attribute or other exceptions upon `_Timedelta` creation.
             td = _Timedelta(obj.modtime, self.reftime)
-            # Iterate through all categories from young to old, w/o `recent`.
+            # If the timecount in youngest category after 'recent' is 0, then
+            # this is a recent item.
+            if td.hours == 0:
+                self._recent_dict[1].append(obj)
+                continue
+            # Iterate through all categories from young to old, w/o 'recent'.
             for catlabel in ("hours", "days", "weeks", "months", "years"):
                 timecount = getattr(td, catlabel)
                 if 0 < timecount <= self.rules[catlabel]:
@@ -99,14 +104,14 @@ class TimeFilter(object):
                     getattr(self, "_%s_dict" % catlabel)[timecount].append(obj)
                     break
             else:
-                # For loop did not break, `obj` is younger than youngest
-                # category. It's a recent one. TODO: Detecting a recent one
-                # might be improvable: requires youngest_cat_count == 0.
-                # Effect on program efficiency depends on time distribution of
-                # objects.
-                # Convention: timecount == 1 for all recent objects.
-                #log.debug("Put %s into recent.", obj)
-                self._recent_dict[1].append(obj)
+                # For loop did not break: `obj` does not fit into any of the
+                # requested categories. Reject it. The first item in
+                # `rejected_objs_lists` is a list for items rejected during
+                # categorization.
+                rejected_objs_lists[0].append(obj)
+                #log.debug("Rejected %s during categorizing.", obj)
+
+
 
         # Go through categorized dataset and sort it into accepted and
         # rejected items, according to the rules given.
