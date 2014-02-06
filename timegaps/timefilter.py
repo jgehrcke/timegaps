@@ -19,17 +19,13 @@ class TimeFilter(object):
     """Represents certain time filtering rules. Allows for filtering objects
     providing a `modtime` attribute.
     """
+    # Define valid categories in order from past to future (old -> young).
+    valid_categories = ("years", "months", "weeks", "days", "hours", "recent")
+
     def __init__(self, rules, reftime=None):
         # Define time categories (their labels) and their default filter
         # values. Must be in order from past to future (old -> young).
-        time_categories = OrderedDict((
-                ("years", 0),
-                ("months", 0),
-                ("weeks", 0),
-                ("days", 0),
-                ("hours", 0),
-                ("recent", 0),
-            ))
+        time_categories = OrderedDict((c, 0) for c in self.valid_categories)
 
         # If the reference time is not provided by the user, use current time
         # (Unix timestamp, seconds since epoch, no localization -- this is
