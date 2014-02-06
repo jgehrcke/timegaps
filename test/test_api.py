@@ -468,6 +468,12 @@ class TestTimeFilterBasic(object):
 class TestTimeFilterMass(object):
     """Test TimeFilter logic and arithmetics with largish mock object lists.
     """
+    now = time.time()
+    N = 1000
+    # Evaluate generator, store FSEs, shuffle FSEs (make sure order does
+    # not play a role). This FSE list is used by multiple tests.
+    fses9 = list(fsegen(ref=now, N_per_cat=N, max_timecount=9))
+    shuffle(fses9)
     def setup(self):
         pass
 
@@ -475,12 +481,6 @@ class TestTimeFilterMass(object):
         pass
 
     def test_singlecat_rules(self):
-        # Evaluate generator, store FSEs, shuffle FSEs (make sure order does
-        # not play a role).
-        now = time.time()
-        N = 1000
-        fses = list(fsegen(ref=now, N_per_cat=N, max_timecount=9))
-        shuffle(fses)
         # In all likelihood, each time category is present with 9 different
         # values (1-9). Request 8 of them (1-8).
         # (Likelihood: dice with 9 eyes, N throws -- likelihood that there is
@@ -494,19 +494,15 @@ class TestTimeFilterMass(object):
         rrecent = {"recent": n}
         # Run single-category filter on these fses.
         for rules in (ryears, rmonths, rweeks, rdays, rhours, rrecent):
-            a, r = TimeFilter(rules, now).filter(fses)
+            a, r = TimeFilter(rules, self.now).filter(self.fses9)
             # There must be 8 accepted items (e.g. 8 in hour category).
             assert len(a) == n
             # There are 6 time categories, N items for each category, and only
             # n acceptances (for one single category), so N*6-n items must be
             # rejected.
-            assert len(list(r)) == N * 6 - n
+            assert len(list(r)) == self.N * 6 - n
 
     def test_fixed_rules_week_month_overlap(self):
-        now = time.time()
-        N = 1000
-        fses = list(fsegen(ref=now, N_per_cat=N, max_timecount=9))
-        shuffle(fses)
         n = 8
         rules = {
             "years": n,
@@ -553,7 +549,7 @@ class TestTimeFilterMass(object):
         #   -> the months-rule returns only 7 items (not 8, like the others)
         # 8 months:
         #   no overlap with years (0 years for all requested months)
-        a, r = TimeFilter(rules, now).filter(fses)
+        a, r = TimeFilter(rules, self.now).filter(self.fses9)
         # 8 items for all categories except for months (7 items expected).
         assert len(a) == 6*8-1
-        assert len(list(r)) == N*6 - (6*8-1)
+        assert len(list(r)) == self.N*6 - (6*8-1)
