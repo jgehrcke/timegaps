@@ -415,7 +415,7 @@ class TestTimeFilterBasic(object):
             assert fse in r
         assert len(r) == 6
 
-    def test_10_days(self):
+    def test_10_days_overlap(self):
         # Category 'overlap' must be possible (10 days > 1 week).
         # Having 15 FSEs, 1 to 15 days in age, the first 10 of them must be
         # accepted according to the 10-day-rule. The last 5 must be rejected.
@@ -427,11 +427,39 @@ class TestTimeFilterBasic(object):
         r = list(r)
         assert len(a) == 10
         assert len(r) == 5
-        #assert fses[:10] == a # This test makes an assumption about the order.
         for fse in fses[:10]:
             assert fse in a
         for fse in fses[10:]:
             assert fse in r
+
+    def test_10_days_order(self):
+        # Having 15 FSEs, 1 to 15 days in age, the first 10 of them must be
+        # accepted according to the 10-day-rule. The last 5 must be rejected.
+        # This test is focused on the right internal ordering when making the
+        # decision to accept or reject an item. The newest ones are expected to
+        # be accepted, while the oldest ones are expected to be rejected.
+        # In order to test robustness against input order, the list of mock
+        # FSEs is shuffled before filtering. The filtering and checks are
+        # repeated a couple of times.
+        # It is tested whether all of the youngest 10 FSEs are accepted. It is
+        # not tested if these 10 FSEs have a certain order within the accepted-
+        # list, because we don't make any guarantees about the
+        # accepted-internal ordering.
+        now = time.time()
+        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXdays]
+        rules = {"days": 10}
+        shuffledfses = fses[:]
+        for _ in xrange(100):
+            shuffle(shuffledfses)
+            a, r = TimeFilter(rules, now).filter(shuffledfses)
+            r = list(r)
+            assert len(a) == 10
+            assert len(r) == 5
+            for fse in fses[:10]:
+                assert fse in a
+            for fse in fses[10:]:
+                assert fse in r
 
     def test_create_recent_allow_old(self):
         now = time.time()
@@ -509,8 +537,8 @@ class TestTimeFilterMass(object):
     now = time.time()
     N = 1200
     # In all likelihood, each time category is present with 9 different
-    # values (1-9). Probability for occurrence of at least 1 item of e.g. value
-    # 2: 1 - (8/9)^N = 1 - 4E-62 for N == 1200
+    # timecount values (1-9). Probability for occurrence of at least 1 item of
+    # e.g. value 2: 1 - (8/9)^N = 1 - 4E-62 for N == 1200
     fses9 = list(fsegen(ref=now, N_per_cat=N, max_timecount=9))
     shuffle(fses9)
     # Probability: 1 - (61/62)^N = 1 - 3E-9 for N == 1200
