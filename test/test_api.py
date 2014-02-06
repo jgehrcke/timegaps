@@ -412,7 +412,7 @@ class TestTimeFilterBasic(object):
         assert len(r) == 6
 
     def test_10_days(self):
-        # Category 'overlap' must be possible (10 days > 1 week). Create
+        # Category 'overlap' must be possible (10 days > 1 week).
         # Having 15 FSEs, 1 to 15 days in age, the first 10 of them must be
         # accepted according to the 10-day-rule. The last 5 must be rejected.
         now = time.time()
