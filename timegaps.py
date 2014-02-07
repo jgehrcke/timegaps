@@ -8,6 +8,13 @@ Feature / TODO brainstorm:
 """
 
 EXTENDED_HELP = """
+
+timegaps accepts or rejects file system entries based on modification time
+categorization. Its input is a set of paths and certain classification rules.
+The output is to two sets of paths, the rejected and the accepted ones.
+All details and features are described below.
+
+
 Input:
     ITEMs:
         By default, an ITEM value is interpreted as a path to a file system
@@ -18,12 +25,12 @@ Input:
         different mode of operation, ITEM values are treated as simple strings
         w/o path validation, in which case a timestamp must be parsable from
         the string itself.
-    FILTERRULES:
+    RULES:
         These rules define how many items of certain time categories are to be
         accepted, while all other items become rejected. Supported time
-        categories and the FILTERRULES string formatting specification are
-        given in the program's normal help text. The exact method of
-        classification is explained below.
+        categories and the RULES string formatting specification are given
+        in the program's normal help text. The exact method of classification
+        is explained below.
 
 
 Output:
@@ -45,7 +52,7 @@ Classification method:
         Each item provided as input becomes classified as either accepted or
         rejected, based on its corresponding timestamp and according to the
         time filter rules given by the user. For the basic meaning of the
-        filter rules, consider this example FILTERRULES string:
+        filter rules, consider this RULES string example:
 
             hours12,days5,weeks4
 
@@ -57,15 +64,15 @@ Classification method:
 
         Based on the reference time, which by default is the program's startup
         time, the program calculates the age of all ITEMs. According to
-        the example rules, the program then tries to identify and accept one
-        item from each of the last 12 hours, one item from each of the last 5
-        days, and one item from each of the last 4 weeks.
+        the example rules, the program tries to identify and accept one item
+        from each of the last 12 hours, one item from each of the last 5 days,
+        and one item from each of the last 4 weeks.
 
-        More specifically, according to <hours> rule above, the program accepts
-        the *newest* item in each of 12 sub-categories: the newest item being
-        1 h old, the newest item being 2 h old, ..., and the newest item being
-        12 h old, yielding at most 12 accepted items from the <hours> time
-        category: zero or one for each of the sub-categories.
+        More specifically, according to the <hours> rule above, the program
+        accepts the *newest* item in each of 12 sub-categories: the newest item
+        being 1 h old, the newest item being 2 h old, ..., and the newest item
+        being 12 h old, yielding at most 12 accepted items from the <hours>
+        time category: zero or one for each of the sub-categories.
 
         An hour is a time unit, as are all time categories except for the
         <recent> category (explained further below). An item is considered
@@ -139,7 +146,7 @@ def main():
         if not options.stdin:
             err("At least one item must be provided (if --stdin not set).")
 
-    # Parse FILTERRULES argument.
+    # Parse RULES argument.
     log.debug("Decode rules string.")
     try:
         rules = parse_rules_from_cmdline(options.rules)
@@ -244,6 +251,11 @@ def err(s):
 def parse_options():
     """Set up and parse commandline options using `argparse`.
     """
+    class ExtHelpAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            print(EXTENDED_HELP)
+            sys.exit(0)
+
     global options
     description = "Accept or reject files/items based on time categorization."
     parser = argparse.ArgumentParser(
@@ -254,14 +266,14 @@ def parse_options():
         )
     parser.add_argument("-h", "--help", action="help",
         help="Show help message and exit.")
-    parser.add_argument("--extended-help", action="version",
-        version=EXTENDED_HELP, help="Show extended help and exit.")
+    parser.add_argument("--extended-help", action=ExtHelpAction, nargs=0,
+        help="Show extended help and exit.")
     parser.add_argument("--version", action="version",
         version=__version__, help="Show version information and exit.")
 
 
     parser.add_argument("rules", action="store",
-        metavar="FILTERRULES",
+        metavar="RULES",
         help=("A string defining the filter rules of the form "
             "<category><maxcount>[,<category><maxcount>[, ... ]]. "
             "Example: 'recent5,days12,months5'. "
