@@ -66,6 +66,116 @@ Feature / TODO brainstorm:
         assert f.rules["recent"] == 5
 """
 
+EXTENDED_HELP = """
+Input:
+    ITEMs:
+        By default, an ITEM value is interpreted as a path to a file system
+        entry. By default, the corresponding timestamp for item filtering is
+        the modification time read from the inode. Optionally, this timestamp
+        may also be parsed from the basename of the path. When interpreted as
+        paths, all ITEM values must point to valid file system entries. In a
+        different mode of operation, ITEM values are treated as simple strings
+        w/o path validation, in which case a timestamp must be parsable from
+        the string itself.
+    FILTERRULES:
+        These rules define how many items of certain time categories are to be
+        accepted, while all other items become rejected. Supported time
+        categories and the FILTERRULES string formatting specification are
+        given in the program's normal help text. The exact method of
+        classification is explained below.
+
+
+Output:
+        By default, the program writes the rejected items to stdout, whereas
+        single items are separated by newline characters. Alternatively, the
+        accepted items can be written out instead of the rejected ones. The
+        item separator may be set to the NULL character. Log output and error
+        messages are written to stderr.
+
+
+Actions:
+        Certain actions such as removal or renaming (moving) can be performed
+        on items based on their classification. By default, no actions are
+        performed. If not further specified, activated actions are performed on
+        rejected items only.
+
+
+Classification method:
+        Each item provided as input becomes classified as either accepted or
+        rejected, based on its corresponding timestamp and according to the
+        time filter rules given by the user. For the basic meaning of the
+        filter rules, consider this example FILTERRULES string:
+
+            hours12,days5,weeks4
+
+        It translates to the following <category>:<maxcount> pairs:
+
+            hours: 12
+            days:   5
+            weeks:  4
+
+        Based on the reference time, which by default is the program's startup
+        time, the program calculates the age of all ITEMs. According to
+        the example rules, the program then tries to identify and accept one
+        item from each of the last 12 hours, one item from each of the last 5
+        days, and one item from each of the last 4 weeks.
+
+        More specifically, according to <hours> rule above, the program accepts
+        the *newest* item in each of 12 sub-categories: the newest item being
+        1 h old, the newest item being 2 h old, ..., and the newest item being
+        12 h old, yielding at most 12 accepted items from the <hours> time
+        category: zero or one for each of the sub-categories.
+
+        An hour is a time unit, as are all time categories except for the
+        <recent> category (explained further below). An item is considered
+        X [timeunits] old if it is older than X [timeunits], but younger than
+        X+1 [timeunits]. For instance, if an item being 45 days old should be
+        sub-categorized within the 'months' category, it would be considered
+        1 month old, because it is older than 30 days (1 month) and younger
+        than 60 days (2 months). Internally, all time category units are
+        treated as linear in time (see below for time category specification).
+
+        The example rules above can accept at most 12 + 5 + 4 accepted items.
+        If there are multiple items fitting into a certain sub-category (e.g.
+        <3-days>), then the newest of these is accepted. If there is no item
+        fitting into a certain sub-category, then this sub-category simply does
+        not yield an item. Considering the example rules above, only 11 items
+        are accepted from the <hours> category if the program does not find an
+        item for the <5-hours> sub-category, but at least one item for the
+        other <hours> sub-categories.
+
+        Younger time categories have higher priority than older ones. This is
+        only relevant when, according to the rules, two <category>:<maxcount>
+        pairs overlap. Example rules:
+
+            days:  10
+            weeks:  1
+
+        An item fitting into one of the <7/8/9/10-days> sub-categories would
+        also fit the <1-weeks> sub-category. This is a rules overlap. In this
+        case, the <X-days> sub-categories will be populated first, since <days>
+        is the younger category than <weeks>. If there is an 11 days old item
+        in the input, it will populate the <1-week> sub-category, because it is
+        the newest 1-week-old item *not consumed by a younger category*.
+
+
+        Time categories and their meaning:
+
+            hours:  60 minutes (    3600 seconds)
+            days:   24 hours   (   86400 seconds)
+            weeks:   7 days    (  604800 seconds)
+            months: 30 days    ( 2592000 seconds)
+            years: 365 days    (31536000 seconds)
+
+        The special category <recent> keeps track of all items younger than
+        1 hour. It it not further sub-categorized. If specified in the rules,
+        the <maxcount> newest items from this category re accepted.
+
+
+Exit status:
+    TODO
+"""
+
 import os
 import sys
 import argparse
@@ -87,18 +197,17 @@ RECENT = 5
 options = None
 
 
-
-
-
 def main():
     parse_options()
     log.debug("Options: %s", options)
 
     # Validate options.
-    if len(options.item) == 0:
+    # I
+    if len(options.items) == 0:
         if not options.stdin:
-            err("At least one item must be provided (or set --stdin).")
+            err("At least one item must be provided (if --stdin not set).")
 
+    #
     log.debug("Decode rules string.")
     try:
         rules = parse_rules_from_cmdline(options.rules)
@@ -119,7 +228,7 @@ def main():
         # interaction
 
     fses = []
-    for i in options.item:
+    for i in options.items:
         try:
             fses.append(FileSystemEntry(path=i))
         except OSError:
@@ -164,21 +273,36 @@ def err(s):
 
 def parse_options():
     global options
+    description = "Accept or reject files/items based on time categorization."
     parser = argparse.ArgumentParser(
-        description=("Filter items by time categories."),
-        epilog="Version %s" % __version__
+        prog="timegaps",
+        description=description,
+        epilog="Version %s" % __version__,
+        add_help=False
         )
-    parser.add_argument('--version', action='version', version=__version__)
+    parser.add_argument("-h", "--help", action="help",
+        help="Show help message and exit.")
+    parser.add_argument("--extended-help", action="version",
+        version=EXTENDED_HELP, help="Show extended help and exit.")
+    parser.add_argument("--version", action="version",
+        version=__version__, help="Show version information and exit.")
+
 
     parser.add_argument("rules", action="store",
-        metavar="FILTER_RULES",
-        help=("Filter rules as JSON string. Example: '{years:1, hours:2}.")
+        metavar="FILTERRULES",
+        help=("A string defining the filter rules of the form "
+            "<category><maxcount>[,<category><maxcount>[, ... ]]. "
+            "Example: 'recent5,days12,months5'. "
+            "Valid <category> values: %s. Valid <maxcount> values: "
+            "positive integers. Default maxcount for unspecified categories: "
+            "0." %
+            ", ".join(TimeFilter.valid_categories))
         )
     # Require at least one arg if --stdin is not defined. Don't require any
     # arg if --stdin is defined. Overall, allow an arbitrary number, and
     # validate later.
-    parser.add_argument("item", action="store", nargs='*',
-        help=("Items for filtering. Interpreted as paths to filesystem "
+    parser.add_argument("items", metavar="ITEM", action="store", nargs='*',
+        help=("Items for filtering. Interpreted as paths to file system "
             "entries by default.")
         )
 
@@ -223,6 +347,12 @@ def parse_options():
         help=("Treat items as strings (don't validate paths) and parse time "
             "from strings using formatstring FMT (cf. bit.ly/strptime).")
         )
+
+    # TODO:
+    #   verbosity option
+    #   output rejected or accepted
+    #   action on rejected or accepted
+
     #arguments = docopt(__doc__, version=__version__)
     #print(arguments)
     options = parser.parse_args()
