@@ -1,69 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 #
-"""Filter items by time categories.
-
-Usage:
-    timegaps [--delete | --move=DIR] [--follow-symlinks] [--reftime=FMT]
-             [--time-from-basename=FMT | --time-from-string=FMT]
-             [--nullchar] FILTER_RULES ITEM ...
-    timegaps --version
-    timegaps --help
-
-
-Arguments:
-    FILTER_RULES  Filter rules as JSON string. Example: '{years:1, hours:2}'.
-    ITEM          A valid path (file, dir, symlink) or any string in case of
-                  --time-from-string)
-
-Options:
-    --help -h                   Show this help message and exit.
-    --version                   Show version information and exit.
-    --delete -d                 Attempt to delete rejected paths.
-    --move=DIR -m DIR           Attempt to move rejected paths to directory DIR.
-    --stdin                     Read items for filtering from stdin, separated
-                                by newline characters.
-    --nullsep -0                Perform input and output item separation with
-                                NULL characters instead of newline characters.
-    --reftime=FMT -t FMT        Parse time from formatstring FMT (cf.
-                                documentation of Python's strptime() at
-                                bit.ly/strptime). Use this time as reference
-                                time (default is time of program invocation).
-    --follow-symlinks -S        Retrieve modification time from symlink target,
-                                TODO: other implications?
-    --time-from-basename=FMT    Don't extract an item's modification time from
-                                inode (which is the default). Instead, parse
-                                time from basename of path according to
-                                formatstring FMT (cf. documentation of Python's
-                                strptime() at bit.ly/strptime)
-    --time-from-string=FMT      Treat items as strings (don't validate paths)
-                                and parse time from strings using formatstring
-                                FMT (cf. bit.ly/strptime)
-
+"""Accept or reject files/items based on time categorization.
 
 Feature / TODO brainstorm:
-    - reference implementation with cmdline interface
-    - comprehensive API for systematic unit testing and library usage
-    - remove or move or noop mode
-    - extensive logging
-    - parse mtime from path (file/dirname)
     - symlink support (elaborate specifics)
-    - file system entry input via positional cmdline args or via null-character
-      separated paths at stdin
-    - add a mode where time-encoding nullchar-separated strings are read as
-      input and then filtered. The output is a set of rejected strings (no
-      involvement of the file system at all, just timestamp filtering)
-    - add cmdline option for reference time input
-    - otherwise: reference time is time at program startup
-    - define default rules in cmdline tool, not in underlying
-      implementation
-    - set some meaningful filtering defaults, such as:
-        assert f.rules["years"] == 4
-        assert f.rules["months"] == 12
-        assert f.rules["weeks"] == 6
-        assert f.rules["hours"] == 48
-        assert f.rules["days"] == 10
-        assert f.rules["recent"] == 5
 """
 
 EXTENDED_HELP = """
@@ -182,15 +123,7 @@ import argparse
 import logging
 import re
 import time
-from logging.handlers import RotatingFileHandler
 from timegaps import TimeFilter, FileSystemEntry, __version__
-
-YEARS = 4
-MONTHS = 12
-WEEKS = 6
-DAYS = 8
-HOURS = 48
-RECENT = 5
 
 
 # Global for options, to be populated by argparse from cmdline arguments.
@@ -199,15 +132,14 @@ options = None
 
 def main():
     parse_options()
-    log.debug("Options: %s", options)
+    log.debug("Options namespace:\n%s", options)
 
-    # Validate options.
-    # I
+    # Validate options (logic not tested automatically by `argparse`).
     if len(options.items) == 0:
         if not options.stdin:
             err("At least one item must be provided (if --stdin not set).")
 
-    #
+    # Parse FILTERRULES argument.
     log.debug("Decode rules string.")
     try:
         rules = parse_rules_from_cmdline(options.rules)
@@ -215,41 +147,77 @@ def main():
     except ValueError as e:
         err("Error while parsing rules: '%s'." % e)
 
-    reference_time = time.time()
+    # Determine reference time and already set up `TimeFilter` instance (if
+    # this raises an error, it's raised in an early stage).
     if options.reference_time is not None:
-        pass
-        # TODO: parse ref time from string
+        log.debug("Parse reference time from cmdline.")
+        raise NotImplemented
+    else:
+        log.debug("Get reference time: now.")
+        reference_time = time.time()
     log.info("Using reference time %s." % reference_time)
     timefilter = TimeFilter(rules, reference_time)
 
-    if options.time_from_string is not None:
-        pass
-        # TODO: change mode to pure string parsing, w/o item-wise filesystem
-        # interaction
+    # Input section.
+    log.info("Start collecting items.")
+    items = prepare_input()
+    log.info("Start filtering %s items.", len(items))
 
-    fses = []
-    for i in options.items:
-        try:
-            fses.append(FileSystemEntry(path=i))
-        except OSError:
-            err("Cannot open '%s'." % i)
-
-    log.info("Filtering ...")
-    accepted, rejected = timefilter.filter(fses)
+    # Classification section.
+    accepted, rejected = timefilter.filter(items)
     rejected = list(rejected)
+    log.info("Number of accepted items: %s", len(accepted))
+    log.info("Number of rejected items: %s", len(rejected))
     log.debug("Accepted items:\n%s" % "\n".join("%s" % a for a in accepted))
     log.debug("Rejected items:\n%s" % "\n".join("%s" % r for r in rejected))
 
-    # Build object list to be filtered via TimeFilter.
+    # Output section.
+
+
+
+def prepare_input():
+    """Return a list of objects that can be classified by a `TimeFilter`
+    instance.
+    """
+    if options.time_from_string is not None:
+        # TODO: change mode to pure string parsing, w/o item-wise file system
+        # interaction
+        raise NotImplemented
+        # return list_of_items_from_strings
+    # File system mode.
+    log.info("Validate paths and extract time information.")
+    fses = []
+    for path in options.items:
+        modtime = None
+        if options.time_from_basename:
+            modtime = time_from_basename(path)
+        try:
+            fses.append(FileSystemEntry(path, modtime))
+        except OSError:
+            err("Cannot access '%s'." % item)
+    log.debug("Created %s items from file system entries.", len(fses))
+    return fses
+
+
+def time_from_basename(path):
+    """Parse `path`, extract time from basename, according to format string
+    in `options.time_from_basename`. Treat time string as local time.
+
+    Return non-localized Unix timestamp.
+    """
+    raise NotImplemented
+    # use options.time_from_basename for parsing string.
 
 
 def parse_rules_from_cmdline(s):
+    """Parse strings such as 'hours12,days5,weeks4' into rules dictionary.
+    """
     tokens = s.split(",")
     if not tokens:
         raise ValueError("Error extracting rules from string '%s'" % s)
     rules = {}
     for t in tokens:
-        log.debug("Analze token '%s'", t)
+        log.debug("Analyze token '%s'", t)
         if not t:
             raise ValueError("Token is empty")
         match = re.search(r'([a-z]+)([0-9]+)', t)
@@ -266,12 +234,16 @@ def parse_rules_from_cmdline(s):
 
 
 def err(s):
+    """Log error message `s` in logging's error category and exit with code 1.
+    """
     log.error(s)
     log.info("Exit with code 1.")
     sys.exit(1)
 
 
 def parse_options():
+    """Set up and parse commandline options using `argparse`.
+    """
     global options
     description = "Accept or reject files/items based on time categorization."
     parser = argparse.ArgumentParser(
@@ -303,7 +275,7 @@ def parse_options():
     # validate later.
     parser.add_argument("items", metavar="ITEM", action="store", nargs='*',
         help=("Items for filtering. Interpreted as paths to file system "
-            "entries by default.")
+            "entries by default. Not required in --stdin mode.")
         )
 
     filehandlegroup = parser.add_mutually_exclusive_group()
@@ -316,8 +288,7 @@ def parse_options():
 
 
     parser.add_argument("-s", "--stdin", action="store_true",
-        help=("Read items for filtering from stdin, separated by newline "
-            "by newline characters.")
+        help=("Read input items from stdin (default separator: newline).")
         )
     parser.add_argument("-0", "--nullsep", action="store_true",
         help=("Perform input and output item separation with NULL characters "
