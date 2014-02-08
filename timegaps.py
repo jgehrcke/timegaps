@@ -142,6 +142,10 @@ options = None
 
 def main():
     parse_options()
+    if options.verbose == 1:
+        log.setLevel(logging.INFO)
+    elif options.verbose == 2:
+        log.setLevel(logging.DEBUG)
     log.debug("Options namespace:\n%s", options)
 
     # Validate options (logic not tested automatically by `argparse`).
@@ -194,8 +198,6 @@ def main():
         # sys.stdout.encoding is not always the right thing:
         # http://drj11.wordpress.com/2007/05/14/python-how-is-sysstdoutencoding-chosen/
         sys.stdout.write(("%s\n" % ai.text).encode(sys.stdout.encoding))
-
-
 
 
 def prepare_input():
@@ -366,18 +368,7 @@ def parse_options():
             "increasing logging level. Levels: error (default), info, debug.")
         )
 
-    # TODO:
-    #   verbosity option
-    #   output rejected or accepted
-    #   action on rejected or accepted
-
-    #arguments = docopt(__doc__, version=__version__)
-    #print(arguments)
     options = parser.parse_args()
-    if options.verbose == 1:
-        log.setLevel(logging.INFO)
-    elif options.verbose == 2:
-        log.setLevel(logging.DEBUG)
 
 
 def time_from_dirname(d):
