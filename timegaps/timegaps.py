@@ -14,13 +14,47 @@ class TimegapsError(Exception):
     pass
 
 
-class FileSystemEntry(object):
+class FilterItem(object):
+    """Represents item for time classification. An item has a name/description,
+    simply called "text" and a modification time, called "modtime". It is up
+    to the user what these entities mean in reality.
+
+    Public interface:
+        self.text:    unicode object describing this item.
+        self.moddate: last change as local datetime object.
+        self.modtime: last change as float, seconds since Unix epoch (nonlocal).
+    """
+    def __init__(self, text, modtime):
+        # TODO: text type validation that works for Py2+3.
+        self.text = text
+        if isinstance(modtime, float) :
+            self.modtime = modtime
+        else:
+            raise TimegapsError(
+                "`modtime` parameter must be `float` type or `None`.")
+
+    @property
+    def moddate(self):
+        """Content modification time is internally stored as Unix timestamp.
+        Return datetime object corresponding to local time.
+        """
+        return datetime.datetime.fromtimestamp(self.modtime)
+
+    def __str__(self):
+        return "%s(text: %s, moddate: %s)" % (self.__class__.__name__,
+            self.text, self.moddate)
+
+    def __repr__(self):
+        return "%s(text=%s, modtime=%s)" % (self.__class__.__name__,
+            self.text, self.modtime)
+
+
+class FileSystemEntry(FilterItem):
     """Represents file system entry (for later filtering). Validates path upon
     initialization, extracts information from inode, and stores inode data
-    for later usage. Public interface:
-        - self.moddate: last content change (mtime) as local datetime object.
-        - self.type: "dir", "file", or "symlink".
-        - self.path: path to file system entry.
+    for later usage. Public interface (in addition to FilterItem's interface):
+        self.type: "dir", "file", or "symlink".
+        self.path: path to file system entry.
     """
     def __init__(self, path, modtime=None):
         log.debug("Creating FileSystemEntry from path '%s'.", path)
@@ -40,13 +74,9 @@ class FileSystemEntry(object):
             # User may provide modification time -- if not, extract it from
             # inode. This is a Unix timestamp, seconds since epoch. Not
             # localized.
-            self.modtime = self._stat.st_mtime
-        elif isinstance(modtime, float) :
-            self.modtime = modtime
-        else:
-            raise TimegapsError(
-                "`modtime` parameter must be `float` type or `None`.")
+            modtime = self._stat.st_mtime
         self.path = path
+        FilterItem.__init__(self, text=path, modtime=modtime)
 
     def _get_type(self, statobj):
         """Determine file type from stat object `statobj`.
@@ -60,15 +90,8 @@ class FileSystemEntry(object):
             return "symlink"
         raise TimegapsError("Unsupported file type: '%s'", self.path)
 
-    @property
-    def moddate(self):
-        """Content modification time is internally stored as Unix timestamp.
-        Return datetime object corresponding to local time.
-        """
-        return datetime.datetime.fromtimestamp(self.modtime)
-
     def __str__(self):
-        return "%s(path=%s, moddate: %s)" % (self.__class__.__name__,
+        return "%s(path: %s, moddate: %s)" % (self.__class__.__name__,
             self.path, self.moddate)
 
     def __repr__(self):
