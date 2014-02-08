@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 #
+
+from __future__ import unicode_literals
+
 """Accept or reject files/items based on time categorization.
 
 Feature / TODO brainstorm:
@@ -37,7 +40,7 @@ Output:
         By default, the program writes the rejected items to stdout, whereas
         single items are separated by newline characters. Alternatively, the
         accepted items can be written out instead of the rejected ones. The
-        item separator may be set to the NULL character. Log output and error
+        item separator may be set to the NUL character. Log output and error
         messages are written to stderr.
 
 
@@ -165,7 +168,7 @@ def main():
     log.info("Using reference time %s." % reference_time)
     timefilter = TimeFilter(rules, reference_time)
 
-    # Input section.
+    # Item input section.
     log.info("Start collecting items.")
     items = prepare_input()
     log.info("Start filtering %s items.", len(items))
@@ -178,7 +181,10 @@ def main():
     log.debug("Accepted items:\n%s" % "\n".join("%s" % a for a in accepted))
     log.debug("Rejected items:\n%s" % "\n".join("%s" % r for r in rejected))
 
-    # Output section.
+    # Item output section.
+
+    sys.stdout.write()
+
 
 
 
@@ -186,6 +192,9 @@ def prepare_input():
     """Return a list of objects that can be classified by a `TimeFilter`
     instance.
     """
+    # When reading from stdin, take a different path than `options.items`.
+    # Regarding stdin decoding: http://stackoverflow.com/a/16549381/145400
+    #
     if options.time_from_string is not None:
         # TODO: change mode to pure string parsing, w/o item-wise file system
         # interaction
@@ -303,8 +312,8 @@ def parse_options():
         help=("Read input items from stdin (default separator: newline).")
         )
     parser.add_argument("-0", "--nullsep", action="store_true",
-        help=("Perform input and output item separation with NULL characters "
-            "instead of newline characters.")
+        help=("Input and output item separation is NUL character "
+            "instead of newline character.")
         )
     parser.add_argument("-t", "--reference-time", action="store",
         metavar="FMT",
