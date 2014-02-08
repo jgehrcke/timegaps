@@ -18,7 +18,7 @@ from py.test import raises, mark
 
 
 sys.path.insert(0, os.path.abspath('..'))
-from timegaps.timegaps import FileSystemEntry, TimegapsError
+from timegaps.timegaps import FileSystemEntry, TimegapsError, FilterItem
 from timegaps.timefilter import TimeFilter, _Timedelta, TimeFilterError
 
 
@@ -32,17 +32,6 @@ log.setLevel(logging.DEBUG)
 
 WINDOWS = sys.platform == "win32"
 SHORTTIME = 0.01
-
-
-class FileSystemEntryMock(FileSystemEntry):
-    def __init__(self, modtime):
-        self.modtime = modtime
-
-    def __str__(self):
-        return "%s(moddate: %s)" % (self.__class__.__name__, self.moddate)
-
-    def __repr__(self):
-        return "%s(modtime=%s)" % (self.__class__.__name__, self.modtime)
 
 
 def nrandint(n, min, max):
@@ -71,7 +60,7 @@ def fsegen(ref, N_per_cat, max_timecount):
         nowminusXhours,
         nowminusXseconds,
         )
-    return (FileSystemEntryMock(modtime=t) for t in times)
+    return (FilterItem(modtime=t) for t in times)
 
 
 class TestBasicFSEntry(object):
@@ -289,7 +278,7 @@ class TestTimeFilterBasic(object):
         # Create mock that is 1.5 hours old. Must end up in accepted list,
         # since it's 1 hour old and one item should be kept from the 1-hour-
         # old-category
-        fse = FileSystemEntryMock(modtime=time.time()-60*60*1.5)
+        fse = FilterItem(modtime=time.time()-60*60*1.5)
         a, r = f.filter(objs=[fse])
         # http://stackoverflow.com/a/1952655/145400
         assert isinstance(a, collections.Iterable)
@@ -301,8 +290,8 @@ class TestTimeFilterBasic(object):
 
     def test_hours_one_accepted_one_rejected(self):
         f = TimeFilter(rules={"hours": 1})
-        fse1 = FileSystemEntryMock(modtime=time.time()-60*60*1.5)
-        fse2 = FileSystemEntryMock(modtime=time.time()-60*60*1.6)
+        fse1 = FilterItem(modtime=time.time()-60*60*1.5)
+        fse2 = FilterItem(modtime=time.time()-60*60*1.6)
         a, r = f.filter(objs=[fse1, fse2])
         r = list(r)
         # The younger one must be accepted.
@@ -312,9 +301,9 @@ class TestTimeFilterBasic(object):
         assert len(r) == 1
 
     def test_two_recent(self):
-        fse1 = FileSystemEntryMock(modtime=time.time())
+        fse1 = FilterItem(modtime=time.time())
         time.sleep(SHORTTIME)
-        fse2 = FileSystemEntryMock(modtime=time.time())
+        fse2 = FilterItem(modtime=time.time())
         # fse2 is a little younger than fse1.
         time.sleep(SHORTTIME) # Make sure ref is newer than fse2.modtime.
         a, r = TimeFilter(rules={"recent": 1}).filter(objs=[fse1, fse2])
@@ -327,9 +316,9 @@ class TestTimeFilterBasic(object):
 
     def test_2_recent_10_allowed(self):
         # Request to keep more than available.
-        fse1 = FileSystemEntryMock(modtime=time.time())
+        fse1 = FilterItem(modtime=time.time())
         time.sleep(SHORTTIME)
-        fse2 = FileSystemEntryMock(modtime=time.time())
+        fse2 = FilterItem(modtime=time.time())
         time.sleep(SHORTTIME)
         a, r = TimeFilter(rules={"recent": 10}).filter(objs=[fse1, fse2])
         r = list(r)
@@ -346,8 +335,8 @@ class TestTimeFilterBasic(object):
         # Produce one 9 year old, one 10 year old, keep 10 years.
         nowminus10years = time.time() - (60*60*24*365 * 10 + 1)
         nowminus09years = time.time() - (60*60*24*365 *  9 + 1)
-        fse1 = FileSystemEntryMock(modtime=nowminus10years)
-        fse2 = FileSystemEntryMock(modtime=nowminus09years)
+        fse1 = FilterItem(modtime=nowminus10years)
+        fse2 = FilterItem(modtime=nowminus09years)
         a, r = TimeFilter(rules={"years": 10}).filter(objs=[fse1, fse2])
         r = list(r)
         # All should be accepted.
@@ -359,8 +348,8 @@ class TestTimeFilterBasic(object):
         # Produce one 1 year old, one 2 year old, keep 10 years.
         nowminus10years = time.time() - (60*60*24*365 * 2 + 1)
         nowminus09years = time.time() - (60*60*24*365 * 1 + 1)
-        fse1 = FileSystemEntryMock(modtime=nowminus10years)
-        fse2 = FileSystemEntryMock(modtime=nowminus09years)
+        fse1 = FilterItem(modtime=nowminus10years)
+        fse2 = FilterItem(modtime=nowminus09years)
         a, r = TimeFilter(rules={"years": 10}).filter(objs=[fse1, fse2])
         r = list(r)
         # All should be accepted.
@@ -372,8 +361,8 @@ class TestTimeFilterBasic(object):
         # Produce one 1 year old, one 2 year old, keep 10 years.
         nowminus10years = time.time() - (60*60*24*365 * 2 + 1)
         nowminus09years = time.time() - (60*60*24*365 * 1 + 1)
-        fse1 = FileSystemEntryMock(modtime=nowminus10years)
-        fse2 = FileSystemEntryMock(modtime=nowminus09years)
+        fse1 = FilterItem(modtime=nowminus10years)
+        fse2 = FilterItem(modtime=nowminus09years)
         a, r = TimeFilter(rules={"years": 2}).filter(objs=[fse1, fse2])
         r = list(r)
         # All should be accepted.
@@ -410,8 +399,8 @@ class TestTimeFilterBasic(object):
             nowminus2hour,
             nowminus2second,
             )
-        afses = [FileSystemEntryMock(modtime=t) for t in atimes]
-        rfses = [FileSystemEntryMock(modtime=t) for t in rtimes]
+        afses = [FilterItem(modtime=t) for t in atimes]
+        rfses = [FilterItem(modtime=t) for t in rtimes]
         cats = ("days", "years", "months", "weeks", "hours", "recent")
         rules = {c:1 for c in cats}
         a, r = TimeFilter(rules, now).filter(chain(afses, rfses))
@@ -430,7 +419,7 @@ class TestTimeFilterBasic(object):
         # accepted according to the 10-day-rule. The last 5 must be rejected.
         now = time.time()
         nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
-        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXdays]
+        fses = [FilterItem(modtime=t) for t in nowminusXdays]
         rules = {"days": 10}
         a, r = TimeFilter(rules, now).filter(fses)
         r = list(r)
@@ -456,7 +445,7 @@ class TestTimeFilterBasic(object):
         # accepted-internal ordering.
         now = time.time()
         nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
-        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXdays]
+        fses = [FilterItem(modtime=t) for t in nowminusXdays]
         rules = {"days": 10}
         shuffledfses = fses[:]
         for _ in xrange(100):
@@ -473,7 +462,7 @@ class TestTimeFilterBasic(object):
     def test_create_recent_allow_old(self):
         now = time.time()
         nowminusXseconds = (now - (i + 1) for i in xrange(1,16))
-        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXseconds]
+        fses = [FilterItem(modtime=t) for t in nowminusXseconds]
         rules = {"years": 1}
         a, r = TimeFilter(rules, now).filter(fses)
         r = list(r)
@@ -486,7 +475,7 @@ class TestTimeFilterBasic(object):
         # ended up in the recent category.
         now = time.time()
         nowminusXyears = (now-(60*60*24*365 * i + 1) for i in xrange(1,16))
-        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXyears]
+        fses = [FilterItem(modtime=t) for t in nowminusXyears]
         rules = {"recent": 1}
         a, r = TimeFilter(rules, now).filter(fses)
         r = list(r)
@@ -497,7 +486,7 @@ class TestTimeFilterBasic(object):
         # Create a few young items (recent ones). Then don't request any.
         now = time.time()
         nowminusXseconds = (now - (i + 1) for i in xrange(1,16))
-        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXseconds]
+        fses = [FilterItem(modtime=t) for t in nowminusXseconds]
         rules = {"years": 1, "recent": 0}
         a, r = TimeFilter(rules, now).filter(fses)
         r = list(r)
@@ -522,7 +511,7 @@ class TestTimeFilterBasic(object):
         # 13, 15).
         now = time.time()
         nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
-        fses = [FileSystemEntryMock(modtime=t) for t in nowminusXdays]
+        fses = [FilterItem(modtime=t) for t in nowminusXdays]
         rules = {"days": 10, "weeks": 2}
         a, r = TimeFilter(rules, now).filter(fses)
         r = list(r)

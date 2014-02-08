@@ -20,11 +20,11 @@ class FilterItem(object):
     to the user what these entities mean in reality.
 
     Public interface:
-        self.text:    unicode object describing this item.
+        self.text:    unicode object describing this item or None.
         self.moddate: last change as local datetime object.
         self.modtime: last change as float, seconds since Unix epoch (nonlocal).
     """
-    def __init__(self, text, modtime):
+    def __init__(self, modtime, text=None):
         # TODO: text type validation that works for Py2+3.
         self.text = text
         if isinstance(modtime, float) :
