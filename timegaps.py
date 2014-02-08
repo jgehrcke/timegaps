@@ -186,9 +186,11 @@ def main():
     log.debug("Accepted items:\n%s" % "\n".join("%s" % a for a in accepted))
     log.debug("Rejected items:\n%s" % "\n".join("%s" % r for r in rejected))
 
+    actonitems = rejected if not options.accepted else accepted
+
     # Item output section.
     # The `text` attribute of items is a unicode object
-    for ai in accepted:
+    for ai in actonitems:
         # sys.stdout.encoding is not always the right thing:
         # http://drj11.wordpress.com/2007/05/14/python-how-is-sysstdoutencoding-chosen/
         sys.stdout.write(("%s\n" % ai.text).encode(sys.stdout.encoding))
@@ -352,6 +354,11 @@ def parse_options():
         metavar="FMT",
         help=("Treat items as strings (don't validate paths) and parse time "
             "from strings using formatstring FMT (cf. bit.ly/strptime).")
+        )
+
+    parser.add_argument('-a', '--accepted', action='store_true',
+        help=("Output accepted items and perform actions on accepted items "
+            "instead of (on) rejected ones.")
         )
 
     parser.add_argument('-v', '--verbose', action='count', default=0,
