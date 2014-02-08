@@ -145,10 +145,11 @@ def main():
     log.debug("Options namespace:\n%s", options)
 
     # Validate options (logic not tested automatically by `argparse`).
-    if len(options.items) == 0:
-        if not options.stdin:
-            err("At least one item must be provided (if --stdin not set).")
 
+    # If the user misses to provide either RULES or an ITEM, it is not catched
+    # by argparse (0 ITEMs is allowed when --stdin is set). Validate RULES and
+    # ITEMs here in the order as consumed by argparse (first RULES, then ITEMS).
+    # Doing it the other way round could produce confusing error messages.
     # Parse RULES argument.
     log.debug("Decode rules string.")
     try:
@@ -156,6 +157,10 @@ def main():
         log.info("Using rules: %s", rules)
     except ValueError as e:
         err("Error while parsing rules: '%s'." % e)
+
+    if len(options.items) == 0:
+        if not options.stdin:
+            err("At least one item must be provided (if --stdin not set).")
 
     # Determine reference time and already set up `TimeFilter` instance (if
     # this raises an error, it's raised in an early stage).
@@ -182,8 +187,11 @@ def main():
     log.debug("Rejected items:\n%s" % "\n".join("%s" % r for r in rejected))
 
     # Item output section.
-
-    sys.stdout.write()
+    # The `text` attribute of items is a unicode object
+    for ai in accepted:
+        # sys.stdout.encoding is not always the right thing:
+        # http://drj11.wordpress.com/2007/05/14/python-how-is-sysstdoutencoding-chosen/
+        sys.stdout.write(("%s\n" % ai.text).encode(sys.stdout.encoding))
 
 
 
@@ -204,6 +212,12 @@ def prepare_input():
     log.info("Validate paths and extract time information.")
     fses = []
     for path in options.items:
+        log.debug("Type of path: %s", type(path))
+        # Decode cmdline args to unicode.
+        # http://stackoverflow.com/a/12764703/145400
+        path = path.decode(sys.stdin.encoding)
+        log.debug("Type of path: %s", type(path))
+        #title = opts.title.decode('mbcs')
         modtime = None
         if options.time_from_basename:
             modtime = time_from_basename(path)
@@ -340,6 +354,11 @@ def parse_options():
             "from strings using formatstring FMT (cf. bit.ly/strptime).")
         )
 
+    parser.add_argument('-v', '--verbose', action='count', default=0,
+        help=("Control verbosity. Can be specified multiple times for "
+            "increasing logging level. Levels: error (default), info, debug.")
+        )
+
     # TODO:
     #   verbosity option
     #   output rejected or accepted
@@ -348,6 +367,10 @@ def parse_options():
     #arguments = docopt(__doc__, version=__version__)
     #print(arguments)
     options = parser.parse_args()
+    if options.verbose == 1:
+        log.setLevel(logging.INFO)
+    elif options.verbose == 2:
+        log.setLevel(logging.DEBUG)
 
 
 def time_from_dirname(d):
@@ -361,7 +384,7 @@ def dirname_from_time(t):
 
 if __name__ == "__main__":
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.ERROR)
     ch = logging.StreamHandler()
     #fh = RotatingFileHandler(
     #    LOGFILE_PATH,
