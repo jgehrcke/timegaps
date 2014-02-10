@@ -228,7 +228,7 @@ def prepare_input():
         try:
             fses.append(FileSystemEntry(path, modtime))
         except OSError:
-            err("Cannot access '%s'." % item)
+            err("Cannot access '%s'." % path)
     log.debug("Created %s items from file system entries.", len(fses))
     return fses
 
