@@ -219,6 +219,13 @@ def prepare_input():
         log.debug("Type of path: %s", type(path))
         # Decode cmdline args to unicode.
         # http://stackoverflow.com/a/12764703/145400
+        # sys.stdin.encoding might be None, if process not attached to
+        # terminal. In this case, env PYTHONIOENCODING dictates what
+        # sys.stdin.encoding is. sys.stdin.encoding, however, might not make
+        # sense at all at this point. How are cmdline arguments encoded? Who
+        # encodes them (the calling process? Is there some intermediate
+        # entity hidden in exec() that modifies argument data? Can arbitrary
+        # data provided? How to reliably decode this data?
         path = path.decode(sys.stdin.encoding)
         log.debug("Type of path: %s", type(path))
         #title = opts.title.decode('mbcs')
