@@ -217,18 +217,28 @@ def prepare_input():
     fses = []
     for path in options.items:
         log.debug("Type of path: %s", type(path))
-        # Decode cmdline args to unicode.
-        # http://stackoverflow.com/a/12764703/145400
-        # sys.stdin.encoding might be None, if process not attached to
-        # terminal. In this case, env PYTHONIOENCODING dictates what
-        # sys.stdin.encoding is. sys.stdin.encoding, however, might not make
-        # sense at all at this point. How are cmdline arguments encoded? Who
-        # encodes them (the calling process? Is there some intermediate
-        # entity hidden in exec() that modifies argument data? Can arbitrary
-        # data provided? How to reliably decode this data?
-        path = path.decode(sys.stdin.encoding)
-        log.debug("Type of path: %s", type(path))
-        #title = opts.title.decode('mbcs')
+
+        # On the one hand, a unicode-aware Python program should only use
+        # unicode type strings internally. On the other hand, when it comes
+        # to file system interaction, bytestrings are the more portable choice
+        # on Unix-like systems.
+        # See https://wiki.python.org/moin/Python3UnicodeDecodeError:
+        # "A robust program will have to use only the bytes type to make sure
+        # that it can open / copy / remove any file or directory."
+        #
+        # On Python 3, which automatically populates argv with unicode objects,
+        # we could therefore re-encode towards bytestrings. See:
+        # http://stackoverflow.com/a/7077803/145400
+        # http://bugs.python.org/issue8514
+        # https://github.com/oscarbenjamin/opster/commit/61f693a2c553944394ba286baed20abc31958f03
+        # On the other hand,
+        # there is http://www.python.org/dev/peps/pep-0383/ which describes how
+        # surrogate encoding is used by Python 3 for auto-correcting issues
+        # related to wrongly decoded arguments (the encoding assumption upon
+        # decoding might have been wrong).
+        # Also, interesting in this respect:
+        # http://stackoverflow.com/a/846931/145400
+
         modtime = None
         if options.time_from_basename:
             modtime = time_from_basename(path)
@@ -246,6 +256,20 @@ def time_from_basename(path):
 
     Return non-localized Unix timestamp.
     """
+    # When extracting time from path (basename), use path and format string as
+    # unicode objects.
+    #
+    # On Python 3, argv comes as unicode objects (possibly with surrogate
+    # chars).
+    #
+    # On Python 2, both the format string and the path
+    # come as byte strings from sys.argv. By default, attempt to decode
+    # both using sys.getfilesystemencoding(), as the best possible
+    # guess. Or let the user override via --encoding-args
+
+
+
+    #
     raise NotImplemented
     # use options.time_from_basename for parsing string.
 
