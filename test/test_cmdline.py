@@ -56,8 +56,8 @@ class Base(object):
         return self.cmdlinetest
 
 
-class TestBasic(Base):
-    """Test basic functionality.
+class TestSimpleErrors.(Base):
+    """Test for basic error detection and proper error messages.
     """
 
     def test_too_few_args(self):
