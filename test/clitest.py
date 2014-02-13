@@ -97,6 +97,8 @@ class CmdlineInterfaceTest(object):
     rundirtop = "."
     shellscript_encoding = "utf-8"
     shellscript_ext = ".sh"
+    preamble = None
+    shellargs = []
 
     def __init__(self, name):
         self.name = name
@@ -125,14 +127,22 @@ class CmdlineInterfaceTest(object):
         with open(p, 'w') as f:
             f.write(content_bytestring)
 
+    def _script_contents(self, cmd_unicode):
+        preamble = self.preamble if self.preamble else ""
+        return "%s%s\n" % (preamble, cmd_unicode)
+
     def run(self, cmd_unicode, expect_rc=0, log_output=True):
-        shellscript_content_bytes = cmd_unicode.encode(
+        shellscript_content_bytes = self._script_contents(cmd_unicode).encode(
             self.shellscript_encoding)
         self.add_file(self.shellscript_name, shellscript_content_bytes)
 
-        cmd = [self.shellpath, self.shellscript_name]
+        cmd = [self.shellpath]
+        # If additional args are defined, append them (noop if list is empty).
+        cmd.extend(self.shellargs)
+        cmd.append(self.shellscript_name)
         of = open(self.outfilepath, "w")
         ef = open(self.errfilepath, "w")
+        log.debug("Popen with cmd: %s", cmd)
         try:
             sp = subprocess.Popen(cmd, stdout=of, stderr=ef, cwd=self.rundir)
             sp.wait()
@@ -154,7 +164,6 @@ class CmdlineInterfaceTest(object):
             log.info("Test stderr repr:\n%s", repr(self.rawerr))
         if rc != expect_rc:
             raise WrongExitCode("Expected %s, got %s" % (expect_rc, rc))
-
 
     def in_stderr(self, expect_in_stderr, encoding=None):
         # Process expect_in_stderr/out. Each might be None, a single strings or
