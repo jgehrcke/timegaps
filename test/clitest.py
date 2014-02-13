@@ -24,6 +24,14 @@ class WrongExitCode(CmdlineTestError):
     pass
 
 
+class WrongStdout(CmdlineTestError):
+    pass
+
+
+class WrongStderr(CmdlineTestError):
+    pass
+
+
 class CmdlineInterfaceTest(object):
     """Command line interface test abstraction for a given CLI proram, called
     PROGRAM in the following paragraphs.
@@ -138,11 +146,45 @@ class CmdlineInterfaceTest(object):
             of.close()
             ef.close()
         with open(self.outfilepath) as f:
-            out = f.read()
+            self.rawout = f.read()
         with open(self.errfilepath) as f:
-            err = f.read()
+            self.rawerr = f.read()
         if log_output:
-            log.info("Test stdout repr:\n%s", repr(out))
-            log.info("Test stderr repr:\n%s", repr(err))
+            log.info("Test stdout repr:\n%s", repr(self.rawout))
+            log.info("Test stderr repr:\n%s", repr(self.rawerr))
         if rc != expect_rc:
             raise WrongExitCode("Expected %s, got %s" % (expect_rc, rc))
+
+
+    def in_stderr(self, expect_in_stderr, encoding=None):
+        # Process expect_in_stderr/out. Each might be None, a single strings or
+        # a list of strings.
+        if encoding is None:
+            encoding = self.shellscript_encoding
+        err = self.rawerr.decode(encoding)
+        expect_in_stderr = _validate_stringlist(expect_in_stderr)
+        for s in expect_in_stderr:
+            if s not in err:
+                raise WrongStderr("'%s' not in stderr." % s)
+
+
+    def in_stdout(self, expect_in_stdout, encoding=None):
+        if encoding is None:
+            encoding = self.shellscript_encoding
+        out = self.rawout.decode(encoding)
+        expect_in_stdout = _validate_stringlist(expect_in_stdout)
+        for s in expect_in_stdout:
+            if s not in out:
+                raise WrongStdout("'%s' not in stdout." % s)
+
+
+def _validate_stringlist(stringlist):
+    """Make sure that the object returned is a list with at least one item,
+    where all items are unicode objects. If a single unicode item is provided,
+    transform it to a 1-element-list.
+    """
+    if not isinstance(stringlist, list):
+        stringlist = [stringlist]
+    for s in stringlist:
+        assert isinstance(s, unicode) # TODO: Py3.
+    return stringlist

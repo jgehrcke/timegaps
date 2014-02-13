@@ -33,7 +33,7 @@ if WINDOWS:
 logging.basicConfig(
     format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
     datefmt='%H:%M:%S')
-log = logging.getLogger("test_cmdline")
+log = logging.getLogger()
 log.setLevel(logging.DEBUG)
 
 
@@ -48,10 +48,11 @@ class Base(object):
     def teardown_method(self, method):
         self.cmdlinetest.clear()
 
-    def run(self, arguments_unicode, expect_rc=0):
+    def run(self, arguments_unicode, rc=0):
         cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_NAME, arguments_unicode)
         log.info("Test command:\n%s" % cmd)
-        self.cmdlinetest.run(cmd_unicode=cmd, expect_rc=expect_rc)
+        self.cmdlinetest.run(cmd_unicode=cmd, expect_rc=rc)
+        return self.cmdlinetest
 
 
 class TestBasic(Base):
@@ -59,6 +60,7 @@ class TestBasic(Base):
     """
 
     def test_invalid_itempath_1(self):
-        self.run("-v days5 nofile", 1)
+        t = self.run("-v days5 nofile", rc=1)
+        t.in_stderr(["nofile", "access"])
 
 
