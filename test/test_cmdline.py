@@ -63,4 +63,7 @@ class TestBasic(Base):
         t = self.run("-v days5 nofile", rc=1)
         t.in_stderr(["nofile", "access"])
 
+    def test_invalid_rulesstring_1(self):
+        t = self.run("-v foo nofile", rc=1)
+        t.in_stderr(["Invalid", "token", "foo"])
 

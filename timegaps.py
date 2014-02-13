@@ -13,27 +13,27 @@ Feature / TODO brainstorm:
 EXTENDED_HELP = """
 
 timegaps accepts or rejects file system entries based on modification time
-categorization. Its input is a set of paths and certain classification rules.
-The output is to two sets of paths, the rejected and the accepted ones.
-All details and features are described below.
+categorization. Its input is a set of paths and a set of classification rules.
+In the default mode, the output is to two sets of paths, the rejected and the
+accepted ones. Details are described below.
 
 
 Input:
     ITEMs:
         By default, an ITEM value is interpreted as a path to a file system
-        entry. By default, the corresponding timestamp for item filtering is
-        the modification time read from the inode. Optionally, this timestamp
-        may also be parsed from the basename of the path. When interpreted as
-        paths, all ITEM values must point to valid file system entries. In a
-        different mode of operation, ITEM values are treated as simple strings
-        w/o path validation, in which case a timestamp must be parsable from
-        the string itself.
+        entry. By default, the timestamp corresponding to this item (which is
+        used for item filtering) is the modification time as reported by
+        stat(). Optionally, this timestamp may also be parsed from the basename
+        of the path. When interpreted as paths, all ITEM values must point to
+        valid file system entries. In a different mode of operation, ITEM
+        values are treated as simple strings w/o path validation, in which case
+        a timestamp must be parsable from the string itself.
     RULES:
-        These rules define how many items of certain time categories are to be
-        accepted, while all other items become rejected. Supported time
-        categories and the RULES string formatting specification are given
-        in the program's normal help text. The exact method of classification
-        is explained below.
+        These rules define the amount of items to be accepted for certain time
+        categories. All other items become rejected. Supported time categories
+        and the RULES string formatting specification are given in the
+        program's normal help text. The exact method of classification is
+        explained below.
 
 
 Output:
