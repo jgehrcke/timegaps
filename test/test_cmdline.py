@@ -21,8 +21,17 @@ class CmdlineInterfaceTestUnix(CmdlineInterfaceTest):
 
 class CmdlineInterfaceTestWindows(CmdlineInterfaceTest):
     shellpath = "cmd.exe"
+    shellargs = ["/C"]
     rundirtop = RUNDIRTOP
     shellscript_ext = ".bat"
+    # Use PYTHONIOENCODING for enforcing stdout encoding UTF-8 on
+    # Windows. First, I also set console code page via @chcp 65001, but
+    # according to Stinner this is buggy (*not utf-8*,
+    # http://bugs.python.org/issue1602). Good news: independent of the
+    # console code page set, the stdout of the console is the unmodified
+    # Python stdout bytestream, which is forced to be UTF-8 via
+    # environment variable anyway.
+    preamble = "@set PYTHONIOENCODING=utf-8\n"
 
 
 CLITest = CmdlineInterfaceTestUnix
@@ -56,7 +65,7 @@ class Base(object):
         return self.cmdlinetest
 
 
-class TestSimpleErrors.(Base):
+class TestSimpleErrors(Base):
     """Test for basic error detection and proper error messages.
     """
 
