@@ -1,22 +1,35 @@
 # -*- coding: utf-8 -*-
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 
+from __future__ import unicode_literals
 import os
 import sys
-
-# py.test runs tests in order of definition. This is useful for running simple,
-# fundamental tests first and more complex tests later.
-from py.test import raises, mark
-
-# https://pypi.python.org/pypi/scripttest
-from scripttest import TestFileEnvironment
-
-#sys.path.insert(0, os.path.abspath('..'))
-#from timegaps.timegaps import FileSystemEntry, TimegapsError, FilterItem
-#from timegaps.timefilter import TimeFilter, _Timedelta, TimeFilterError
-
-
 import logging
+from py.test import raises, mark
+from clitest import CmdlineInterfaceTest, CmdlineTestError, WrongExitCode
+
+
+RUNDIRTOP = "./cmdline-test"
+TIMEGAPS_NAME = "../../../timegaps.py"
+PYTHON_EXE = "python"
+WINDOWS = sys.platform == "win32"
+
+
+class CmdlineInterfaceTestUnix(CmdlineInterfaceTest):
+    rundirtop = RUNDIRTOP
+
+
+class CmdlineInterfaceTestWindows(CmdlineInterfaceTest):
+    shellpath = "cmd.exe"
+    rundirtop = RUNDIRTOP
+    shellscript_ext = ".bat"
+
+
+CLITest = CmdlineInterfaceTestUnix
+if WINDOWS:
+    CLITest = CmdlineInterfaceTestWindows
+
+
 logging.basicConfig(
     format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
     datefmt='%H:%M:%S')
@@ -24,21 +37,28 @@ log = logging.getLogger("test_cmdline")
 log.setLevel(logging.DEBUG)
 
 
-RUNDIR = './cmdline-test-'
-
-os.environ["PYTHONIOENCODING"] = "utf-8"
-
-class TestBasic(object):
-    """Test basic functionality.
+class Base(object):
+    """Implement methods shared by all test classes.
     """
-    def setup(self):
-        self.env = TestFileEnvironment()
 
-    def teardown(self):
+    def setup_method(self, method):
+        name = "%s_%s" % (type(self).__name__, method.__name__)
+        self.cmdlinetest = CLITest(name)
+
+    def teardown_method(self, method):
         pass
 
-    def run(self, *args, **kwargs):
-        self.env.run("python", "../../timegaps.py", *args, **kwargs)
+    def run(self, arguments_unicode, expect_rc=0):
+        cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_NAME, arguments_unicode)
+        log.info("Test command:\n%s" % cmd)
+        self.cmdlinetest.run(cmd_unicode=cmd, expect_rc=expect_rc)
+
+
+class TestBasic(Base):
+    """Test basic functionality.
+    """
 
     def test_invalid_itempath_1(self):
-        self.run("-v", "days5", "nofile")
+        self.run("-v days5 nofile", 1)
+
+
