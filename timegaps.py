@@ -278,8 +278,9 @@ def parse_rules_from_cmdline(s):
     """Parse strings such as 'hours12,days5,weeks4' into rules dictionary.
     """
     tokens = s.split(",")
-    if not tokens:
-        raise ValueError("Error extracting rules from string '%s'" % s)
+    # never happens: http://docs.python.org/2/library/stdtypes.html#str.split
+    #if not tokens:
+    #    raise ValueError("Error extracting rules from string '%s'" % s)
     rules = {}
     for t in tokens:
         log.debug("Analyze token '%s'", t)
