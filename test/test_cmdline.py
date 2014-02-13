@@ -42,11 +42,11 @@ class Base(object):
     """
 
     def setup_method(self, method):
-        name = "%s_%s" % (type(self).__name__, method.__name__)
-        self.cmdlinetest = CLITest(name)
+        testname = "%s_%s" % (type(self).__name__, method.__name__)
+        self.cmdlinetest = CLITest(testname)
 
     def teardown_method(self, method):
-        pass
+        self.cmdlinetest.clear()
 
     def run(self, arguments_unicode, expect_rc=0):
         cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_NAME, arguments_unicode)
