@@ -25,13 +25,16 @@ class CmdlineInterfaceTestWindows(CmdlineInterfaceTest):
     rundirtop = RUNDIRTOP
     shellscript_ext = ".bat"
     # Use PYTHONIOENCODING for enforcing stdout encoding UTF-8 on
-    # Windows. First, I also set console code page via @chcp 65001, but
-    # according to Stinner this is buggy (*not utf-8*,
+    # Windows. I also set console code page via @chcp 65001, but
+    # according to Stinner this is buggy (not fully analogue to utf-8,
     # http://bugs.python.org/issue1602). Good news: independent of the
     # console code page set, the stdout of the console is the unmodified
     # Python stdout bytestream, which is forced to be UTF-8 via
-    # environment variable anyway.
-    preamble = "@set PYTHONIOENCODING=utf-8\n"
+    # environment variable anyway. Nevertheless, @chcp 65001 is required
+    # for special char command line arguments to be properly passed to Python
+    # (with the Win 32 sys.argv hack on the receiving end, sys.argv becomes
+    # populated with unicode objects).
+    preamble = "@chcp 65001 > nul\n@set PYTHONIOENCODING=utf-8\n"
 
 
 CLITest = CmdlineInterfaceTestUnix
@@ -56,6 +59,7 @@ class Base(object):
         self.cmdlinetest = CLITest(testname)
 
     def teardown_method(self, method):
+        #pass
         self.cmdlinetest.clear()
 
     def run(self, arguments_unicode, rc=0):
@@ -107,4 +111,11 @@ class TestSimpleErrors(Base):
         t = self.run("days5 . nofile", rc=1)
         t.in_stderr(["nofile", "Cannot access"])
 
+
+class TestSpecialChars(Base):
+    """Tests of all classes, involving Unicode challenges.
+    """
+    def test_invalid_rulesstring_smiley(self):
+        t = self.run("☺", rc=1)
+        t.in_stderr(["Invalid", "token", "☺"])
 
