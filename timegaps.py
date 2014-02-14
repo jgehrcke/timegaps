@@ -135,6 +135,7 @@ import re
 import time
 from timegaps import TimeFilter, FileSystemEntry, __version__
 
+WINDOWS = sys.platform == "win32"
 
 # Global for options, to be populated by argparse from cmdline arguments.
 options = None
@@ -155,13 +156,19 @@ def main():
     # ITEMs here in the order as consumed by argparse (first RULES, then ITEMS).
     # Doing it the other way round could produce confusing error messages.
     # Parse RULES argument.
+    # TODO: Py3
+    # sys.stdout.encoding is either derived from LC_CTYPE (set on your typical
+    # Unix system) or from environment variable PYTHONIOENCODING, which is good
+    # for overriding and making guarantees, e.g. on Windows.
+    rules_unicode = options.rules
+    if not isinstance(rules_unicode, unicode):
+        rules_unicode = options.rules.decode(sys.stdout.encoding)
     log.debug("Decode rules string.")
     try:
-        rules = parse_rules_from_cmdline(options.rules)
+        rules = parse_rules_from_cmdline(rules_unicode)
         log.info("Using rules: %s", rules)
     except ValueError as e:
         err("Error while parsing rules: '%s'." % e)
-
     if len(options.items) == 0:
         if not options.stdin:
             err("At least one item must be provided (if --stdin not set).")
@@ -277,6 +284,7 @@ def time_from_basename(path):
 def parse_rules_from_cmdline(s):
     """Parse strings such as 'hours12,days5,weeks4' into rules dictionary.
     """
+    assert isinstance(s, unicode) # TODO: Py3
     tokens = s.split(",")
     # never happens: http://docs.python.org/2/library/stdtypes.html#str.split
     #if not tokens:
@@ -410,6 +418,43 @@ def time_from_dirname(d):
 
 def dirname_from_time(t):
     return time.strftime("%Y.%m.%d_%H.%M.%S", t)
+
+
+# TODO: Py3 (this hack should not be necessary for 3.3, at least).
+if WINDOWS:
+    def win32_unicode_argv():
+        """Uses shell32.GetCommandLineArgvW to get sys.argv as a list of Unicode
+        strings.
+
+        Versions 2.x of Python don't support Unicode in sys.argv on
+        Windows, with the underlying Windows API instead replacing multi-byte
+        characters with '?'.
+
+        Solution copied from http://stackoverflow.com/a/846931/145400
+        """
+
+        from ctypes import POINTER, byref, cdll, c_int, windll
+        from ctypes.wintypes import LPCWSTR, LPWSTR
+
+        GetCommandLineW = cdll.kernel32.GetCommandLineW
+        GetCommandLineW.argtypes = []
+        GetCommandLineW.restype = LPCWSTR
+
+        CommandLineToArgvW = windll.shell32.CommandLineToArgvW
+        CommandLineToArgvW.argtypes = [LPCWSTR, POINTER(c_int)]
+        CommandLineToArgvW.restype = POINTER(LPWSTR)
+
+        cmd = GetCommandLineW()
+        argc = c_int(0)
+        argv = CommandLineToArgvW(cmd, byref(argc))
+        if argc.value > 0:
+            # Remove Python executable and commands if present
+            start = argc.value - len(sys.argv)
+            return [argv[i] for i in
+                    xrange(start, argc.value)]
+
+    # Populate sys.argv with unicode objects.
+    sys.argv = win32_unicode_argv()
 
 
 if __name__ == "__main__":
