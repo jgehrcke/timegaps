@@ -77,14 +77,14 @@ class TimeFilter(object):
         # buckets are represented as lists. The timecount for a certain bucket
         # is used as a key for storing the list (value) in the dictionary.
         # For example, `self._years_dict[2]` stores the list representing the
-        # 2-year bucket. These dictionaries and their key-value-paris are
+        # 2-year bucket. These dictionaries and their key-value-pairs are
         # created on the fly.
         #
         # There is no timecount distinction in 'recent' category, therefore
         # only one list is used for storing recent items.
         #
         # `accepted_objs` and `rejected_objs_lists` are the containers for
-        # accepted and rejected items/objects. Eventually, all objects in`objs`
+        # accepted and rejected items/objects. Eventually, all objects in `objs`
         # are to be inserted into either of both containers. Items to
         # be accepted are identified individually, and each single accepted
         # item will be stored via `accepted_objs.append(obj)`. Items to be
@@ -148,7 +148,7 @@ class TimeFilter(object):
         # The newest item in each of these category-timecount buckets is to
         # be accepted. Remove newest from the list via pop() (should be of
         # constant time complexity for the last item of a list). Then reject
-        #the (modified, if item has been popped) list.
+        # the (modified, if item has been popped) list.
         for catlabel in self.rules.keys()[:-1]:
             catdict = getattr(self, "_%s_dict" % catlabel)
             for timecount in catdict:

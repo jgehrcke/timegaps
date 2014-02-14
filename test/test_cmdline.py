@@ -117,6 +117,16 @@ class TestSimpleErrors(Base):
         t = self.run("days5 . nofile", rc=1)
         t.assert_in_stderr(["nofile", "Cannot access"])
 
+    def test_move_missingarg(self):
+        t = self.run("--move", rc=2)
+        t.assert_no_stdout()
+        t.assert_in_stderr(["--move", "expected", "argument"])
+
+    def test_excl_delete_move(self):
+        t = self.run("--delete --move DIR", rc=2)
+        t.assert_no_stdout()
+        t.assert_in_stderr(["--move", "--delete", "not allowed with"])
+
 
 class TestSimplestFilterFeatures(Base):
     """Test minimal working invocation signature that filters files.
@@ -136,12 +146,11 @@ class TestSimplestFilterFeatures(Base):
 
 
 class TestArgparseLogic(Base):
-    """Make sure that argparse is used properly.
+    """Make sure that argparse is set up properly (and works as exepected).
     """
     def test_version(self):
         t = self.run("--version")
-        # argparse makes this go to stderr, although this seems wrid.
-        # help goes to stdout.
+        # argparse makes this go to stderr, weird, help goes to stdout.
         t.assert_no_stdout()
         t.assert_is_stderr("%s\n" % __version__)
 
