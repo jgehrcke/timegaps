@@ -115,8 +115,8 @@ class TestSimpleErrors(Base):
         t.assert_in_stderr(["nofile", "Cannot access"])
 
 
-class TestSimplestFeatures(Base):
-    """Test minimal working invocation signature.
+class TestSimplestFilterFeatures(Base):
+    """Test minimal working invocation signature that filters files.
     """
     def test_accept_cwd(self):
         # Test CWD should *just* have been created, so it's recent-accepted.
@@ -128,7 +128,7 @@ class TestSimplestFeatures(Base):
     def test_reject_cwd(self):
         # Test CWD should *just* have been created, so it's years-rejected.
         t = self.run("years1 .")
-        t.assert_in_stdout(".")
+        t.assert_is_stdout(".\n")
         t.assert_no_stderr()
 
 

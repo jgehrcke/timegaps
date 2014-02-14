@@ -199,6 +199,30 @@ class CmdlineInterfaceTest(object):
             if s not in out:
                 raise WrongStdout("'%s' not in stdout." % s)
 
+    def assert_is_stdout(self, expect_stdout, encoding=None):
+        """ TODO: Same encoding rules as above.
+        """
+        if isinstance(expect_stdout, unicode):
+            if encoding is None:
+                encoding = self.shellscript_encoding
+            out = self.rawout.decode(encoding)
+        else:
+            out = self.rawout
+        if expect_stdout != out:
+            raise WrongStdout("stdout is not '%s'." % expect_stdout)
+
+    def assert_is_stderr(self, expect_stderr, encoding=None):
+        """ TODO: Same encoding rules as above.
+        """
+        if isinstance(expect_stderr, unicode):
+            if encoding is None:
+                encoding = self.shellscript_encoding
+            err = self.rawerr.decode(encoding)
+        else:
+            err = self.rawerr
+        if expect_stderr != err:
+            raise WrongStderr("stderr is not '%s'." % expect_stder)
+
 
 def _validate_stringlist(stringlist):
     """Make sure that the object returned is a list with at least one item,
