@@ -33,27 +33,26 @@ class WrongStderr(CmdlineTestError):
 
 
 class CmdlineInterfaceTest(object):
-    """Command line interface test abstraction for a given CLI proram, called
-    PROGRAM in the following paragraphs.
+    """Command line interface test abstraction for a given CLI program, called
+    PROGRAM from here on.
 
     Creates a run directory and a test shell script as a wrapper for the
-    actual test (the command to be tested is provided as unicode string,
+    actual test. The command to be tested is provided as unicode string,
     and written to this shell script in a certain encoding as given by
-    self.shellscript_encoding). This wrapper shell script becomes
+    self.shellscript_encoding. This wrapper shell script becomes
     interpreted and executed by a shell of choice (e.g. bash or cmd.exe).
-    stdout and stderr of this wrapper are streamed into real files in the
-    file system.
+    stdout and stderr of this wrapper are streamed into real files.
 
     Other CLI program test environments directly use Python's subprocess module
     for invoking PROGRAM including corresponding command line arguments. While
     in real use cases PROGRAM might also become executed this way, the largest
-    fraction of use cases is different: This automated method of testing the
+    fraction of use cases is different. This test runner's method of testing the
     command line behavior of PROGRAM resembles actual user behavior as close as
-    possbile. In most cases, a user would either invoke PROGRAM directly by
-    typing a command in a shell or write a shell script which he/she then
-    executes later.
+    possible: in most cases, a user would either invoke PROGRAM directly by
+    typing a command in a shell or write a shell script which the user executes
+    later.
 
-    This test environt here also uses Python's subprocess module for
+    This test environment here also uses Python's subprocess module for
     setting the current working directory for the test, for redirecting
     stdout and stderr to files, and for actually invoking the test shell
     script via a command as simple as
