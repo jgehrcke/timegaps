@@ -8,6 +8,9 @@ import logging
 from py.test import raises, mark
 from clitest import CmdlineInterfaceTest, CmdlineTestError, WrongExitCode
 
+sys.path.insert(0, os.path.abspath('..'))
+from timegaps import __version__
+
 
 RUNDIRTOP = "./cmdline-test"
 TIMEGAPS_NAME = "../../../timegaps.py"
@@ -129,6 +132,22 @@ class TestSimplestFilterFeatures(Base):
         # Test CWD should *just* have been created, so it's years-rejected.
         t = self.run("years1 .")
         t.assert_is_stdout(".\n")
+        t.assert_no_stderr()
+
+
+class TestArgparseLogic(Base):
+    """Make sure that argparse is used properly.
+    """
+    def test_version(self):
+        t = self.run("--version")
+        # argparse makes this go to stderr, although this seems wrid.
+        # help goes to stdout.
+        t.assert_no_stdout()
+        t.assert_is_stderr("%s\n" % __version__)
+
+    def test_help(self):
+        t = self.run("--help")
+        t.assert_in_stdout(["usage","RULES","ITEM"])
         t.assert_no_stderr()
 
 
