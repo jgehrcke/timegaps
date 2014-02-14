@@ -79,40 +79,57 @@ class TestSimpleErrors(Base):
     def test_too_few_args(self):
         # argparse ArgumentParser.error() makes program exit with code 2.
         t = self.run("", rc=2)
-        t.in_stderr("too few arguments")
+        t.assert_in_stderr("too few arguments")
 
     def test_valid_rules_missing_item_cmdline(self):
         # TODO: also test missing item / valid rules for stdin mode.
         t = self.run("days5", rc=1)
-        t.in_stderr("one item must be provided (if --stdin not set")
+        t.assert_in_stderr("one item must be provided (if --stdin not set")
 
     def test_invalid_rulesstring_missing_item(self):
         # Rules are checked first, error must indicate invalid rules.
         t = self.run("bar", rc=1)
-        t.in_stderr(["Invalid", "token", "bar"])
+        t.assert_in_stderr(["Invalid", "token", "bar"])
 
     def test_empty_rulesstring(self):
         # Rules are checked first, error must indicate invalid rules.
         t = self.run('""', rc=1)
-        t.in_stderr("Token is empty")
+        t.assert_in_stderr("Token is empty")
 
     def test_invalid_rulesstring_category(self):
         # Rules are checked first, error must indicate invalid rules.
         t = self.run('peter5', rc=1)
-        t.in_stderr(["Time category", "invalid"])
+        t.assert_in_stderr(["Time category", "invalid"])
 
     def test_invalid_rulesstring_wrong_item(self):
         # Rules are checked first, error must indicate invalid rules.
         t = self.run("foo nofile", rc=1)
-        t.in_stderr(["Invalid", "token", "foo"])
+        t.assert_in_stderr(["Invalid", "token", "foo"])
 
     def test_invalid_itempath_1(self):
         t = self.run("days5 nofile", rc=1)
-        t.in_stderr(["nofile", "Cannot access"])
+        t.assert_in_stderr(["nofile", "Cannot access"])
 
     def test_invalid_itempath_2(self):
         t = self.run("days5 . nofile", rc=1)
-        t.in_stderr(["nofile", "Cannot access"])
+        t.assert_in_stderr(["nofile", "Cannot access"])
+
+
+class TestSimplestFeatures(Base):
+    """Test minimal working invocation signature.
+    """
+    def test_accept_cwd(self):
+        # Test CWD should *just* have been created, so it's recent-accepted.
+        # All accepted means no stdout. No verbosity means no stderr.
+        t = self.run("recent10 .")
+        t.assert_no_stdout()
+        t.assert_no_stderr()
+
+    def test_reject_cwd(self):
+        # Test CWD should *just* have been created, so it's years-rejected.
+        t = self.run("years1 .")
+        t.assert_in_stdout(".")
+        t.assert_no_stderr()
 
 
 class TestSpecialChars(Base):
@@ -120,5 +137,5 @@ class TestSpecialChars(Base):
     """
     def test_invalid_rulesstring_smiley(self):
         t = self.run("☺", rc=1)
-        t.in_stderr(["Invalid", "token", "☺"])
+        t.assert_in_stderr(["Invalid", "token", "☺"])
 

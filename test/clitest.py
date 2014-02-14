@@ -164,7 +164,22 @@ class CmdlineInterfaceTest(object):
         if rc != expect_rc:
             raise WrongExitCode("Expected %s, got %s" % (expect_rc, rc))
 
-    def in_stderr(self, expect_in_stderr, encoding=None):
+    def assert_no_stderr(self):
+        if not self.rawerr == "":
+            raise WrongStderr("stderr not empty.")
+
+    def assert_no_stdout(self):
+        if not self.rawout == "":
+            raise WrongStdout("stdout not empty.")
+
+    def assert_in_stderr(self, expect_in_stderr, encoding=None):
+        """ TODO: Implement proper data handling: It should be possible to
+        - provide byte string: then search for byte needle in byte haystack
+        - unicode string: then decode haystack and search for unicode needle
+          in unicode haystack.
+        In the latter case, the default codec is `self.shellscript_encoding`.
+        If `encoding` is provided, use this.
+        """
         # Process expect_in_stderr/out. Each might be None, a single strings or
         # a list of strings.
         if encoding is None:
@@ -175,8 +190,7 @@ class CmdlineInterfaceTest(object):
             if s not in err:
                 raise WrongStderr("'%s' not in stderr." % s)
 
-
-    def in_stdout(self, expect_in_stdout, encoding=None):
+    def assert_in_stdout(self, expect_in_stdout, encoding=None):
         if encoding is None:
             encoding = self.shellscript_encoding
         out = self.rawout.decode(encoding)
