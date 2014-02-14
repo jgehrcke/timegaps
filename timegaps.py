@@ -253,6 +253,8 @@ def prepare_input():
         # Also, interesting in this respect:
         # http://stackoverflow.com/a/846931/145400
 
+        # Definite choice for Python 2 and Unix:
+        # keep paths as byte strings.
         modtime = None
         if options.time_from_basename:
             modtime = time_from_basename(path)

@@ -26,6 +26,7 @@ class FilterItem(object):
     """
     def __init__(self, modtime, text=None):
         # TODO: text type validation that works for Py2+3.
+        assert isinstance(text, unicode)
         self.text = text
         if isinstance(modtime, float) :
             self.modtime = modtime
@@ -76,7 +77,13 @@ class FileSystemEntry(FilterItem):
             # localized.
             modtime = self._stat.st_mtime
         self.path = path
-        FilterItem.__init__(self, text=path, modtime=modtime)
+        # FilterItem requires unicode `text` attribute, decode path if not
+        # already unicode:
+        t = path
+        # TODO: Py3
+        if not isinstance(t, unicode):
+            t = t.decode(sys.getfilesystemencoding())
+        FilterItem.__init__(self, text=t, modtime=modtime)
 
     def _get_type(self, statobj):
         """Determine file type from stat object `statobj`.
