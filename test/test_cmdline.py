@@ -17,6 +17,9 @@ WINDOWS = sys.platform == "win32"
 
 class CmdlineInterfaceTestUnix(CmdlineInterfaceTest):
     rundirtop = RUNDIRTOP
+    # Set PYTHONIOENCODING. When connected to pipes (as in the context of
+    # py.test, sys.stdout.encoding is None otherwise.)
+    preamble = 'export PYTHONIOENCODING="utf-8"\n'
 
 
 class CmdlineInterfaceTestWindows(CmdlineInterfaceTest):

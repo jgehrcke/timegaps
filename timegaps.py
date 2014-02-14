@@ -147,6 +147,13 @@ def main():
         log.setLevel(logging.INFO)
     elif options.verbose == 2:
         log.setLevel(logging.DEBUG)
+
+    # Also see http://stackoverflow.com/a/4374457/145400
+    if sys.stdout.encoding is None:
+        err(("Don't know which encoding to use when writing data to stdout. "
+            "Please set environment variable PYTHONIOENCODING. "
+            "Example: export PYTHONIOENCODING=UTF-8."))
+
     log.debug("Options namespace:\n%s", options)
 
     # Validate options (logic not tested automatically by `argparse`).
