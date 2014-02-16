@@ -2,6 +2,7 @@
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 
 import os
+import sys
 import stat
 import datetime
 import logging
@@ -26,7 +27,8 @@ class FilterItem(object):
     """
     def __init__(self, modtime, text=None):
         # TODO: text type validation that works for Py2+3.
-        assert isinstance(text, unicode)
+        if text is not None:
+            assert isinstance(text, unicode)
         self.text = text
         if isinstance(modtime, float) :
             self.modtime = modtime

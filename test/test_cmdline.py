@@ -27,7 +27,8 @@ class CmdlineInterfaceTestUnix(CmdlineInterfaceTest):
 
 class CmdlineInterfaceTestWindows(CmdlineInterfaceTest):
     shellpath = "cmd.exe"
-    shellargs = ["/C"]
+    # Execute command (/C) and turn off echo (prompt etc, /Q).
+    shellargs = ["/Q", "/C"]
     rundirtop = RUNDIRTOP
     shellscript_ext = ".bat"
     # Use PYTHONIOENCODING for enforcing stdout encoding UTF-8 on
@@ -65,8 +66,8 @@ class Base(object):
         self.cmdlinetest = CLITest(testname)
 
     def teardown_method(self, method):
-        #pass
-        self.cmdlinetest.clear()
+        pass
+        #self.cmdlinetest.clear()
 
     def run(self, arguments_unicode, rc=0):
         cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_NAME, arguments_unicode)
@@ -80,7 +81,8 @@ class TestSimpleErrors(Base):
     """
 
     def test_too_few_args(self):
-        # argparse ArgumentParser.error() makes program exit with code 2.
+        # argparse ArgumentParser.error() makes program exit with code 2
+        # on Unix. On Windows, it seems to be 1.
         t = self.run("", rc=2)
         t.assert_in_stderr("too few arguments")
 
