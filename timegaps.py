@@ -375,7 +375,8 @@ def parse_options():
     # validate later.
     parser.add_argument("items", metavar="ITEM", action="store", nargs='*',
         help=("Items for filtering. Interpreted as paths to file system "
-            "entries by default. Must be omitted in --stdin mode.")
+            "entries by default. Must be omitted in --stdin mode. It is your "
+            "responsibility to not provide duplicate items.")
         )
 
     filehandlegroup = parser.add_mutually_exclusive_group()
