@@ -130,7 +130,7 @@ class CmdlineInterfaceTest(object):
         preamble = self.preamble if self.preamble else ""
         return "%s%s\n" % (preamble, cmd_unicode)
 
-    def run(self, cmd_unicode, expect_rc=0, log_output=True):
+    def run(self, cmd_unicode, expect_rc=0, stdin=None, log_output=True):
         shellscript_content_bytes = self._script_contents(cmd_unicode).encode(
             self.shellscript_encoding)
         self.add_file(self.shellscript_name, shellscript_content_bytes)
@@ -141,9 +141,17 @@ class CmdlineInterfaceTest(object):
         cmd.append(self.shellscript_name)
         of = open(self.outfilepath, "w")
         ef = open(self.errfilepath, "w")
+        sin = None
+        if stdin is not None:
+            assert isinstance(stdin, str) # Must be bytestring, check for Py3.
+            sin = subprocess.PIPE
         log.debug("Popen with cmd: %s", cmd)
         try:
-            sp = subprocess.Popen(cmd, stdout=of, stderr=ef, cwd=self.rundir)
+            sp = subprocess.Popen(
+                cmd, stdout=of, stderr=ef, stdin=sin, cwd=self.rundir)
+            if stdin is not None:
+                sp.stdin.write(stdin)
+                sp.stdin.close()
             sp.wait()
             rc = sp.returncode
             log.info("Test returncode: %s", rc)
