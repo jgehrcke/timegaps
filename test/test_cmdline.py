@@ -90,8 +90,9 @@ class Base(object):
         return self.cmdlinetest
 
 
-class TestArgparseErrors(Base):
-    """Test argparse error detection, validate error messages.
+class TestArgparseLogic(Base):
+    """Test argparse argument logic and argparse error detection (also validate
+    error messages).
     """
 
     def test_too_few_args(self):
@@ -131,64 +132,102 @@ class TestArgumentErrors(Base):
         # TODO: also test missing item / valid rules for stdin mode.
         t = self.run("days5", rc=1)
         t.assert_in_stderr("one ITEM must be provided (if --stdin not set")
+        t.assert_no_stdout()
 
     def test_invalid_rulesstring_missing_item(self):
         # Rules are checked first, error must indicate invalid rules.
         t = self.run("bar", rc=1)
         t.assert_in_stderr(["Invalid", "token", "bar"])
+        t.assert_no_stdout()
 
     def test_empty_rulesstring(self):
         # Rules are checked first, error must indicate invalid rules.
         t = self.run('""', rc=1)
         t.assert_in_stderr("Token is empty")
+        t.assert_no_stdout()
 
     def test_invalid_rulesstring_category(self):
         # Rules are checked first, error must indicate invalid rules.
         t = self.run('peter5', rc=1)
         t.assert_in_stderr(["Time category", "invalid"])
+        t.assert_no_stdout()
 
     def test_invalid_rulesstring_wrong_item(self):
         # Rules are checked first, error must indicate invalid rules.
         t = self.run("foo nofile", rc=1)
         t.assert_in_stderr(["Invalid", "token", "foo"])
+        t.assert_no_stdout()
 
     def test_invalid_itempath_1(self):
         t = self.run("days5 nofile", rc=1)
         t.assert_in_stderr(["nofile", "Cannot access"])
+        t.assert_no_stdout()
 
     def test_invalid_itempath_2(self):
         t = self.run("days5 . nofile", rc=1)
         t.assert_in_stderr(["nofile", "Cannot access"])
+        t.assert_no_stdout()
 
     def test_invalid_move_target(self):
         t = self.run("--move nodir days5 . nofile", rc=1)
         t.assert_in_stderr("--move target not a directory")
+        t.assert_no_stdout()
 
     def test_one_item_if_stdin(self):
         t = self.run("--stdin days5 .", rc=1)
         t.assert_in_stderr("No ITEM must be provided when --stdin")
+        t.assert_no_stdout()
+
+    def test_all_zero_rules(self):
+        t = self.run("-a days0 .", rc=1)
+        t.assert_in_stderr("one count > 0 required")
+        t.assert_no_stdout()
 
 
 class TestSimplestFilterFeatures(Base):
     """Test minimal working invocation signature that filters files.
     """
-    def test_accept_cwd(self):
-        # Test CWD should *just* have been created, so it's recent-accepted.
+    def test_accept_cwd_recent(self):
+        # CWD should *just* have been created, so it is recent-accepted.
         # All accepted means no stdout. No verbosity means no stderr.
         t = self.run("recent10 .")
         t.assert_no_stdout()
         t.assert_no_stderr()
 
-    def test_reject_cwd(self):
-        # Test CWD should *just* have been created, so it's years-rejected.
+    def test_accept_cwd_invert_1(self):
+        t = self.run("--accepted recent10 .")
+        t.assert_is_stdout(".\n")
+        t.assert_no_stderr()
+
+    def test_accept_cwd_invert_2(self):
+        # Like above, but try the argument short version.
+        t = self.run("-a recent10 .")
+        t.assert_is_stdout(".\n")
+        t.assert_no_stderr()
+
+    def test_reject_cwd_years(self):
+        # CWD should *just* have been created, so it's years-rejected.
         t = self.run("years1 .")
         t.assert_is_stdout(".\n")
+        t.assert_no_stderr()
+
+    def test_reject_cwd_years_invert(self):
+        # CWD is years-rejected, only print accepted -> no output.
+        t = self.run("--accepted years1 .")
+        t.assert_no_stdout()
         t.assert_no_stderr()
 
 
 class TestMisc(Base):
     """Tests that do not fit in other categories.
     """
+    def test_multiswitch_1(self):
+        # Program should ignore multiple occurrences of simple switches.
+        # This is a test from above, with redundant args.
+        t = self.run("-a -a recent10 .")
+        t.assert_is_stdout(".\n")
+        t.assert_no_stderr()
+
     def test_verbosity_setting_0(self):
         t = self.run("-m nodir days5 nofile", rc=1)
         t.assert_in_stderr(["ERROR", "not a directory"])
