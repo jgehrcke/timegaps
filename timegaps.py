@@ -218,12 +218,30 @@ def main():
 
     actonitems = rejected if not options.accepted else accepted
 
-    # Item output section.
-    # The `text` attribute of items is a unicode object
+    # Item output section. Write binary data directly to stdout. Use pre-
+    # existing binary data (e.g. paths on Unix) or encode unicode to
+    # %whateverencoding%.
+    # sys.stdout.encoding might not always be the right thing:
+    # http://drj11.wordpress.com/2007/05/14/python-how-is-sysstdoutencoding-chosen/
+    # However, if PYTHONIOENCODING was set, then sys.stdout.encoding is that.
+    enc = sys.stdout.encoding
+    sep = "\n"
+    if options.nullsep:
+        sep = "\0"
+    sep_bytes = sep.encode(enc)
     for ai in actonitems:
-        # sys.stdout.encoding is not always the right thing:
-        # http://drj11.wordpress.com/2007/05/14/python-how-is-sysstdoutencoding-chosen/
-        sys.stdout.write(("%s\n" % ai.text).encode(sys.stdout.encoding))
+        # If `ai` of `FileSystemEntry` type, then `path` attribute can be
+        # unicode or bytes. If bytes, then write them as they are. If unicode,
+        # encode with `enc`.
+        if isinstance(ai, FileSystemEntry):
+            itemstring_bytes = ai.path # path is byte string
+            if isinstance(ai.path, unicode): # TODO: Py3.
+                itemstring_bytes = ai.path.encode(enc)
+        else:
+            # `ai` is type FilterItem, `text` attribute always is unicode.
+            itemstring_bytes = ai.text.encode(enc)
+        sys.stdout.write("%s%s" % (itemstring_bytes, sep_bytes))
+        # In Python 3, write bytes to stdout buffer (after detach).
 
 
 def prepare_input():
