@@ -18,6 +18,15 @@ PYTHON_EXE = "python"
 WINDOWS = sys.platform == "win32"
 
 
+if WINDOWS:
+    # Simple solution for LookupError: unknown encoding: cp65001 on Python
+    # versions < 3.3 (works in most cases). Ref:
+    # http://stackoverflow.com/a/3259271/145400
+    import codecs
+    codecs.register(
+        lambda name: codecs.lookup('utf-8') if name == 'cp65001' else None)
+
+
 class CmdlineInterfaceTestUnix(CmdlineInterfaceTest):
     rundirtop = RUNDIRTOP
     # Set PYTHONIOENCODING. When connected to pipes (as in the context of
@@ -33,8 +42,13 @@ class CmdlineInterfaceTestWindows(CmdlineInterfaceTest):
     shellscript_ext = ".bat"
     # Use PYTHONIOENCODING for enforcing stdout encoding UTF-8 on
     # Windows. I also set console code page via @chcp 65001, but
-    # according to Stinner this is buggy (not fully analogue to utf-8,
-    # http://bugs.python.org/issue1602). Good news: independent of the
+    # this is not fully analogue to utf-8. References:
+    #   - http://bugs.python.org/issue1602
+    #   - http://bugs.python.org/issue6058#msg97731
+    #   - http://bugs.python.org/issue13216
+    #   - http://bugs.python.org/issue13216#msg145901
+    #   - http://stackoverflow.com/q/878972/145400
+    # Good news: independent of the
     # console code page set, the stdout of the console is the unmodified
     # Python stdout bytestream, which is forced to be UTF-8 via
     # environment variable anyway. Nevertheless, @chcp 65001 is required
@@ -76,8 +90,8 @@ class Base(object):
         return self.cmdlinetest
 
 
-class TestSimpleErrors(Base):
-    """Test for basic error detection and proper error messages.
+class TestArgumentErrors(Base):
+    """Test argparse error detection, validate error messages.
     """
 
     def test_too_few_args(self):
@@ -129,6 +143,18 @@ class TestSimpleErrors(Base):
         t.assert_no_stdout()
         t.assert_in_stderr(["--move", "--delete", "not allowed with"])
 
+    def test_excl_time_options(self):
+        t = self.run("--time-from-string foo --time-from-basename bar", rc=2)
+        t.assert_no_stdout()
+        t.assert_in_stderr(["--time-from-basename",
+            "not allowed with argument --time-from-string"])
+
+    def test_excl_time_options_2(self):
+        t = self.run("--time-from-string a --time-from-basename b c d", rc=2)
+        t.assert_no_stdout()
+        t.assert_in_stderr(["--time-from-basename",
+            "not allowed with argument --time-from-string"])
+
 
 class TestSimplestFilterFeatures(Base):
     """Test minimal working invocation signature that filters files.
@@ -147,7 +173,7 @@ class TestSimplestFilterFeatures(Base):
         t.assert_no_stderr()
 
 
-class TestArgparseLogic(Base):
+class TestArgparseFeatures(Base):
     """Make sure that argparse is set up properly (and works as exepected).
     """
     def test_version(self):
@@ -159,6 +185,11 @@ class TestArgparseLogic(Base):
     def test_help(self):
         t = self.run("--help")
         t.assert_in_stdout(["usage","RULES","ITEM"])
+        t.assert_no_stderr()
+
+    def test_extended_help(self):
+        t = self.run("--extended-help")
+        t.assert_in_stdout(["Input:","Output:","Actions:", "Classification"])
         t.assert_no_stderr()
 
 
