@@ -90,7 +90,7 @@ class Base(object):
         return self.cmdlinetest
 
 
-class TestArgumentErrors(Base):
+class TestArgparseErrors(Base):
     """Test argparse error detection, validate error messages.
     """
 
@@ -100,6 +100,33 @@ class TestArgumentErrors(Base):
         t = self.run("", rc=2)
         t.assert_in_stderr("too few arguments")
 
+    def test_move_missingarg(self):
+        t = self.run("--move", rc=2)
+        t.assert_no_stdout()
+        t.assert_in_stderr(["--move", "expected", "argument"])
+
+    def test_excl_delete_move(self):
+        t = self.run("--delete --move DIR", rc=2)
+        t.assert_no_stdout()
+        t.assert_in_stderr(["--move", "--delete", "not allowed with"])
+
+    def test_excl_time_options(self):
+        t = self.run("--time-from-string foo --time-from-basename bar", rc=2)
+        t.assert_no_stdout()
+        t.assert_in_stderr(["--time-from-basename",
+            "not allowed with argument --time-from-string"])
+
+    def test_excl_time_options_2(self):
+        t = self.run("--time-from-string a --time-from-basename b c d", rc=2)
+        t.assert_no_stdout()
+        t.assert_in_stderr(["--time-from-basename",
+            "not allowed with argument --time-from-string"])
+
+
+class TestArgumentErrors(Base):
+    """Test argument error detection not performed by argparse,
+    validate error messages.
+    """
     def test_valid_rules_missing_item_cmdline(self):
         # TODO: also test missing item / valid rules for stdin mode.
         t = self.run("days5", rc=1)
@@ -132,28 +159,6 @@ class TestArgumentErrors(Base):
     def test_invalid_itempath_2(self):
         t = self.run("days5 . nofile", rc=1)
         t.assert_in_stderr(["nofile", "Cannot access"])
-
-    def test_move_missingarg(self):
-        t = self.run("--move", rc=2)
-        t.assert_no_stdout()
-        t.assert_in_stderr(["--move", "expected", "argument"])
-
-    def test_excl_delete_move(self):
-        t = self.run("--delete --move DIR", rc=2)
-        t.assert_no_stdout()
-        t.assert_in_stderr(["--move", "--delete", "not allowed with"])
-
-    def test_excl_time_options(self):
-        t = self.run("--time-from-string foo --time-from-basename bar", rc=2)
-        t.assert_no_stdout()
-        t.assert_in_stderr(["--time-from-basename",
-            "not allowed with argument --time-from-string"])
-
-    def test_excl_time_options_2(self):
-        t = self.run("--time-from-string a --time-from-basename b c d", rc=2)
-        t.assert_no_stdout()
-        t.assert_in_stderr(["--time-from-basename",
-            "not allowed with argument --time-from-string"])
 
 
 class TestSimplestFilterFeatures(Base):
