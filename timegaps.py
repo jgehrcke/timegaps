@@ -148,6 +148,7 @@ def main():
     elif options.verbose == 2:
         log.setLevel(logging.DEBUG)
 
+    # Be explicit about output encoding.
     # Also see http://stackoverflow.com/a/4374457/145400
     if sys.stdout.encoding is None:
         err(("Don't know which encoding to use when writing data to stdout. "
@@ -176,9 +177,12 @@ def main():
         log.info("Using rules: %s", rules)
     except ValueError as e:
         err("Error while parsing rules: '%s'." % e)
-    if len(options.items) == 0:
-        if not options.stdin:
-            err("At least one item must be provided (if --stdin not set).")
+    if not options.stdin:
+        if len(options.items) == 0:
+            err("At least one ITEM must be provided (if --stdin not set).")
+    else:
+        if len(options.items) > 0:
+            err("No ITEM must be provided when --stdin is set.")
 
     # Determine reference time and set up `TimeFilter` instance. Do this as
     # early as possible: might raise error.
@@ -367,7 +371,7 @@ def parse_options():
     # validate later.
     parser.add_argument("items", metavar="ITEM", action="store", nargs='*',
         help=("Items for filtering. Interpreted as paths to file system "
-            "entries by default. Not required in --stdin mode.")
+            "entries by default. Must be omitted in --stdin mode.")
         )
 
     filehandlegroup = parser.add_mutually_exclusive_group()

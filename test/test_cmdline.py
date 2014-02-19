@@ -130,7 +130,7 @@ class TestArgumentErrors(Base):
     def test_valid_rules_missing_item_cmdline(self):
         # TODO: also test missing item / valid rules for stdin mode.
         t = self.run("days5", rc=1)
-        t.assert_in_stderr("one item must be provided (if --stdin not set")
+        t.assert_in_stderr("one ITEM must be provided (if --stdin not set")
 
     def test_invalid_rulesstring_missing_item(self):
         # Rules are checked first, error must indicate invalid rules.
@@ -159,6 +159,14 @@ class TestArgumentErrors(Base):
     def test_invalid_itempath_2(self):
         t = self.run("days5 . nofile", rc=1)
         t.assert_in_stderr(["nofile", "Cannot access"])
+
+    def test_invalid_move_target(self):
+        t = self.run("--move nodir days5 . nofile", rc=1)
+        t.assert_in_stderr("--move target not a directory")
+
+    def test_one_item_if_stdin(self):
+        t = self.run("--stdin days5 .", rc=1)
+        t.assert_in_stderr("No ITEM must be provided when --stdin")
 
 
 class TestSimplestFilterFeatures(Base):
