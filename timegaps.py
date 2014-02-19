@@ -133,7 +133,7 @@ import argparse
 import logging
 import re
 import time
-from timegaps import TimeFilter, FileSystemEntry, __version__
+from timegaps import TimeFilter, TimeFilterError, FileSystemEntry, __version__
 
 WINDOWS = sys.platform == "win32"
 
@@ -194,7 +194,10 @@ def main():
         reference_time = time.time()
     log.info("Using reference time %s (%s)." % (
         reference_time, time.asctime(time.localtime(reference_time))))
-    timefilter = TimeFilter(rules, reference_time)
+    try:
+        timefilter = TimeFilter(rules, reference_time)
+    except TimeFilterError as e:
+        err("Error upon time filter setup: %s" % e)
 
     if options.move is not None:
         if not os.path.isdir(options.move):
