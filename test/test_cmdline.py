@@ -189,11 +189,28 @@ class TestSimplestFilterFeatures(Base):
 class TestMisc(Base):
     """Tests that do not fit in other categories.
     """
-    def test_verbosity_setting(self):
-        t = self.run("-v -m nodir days5", rc=1)
-        t.assert_in_stderr("INFO")
+    def test_verbosity_setting_0(self):
+        t = self.run("-m nodir days5 nofile", rc=1)
+        t.assert_in_stderr(["ERROR", "not a directory"])
+        t.assert_not_in_stderr(["DEBUG", "INFO"])
         t.assert_no_stdout()
 
+    def test_verbosity_setting_1(self):
+        t = self.run("-v -m nodir days5 nofile", rc=1)
+        t.assert_in_stderr(["ERROR", "not a directory"])
+        t.assert_in_stderr(
+            ["INFO", "Using reference time", "Using rules", "Exit with code 1"])
+        t.assert_not_in_stderr("DEBUG")
+        t.assert_no_stdout()
+
+    def test_verbosity_setting_2(self):
+        t = self.run("-vv -m nodir days5 nofile", rc=1)
+        t.assert_in_stderr(["ERROR", "not a directory"])
+        t.assert_in_stderr(
+            ["INFO", "Using reference time", "Using rules", "Exit with code 1"])
+        t.assert_in_stderr(
+            ["DEBUG", "Options namespace", "Decode rules", "TimeFilter"])
+        t.assert_no_stdout()
 
 
 class TestArgparseFeatures(Base):

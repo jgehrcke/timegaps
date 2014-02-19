@@ -301,7 +301,7 @@ class CmdlineInterfaceTest(object):
 
 
 def _list_string_type(o):
-    """ `o` must be a string or a list of strings. A string must either be byte
+    """`o` must be a string or a list of strings. A string must either be byte
     string or unicode string. If `o` is a list, all elements must be of same
     type. If `o` is a single string, transform it to a 1-element-list.
 

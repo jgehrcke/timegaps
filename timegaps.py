@@ -192,7 +192,8 @@ def main():
     else:
         log.debug("Get reference time: now.")
         reference_time = time.time()
-    log.info("Using reference time %s." % reference_time)
+    log.info("Using reference time %s (%s)." % (
+        reference_time, time.asctime(time.localtime(reference_time))))
     timefilter = TimeFilter(rules, reference_time)
 
     if options.move is not None:
