@@ -184,8 +184,10 @@ class TestArgumentErrors(Base):
         t.assert_no_stdout()
 
 
-class TestSimplestFilterFeatures(Base):
-    """Test minimal working invocation signature that filters files.
+class TestSimpleFilterFeaturesCWD(Base):
+    """Test minimal invocation signatures that filter files. The only file
+    system entry used in these tests is the current working directory, which
+    has just (recently!) been modified.
     """
     def test_accept_cwd_recent(self):
         # CWD should *just* have been created, so it is recent-accepted.
@@ -215,6 +217,28 @@ class TestSimplestFilterFeatures(Base):
         # CWD is years-rejected, only print accepted -> no output.
         t = self.run("--accepted years1 .")
         t.assert_no_stdout()
+        t.assert_no_stderr()
+
+    def test_reject_cwd_years_multiple_times(self):
+        # Duplicate items are treated independently, I cannot think of a
+        # use case where providing duplicates makes sense. Still, this behavior
+        # is nice for testing.
+        t = self.run("years1 . . . . . .")
+        t.assert_is_stdout(".\n.\n.\n.\n.\n.\n")
+        t.assert_no_stderr()
+
+    def test_cwd_recent_multiple_times(self):
+        # Accept 10 recent, print accepted, provide 5 recent -> print 5
+        t = self.run("-a recent10 . . . . .")
+        t.assert_is_stdout(".\n.\n.\n.\n.\n")
+        t.assert_no_stderr()
+        # Accept 4 recent, print accepted, provide 5 recent -> print 4
+        t = self.run("-a recent4 . . . . .")
+        t.assert_is_stdout(".\n.\n.\n.\n")
+        t.assert_no_stderr()
+        # Accept 4 recent, print rejected, provide 5 recent -> print 1
+        t = self.run("recent4 . . . . .")
+        t.assert_is_stdout(".\n")
         t.assert_no_stderr()
 
 
