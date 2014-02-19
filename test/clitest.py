@@ -173,58 +173,78 @@ class CmdlineInterfaceTest(object):
             raise WrongStdout("stdout not empty.")
 
     def assert_in_stderr(self, expect_in_stderr, encoding=None):
-        """ TODO: Implement proper data handling: It should be possible to
-        - provide byte string: then search for byte needle in byte haystack
-        - unicode string: then decode haystack and search for unicode needle
+        """ If
+        - byte string provided: search for byte needle in byte haystack.
+        - unicode string provided: decode haystack and search for unicode needle
           in unicode haystack.
-        In the latter case, the default codec is `self.shellscript_encoding`.
+        In the latter case the default codec is `self.shellscript_encoding`.
         If `encoding` is provided, use this.
         """
-        # Process expect_in_stderr/out. Each might be None, a single strings or
-        # a list of strings.
-        if encoding is None:
-            encoding = self.shellscript_encoding
-        err = self.rawerr.decode(encoding)
-        expect_in_stderr = _validate_stringlist(expect_in_stderr)
+        err = self.rawerr
+        if self._get_string_type(expect_in_stderr) == unicode:
+            err = self._decode_stderr(encoding)
+        expect_in_stderr = _stringlist(expect_in_stderr)
         for s in expect_in_stderr:
             if s not in err:
                 raise WrongStderr("'%s' not in stderr." % s)
 
     def assert_in_stdout(self, expect_in_stdout, encoding=None):
-        if encoding is None:
-            encoding = self.shellscript_encoding
-        out = self.rawout.decode(encoding)
-        expect_in_stdout = _validate_stringlist(expect_in_stdout)
+        out = self.rawout
+        if self._get_string_type(expect_in_stdout) == unicode:
+            out = self._decode_stdout(encoding)
+        expect_in_stdout = _stringlist(expect_in_stdout)
         for s in expect_in_stdout:
             if s not in out:
                 raise WrongStdout("'%s' not in stdout." % s)
 
     def assert_is_stdout(self, expect_stdout, encoding=None):
-        """ TODO: Same encoding rules as above.
-        """
+        out = self.rawout
         if isinstance(expect_stdout, unicode):
-            if encoding is None:
-                encoding = self.shellscript_encoding
-            out = self.rawout.decode(encoding)
-        else:
-            out = self.rawout
+            out = self._decode_stdout(encoding)
         if expect_stdout != out:
             raise WrongStdout("stdout is not '%s'." % expect_stdout)
 
     def assert_is_stderr(self, expect_stderr, encoding=None):
-        """ TODO: Same encoding rules as above.
-        """
+        err = self.rawerr
         if isinstance(expect_stderr, unicode):
-            if encoding is None:
-                encoding = self.shellscript_encoding
-            err = self.rawerr.decode(encoding)
-        else:
-            err = self.rawerr
+            err = self._decode_stderr(encoding)
         if expect_stderr != err:
             raise WrongStderr("stderr is not '%s'." % expect_stder)
 
+    def assert_not_in_stdout(self, not_in_stdout, encoding=None):
+        pass
 
-def _validate_stringlist(stringlist):
+    def assert_not_in_stderr(self, not_in_stderr, encoding=None):
+        pass
+
+    def _decode_stdout(self, encoding):
+        if encoding is None:
+            encoding = self.shellscript_encoding
+        return self.rawout.decode(encoding)
+
+    def _decode_stderr(self, encoding):
+        if encoding is None:
+            encoding = self.shellscript_encoding
+        return self.rawerr.decode(encoding)
+
+    def _get_string_type(self, o):
+        """ `o` must either be a string or a list of strings. If it is a list,
+        it must contain either only byte strings or only unicode strings.
+        Return string type.
+        """
+        t = type(o)
+        if isinstance(o, list):
+            ts = list(set(type(_) for _ in o))
+            if len(ts) > 1:
+                raise Exception("List %r must contain only one data type." % o)
+            t = ts[0]
+        # TODO: Py3
+        if t == str or t == unicode:
+            return t
+        raise Exception("%r must be/contain byte or unicode string(s)" % o)
+
+
+def _stringlist(stringlist):
     """Make sure that the object returned is a list with at least one item,
     where all items are unicode objects. If a single unicode item is provided,
     transform it to a 1-element-list.
