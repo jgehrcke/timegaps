@@ -186,6 +186,16 @@ class TestSimplestFilterFeatures(Base):
         t.assert_no_stderr()
 
 
+class TestMisc(Base):
+    """Tests that do not fit in other categories.
+    """
+    def test_verbosity_setting(self):
+        t = self.run("-v -m nodir days5", rc=1)
+        t.assert_in_stderr("INFO")
+        t.assert_no_stdout()
+
+
+
 class TestArgparseFeatures(Base):
     """Make sure that argparse is set up properly (and works as exepected).
     """

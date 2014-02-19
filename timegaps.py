@@ -387,7 +387,7 @@ def parse_options():
         help=("Read input items from stdin (default separator: newline).")
         )
     parser.add_argument("-0", "--nullsep", action="store_true",
-        help=("Input and output item separation is NUL character "
+        help=("Input and output item separator is NUL character "
             "instead of newline character.")
         )
     parser.add_argument("-t", "--reference-time", action="store",
