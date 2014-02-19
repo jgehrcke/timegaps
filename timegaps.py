@@ -180,8 +180,8 @@ def main():
         if not options.stdin:
             err("At least one item must be provided (if --stdin not set).")
 
-    # Determine reference time and already set up `TimeFilter` instance (if
-    # this raises an error, it's raised in an early stage).
+    # Determine reference time and set up `TimeFilter` instance. Do this as
+    # early as possible: might raise error.
     if options.reference_time is not None:
         log.debug("Parse reference time from cmdline.")
         raise NotImplemented
@@ -190,6 +190,10 @@ def main():
         reference_time = time.time()
     log.info("Using reference time %s." % reference_time)
     timefilter = TimeFilter(rules, reference_time)
+
+    if options.move is not None:
+        if not os.path.isdir(options.move):
+            err("--move target not a directory: '%s'" % options.move)
 
     # Item input section.
     log.info("Start collecting items.")
