@@ -165,36 +165,38 @@ class CmdlineInterfaceTest(object):
             raise WrongExitCode("Expected %s, got %s" % (expect_rc, rc))
 
     def assert_no_stderr(self):
-        """Raises `WrongStderr` if standard error is not empty.
-        """
+        """Raise `WrongStderr` if standard error is not empty."""
         if not self.rawerr == "":
             raise WrongStderr("stderr not empty.")
 
     def assert_no_stdout(self):
-        """Raises `WrongStdout` if standard output is not empty.
-        """
+        """Raise `WrongStdout` if standard output is not empty."""
         if not self.rawout == "":
             raise WrongStdout("stdout not empty.")
 
-    # TODO: rename expect_in and not_in to strings
-    def assert_in_stdout(self, expect_in_stdout, encoding=None):
-        """ If `expect_in_stdout` is byte string search for byte needle in byte
+    def assert_in_stdout(self, strings, encoding=None):
+        """Verify that one or more strings is/are in standard output.
+
+        If `strings` is byte string search for byte needle in byte
         haystack. If it is unicode string, decode haystack and search for
         unicode needle in unicode haystack. In the latter case, use
         `self.shellscript_encoding` if `encoding` is not provided.
 
-        `expect_in_stdout` can be either a single byte or unicode string or a
+        `strings` can be either a single byte or unicode string or a
         list of strings of the same type.
 
-        Raises `WrongStdout` in case of mismatch.
+        Raises:
+            `WrongStdout` in case of mismatch.
         """
-        out, expectlist = self._klazonk(self.rawout, expect_in_stdout, encoding)
-        for s in expectlist:
+        out, expected = self._klazonk(self.rawout, strings, encoding)
+        for s in expected:
             if s not in out:
                 raise WrongStdout("'%s' not in stdout." % s)
 
     def assert_not_in_stdout(self, strings, encoding=None):
-        """ If `strings` is byte string search for byte needle in byte
+        """Verify that one or more strings is/are not in standard output.
+
+        If `strings` is byte string search for byte needle in byte
         haystack. If it is unicode string, decode haystack and search for
         unicode needle in unicode haystack. In the latter case, use
         `self.shellscript_encoding` if `encoding` is not provided.
@@ -202,31 +204,37 @@ class CmdlineInterfaceTest(object):
         `strings` can be either a single byte or unicode string or a list of
         strings of the same type.
 
-        Raises `WrongStdout` in case of mismatch.
+        Raises:
+            `WrongStdout` in case of mismatch.
         """
         out, forbidden = self._klazonk(self.rawout, strings, encoding)
         for s in forbidden:
             if s in out:
                 raise WrongStdout("'%s' must not be in stdout." % s)
 
-    def assert_in_stderr(self, expect_in_stderr, encoding=None):
-        """ If `expect_in_stderr` is byte string search for byte needle in byte
+    def assert_in_stderr(self, strings, encoding=None):
+        """Verify that one or more strings is/are in standard error.
+
+        If `strings` is byte string search for byte needle in byte
         haystack. If it is unicode string, decode haystack and search for
         unicode needle in unicode haystack. In the latter case, use
         `self.shellscript_encoding` if `encoding` is not provided.
 
-        `expect_in_stderr` can be either a single byte or unicode string or a
+        `strings` can be either a single byte or unicode string or a
         list of strings of the same type.
 
-        Raises `WrongStderr` in case of mismatch.
+        Raises:
+            `WrongStderr` in case of mismatch.
         """
-        err, expectlist = self._klazonk(self.rawerr, expect_in_stderr, encoding)
-        for s in expectlist:
+        err, expected = self._klazonk(self.rawerr, strings, encoding)
+        for s in expected:
             if s not in err:
                 raise WrongStderr("'%s' not in stderr." % s)
 
     def assert_not_in_stderr(self, strings, encoding=None):
-        """ If `strings` is byte string search for byte needle in byte
+        """Verify that one or more strings is/are not in standard error.
+
+        If `strings` is byte string search for byte needle in byte
         haystack. If it is unicode string, decode haystack and search for
         unicode needle in unicode haystack. In the latter case, use
         `self.shellscript_encoding` if `encoding` is not provided.
@@ -234,45 +242,48 @@ class CmdlineInterfaceTest(object):
         `strings` can be either a single byte or unicode string or a list of
         strings of the same type.
 
-        Raises `WrongStderr` in case of mismatch.
+        Raises:
+            `WrongStderr` in case of mismatch.
         """
         err, forbidden = self._klazonk(self.rawerr, strings, encoding)
         for s in forbidden:
             if s in err:
                 raise WrongStderr("'%s' must not be in stderr." % s)
 
-    def assert_is_stdout(self, expect_stdout, encoding=None):
-        """Validate that `expect_stdout` corresponds to standard output of test
-        process. If `expect_stdout` is unicode type, decode binary stdout data
-        before comparison.
+    def assert_is_stdout(self, s, encoding=None):
+        """Validate that `s` is standard output of test process.
 
-        Raises `WrongStdout` in case of mismatch.
+        If `s` is unicode type, decode binary stdout data before comparison.
+
+        Raises:
+            `WrongStdout` in case of mismatch.
         """
         out = self.rawout
-        if isinstance(expect_stdout, unicode):
+        if isinstance(s, unicode):
             out = self._decode(self.rawout, encoding)
-        if expect_stdout != out:
-            raise WrongStdout("stdout is not '%s'." % expect_stdout)
+        if s != out:
+            raise WrongStdout("stdout is not '%s'." % s)
 
-    def assert_is_stderr(self, expect_stderr, encoding=None):
-        """Validate that `expect_stderr` corresponds to standard error of test
-        process. If `expect_stderr` is unicode type, decode binary stderr data
-        before comparison.
+    def assert_is_stderr(self, s, encoding=None):
+        """Validate that `s` is standard error of test process.
 
-        Raises `WrongStderr` in case of mismatch.
+        If `s` is unicode type, decode binary stderr data before comparison.
+
+        Raises:
+            `WrongStderr` in case of mismatch.
         """
         err = self.rawerr
-        if isinstance(expect_stderr, unicode):
+        if isinstance(s, unicode):
             err = self._decode(self.rawerr, encoding)
-        if expect_stderr != err:
-            raise WrongStderr("stderr is not '%s'." % expect_stderr)
+        if s != err:
+            raise WrongStderr("stderr is not '%s'." % s)
 
     def _klazonk(self, out_or_err, string_or_stringlist, encoding):
         """Validate that `string_or_stringlist` is either a byte or unicode
         string, or a list of only byte strings or only unicode strings.
-        `out_or_err` must be a byte string.
-        If the type of the single string or the elements in the string list is
-        unicode, then decode `out_or_err` using the `encoding` specified.
+        `out_or_err` must be a byte string. If the type of the single string or
+        the elements in the string list is unicode, then decode `out_or_err`
+        using the `encoding` specified.
 
         Return (out_or_err, stringlist) tuple. `stringlist` is a list with at
         least one element, `out_or_err` is either byte string or unicode string.
