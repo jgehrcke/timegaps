@@ -90,6 +90,26 @@ class Base(object):
         return self.cmdlinetest
 
 
+class TestArgparseFeatures(Base):
+    """Make sure that argparse is set up properly (and works as exepected).
+    """
+    def test_version(self):
+        t = self.run("--version")
+        # argparse makes this go to stderr, weird, help goes to stdout.
+        t.assert_no_stdout()
+        t.assert_is_stderr("%s\n" % __version__)
+
+    def test_help(self):
+        t = self.run("--help")
+        t.assert_in_stdout(["usage","RULES","ITEM"])
+        t.assert_no_stderr()
+
+    def test_extended_help(self):
+        t = self.run("--extended-help")
+        t.assert_in_stdout(["Input:","Output:","Actions:", "Classification"])
+        t.assert_no_stderr()
+
+
 class TestArgparseLogic(Base):
     """Test argparse argument logic and argparse error detection (also validate
     error messages).
@@ -242,6 +262,33 @@ class TestSimpleFilterFeaturesCWD(Base):
         t.assert_no_stderr()
 
 
+class TestStdinAndSeparation(Base):
+    """Test minimal invocation signatures, use --stdin mode and NUL character
+    separation of items. The only file system entry used in these tests is the
+    current working directory, which has just (recently!) been modified.
+    """
+    def test_reject_years(self):
+        # CWD should just have been modified, so it is years-rejected.
+        t = self.run("--nullsep years1 .")
+        t.assert_is_stdout(".\0")
+        t.assert_no_stderr()
+
+
+class TestFileFilter(Base):
+    """Tests that involve filtering of file system entries. Involves creation
+    of temporary mock files in the file system.
+    """
+    pass
+
+
+class TestFileFilterActions(Base):
+    """Tests that involve filtering of file system entries. Tests apply actions
+    (delete, move). Involves creation and modification of temporary files in the
+    file system.
+    """
+    pass
+
+
 class TestMisc(Base):
     """Tests that do not fit in other categories.
     """
@@ -274,26 +321,6 @@ class TestMisc(Base):
         t.assert_in_stderr(
             ["DEBUG", "Options namespace", "Decode rules", "TimeFilter"])
         t.assert_no_stdout()
-
-
-class TestArgparseFeatures(Base):
-    """Make sure that argparse is set up properly (and works as exepected).
-    """
-    def test_version(self):
-        t = self.run("--version")
-        # argparse makes this go to stderr, weird, help goes to stdout.
-        t.assert_no_stdout()
-        t.assert_is_stderr("%s\n" % __version__)
-
-    def test_help(self):
-        t = self.run("--help")
-        t.assert_in_stdout(["usage","RULES","ITEM"])
-        t.assert_no_stderr()
-
-    def test_extended_help(self):
-        t = self.run("--extended-help")
-        t.assert_in_stdout(["Input:","Output:","Actions:", "Classification"])
-        t.assert_no_stderr()
 
 
 class TestSpecialChars(Base):
