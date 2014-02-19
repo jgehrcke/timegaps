@@ -267,10 +267,15 @@ class TestStdinAndSeparation(Base):
     separation of items. The only file system entry used in these tests is the
     current working directory, which has just (recently!) been modified.
     """
-    def test_reject_years(self):
+    def test_simple_nullcharsep_1(self):
         # CWD should just have been modified, so it is years-rejected.
         t = self.run("--nullsep years1 .")
         t.assert_is_stdout(".\0")
+        t.assert_no_stderr()
+
+    def test_simple_nullcharsep_2(self):
+        t = self.run("-0 years1 . . . . . .")
+        t.assert_is_stdout(".\0.\0.\0.\0.\0.\0")
         t.assert_no_stderr()
 
 
