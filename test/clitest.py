@@ -191,7 +191,7 @@ class CmdlineInterfaceTest(object):
         out, expected = self._klazonk(self.rawout, strings, encoding)
         for s in expected:
             if s not in out:
-                raise WrongStdout("'%s' not in stdout." % s)
+                raise WrongStdout("'%r' not in stdout." % s)
 
     def assert_not_in_stdout(self, strings, encoding=None):
         """Verify that one or more strings is/are not in standard output.
@@ -210,7 +210,7 @@ class CmdlineInterfaceTest(object):
         out, forbidden = self._klazonk(self.rawout, strings, encoding)
         for s in forbidden:
             if s in out:
-                raise WrongStdout("'%s' must not be in stdout." % s)
+                raise WrongStdout("'%r' must not be in stdout." % s)
 
     def assert_in_stderr(self, strings, encoding=None):
         """Verify that one or more strings is/are in standard error.
@@ -229,7 +229,7 @@ class CmdlineInterfaceTest(object):
         err, expected = self._klazonk(self.rawerr, strings, encoding)
         for s in expected:
             if s not in err:
-                raise WrongStderr("'%s' not in stderr." % s)
+                raise WrongStderr("'%r' not in stderr." % s)
 
     def assert_not_in_stderr(self, strings, encoding=None):
         """Verify that one or more strings is/are not in standard error.
@@ -248,7 +248,7 @@ class CmdlineInterfaceTest(object):
         err, forbidden = self._klazonk(self.rawerr, strings, encoding)
         for s in forbidden:
             if s in err:
-                raise WrongStderr("'%s' must not be in stderr." % s)
+                raise WrongStderr("'%r' must not be in stderr." % s)
 
     def assert_is_stdout(self, s, encoding=None):
         """Validate that `s` is standard output of test process.
@@ -262,7 +262,7 @@ class CmdlineInterfaceTest(object):
         if isinstance(s, unicode):
             out = self._decode(self.rawout, encoding)
         if s != out:
-            raise WrongStdout("stdout is not '%s'." % s)
+            raise WrongStdout("stdout is not '%r'." % s)
 
     def assert_is_stderr(self, s, encoding=None):
         """Validate that `s` is standard error of test process.
@@ -276,7 +276,7 @@ class CmdlineInterfaceTest(object):
         if isinstance(s, unicode):
             err = self._decode(self.rawerr, encoding)
         if s != err:
-            raise WrongStderr("stderr is not '%s'." % s)
+            raise WrongStderr("stderr is not '%r'." % s)
 
     def _klazonk(self, out_or_err, string_or_stringlist, encoding):
         """Validate that `string_or_stringlist` is either a byte or unicode
