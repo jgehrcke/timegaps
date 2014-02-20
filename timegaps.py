@@ -60,6 +60,9 @@ Actions:
         directories requires the directory to be empty. Entire directory trees
         can be removed using -r/--delete-recursive.
 
+        TODO: Add --strict mode or such that makes file system entry action
+        errors fatal?
+
 
 Classification method:
         Each item provided as input becomes classified as either accepted or
@@ -300,13 +303,33 @@ def action(item):
         # regular errors to be raised by shutil. Be more general.
         except Exception as e:
             log.error("Cannot move '%s': %e", item.path, e)
+        return
     if options.delete:
         log.info("Delete %s '%s'", item.type, item.path)
         if item.type == "dir":
-            os.rmdir()
-        elif item.type ==
-
-    return
+            if options.delete_recursive:
+                # shutil.rmtree: Delete an entire directory tree; path must
+                # point to a directory (but not a symbolic link to a directory).
+                try:
+                    shutil.rmtree(item.path)
+                except Exception:
+                    log.error("Error while recursively deleting '%s': %e",
+                        item.path, e)
+                return
+            try:
+                # Raises OSError if dir not empty.
+                os.rmdir(item.path)
+            except Exception:
+                log.error("Cannot rmdir '%s': %e", item.path, e)
+            return
+        elif item.type == "file":
+            try:
+                os.remove(item.path)
+            except Exception:
+                log.error("Cannot delete file '%s': %e", item.path, e)
+            return
+        else:
+            raise NotImplementedError
 
 
 def read_items_from_stdin():
