@@ -204,17 +204,17 @@ def main():
             err("--move target not a directory: '%s'" % options.move)
 
     # Item input section.
-    log.info("Start collecting items.")
+    log.info("Start collecting item(s).")
     items = prepare_input()
-    log.info("Start filtering %s items.", len(items))
+    log.info("Start filtering %s item(s).", len(items))
 
     # Classification section.
     accepted, rejected = timefilter.filter(items)
     rejected = list(rejected)
     log.info("Number of accepted items: %s", len(accepted))
     log.info("Number of rejected items: %s", len(rejected))
-    log.debug("Accepted items:\n%s" % "\n".join("%s" % a for a in accepted))
-    log.debug("Rejected items:\n%s" % "\n".join("%s" % r for r in rejected))
+    log.debug("Accepted item(s):\n%s" % "\n".join("%s" % a for a in accepted))
+    log.debug("Rejected item(s):\n%s" % "\n".join("%s" % r for r in rejected))
 
     actonitems = rejected if not options.accepted else accepted
 
@@ -283,11 +283,16 @@ def read_items_from_stdin():
         sep = "\0"
     sep_bytes = sep.encode(enc)
 
-    log.debug("Split stdin data on separator %r", sep_bytes)
-    records = bytedata.split(sep_bytes)
-    log.debug("Identified %s records. Decode them using %s.", len(records), enc)
-    records_unicode = [r.decode(enc) for r in records]
-    return records_unicode
+    log.debug("Split binary stdin data on byte separator %r.", sep_bytes)
+    chunks = bytedata.split(sep_bytes)
+    log.debug("Decode non-empty chunks using %s.", enc)
+    # `split()` is the inverse of `join()`, i.e. it introduces empty strings for
+    # leading and trailing separators, and for separator sequences. That is why
+    # the `if c` part below is essential. Also see
+    # http://stackoverflow.com/a/2197493/145400
+    items_unicode = [c.decode(enc) for c in chunks if c]
+    log.debug("Identified %s item(s).", len(items_unicode))
+    return items_unicode
 
 
 def prepare_input():
@@ -316,11 +321,11 @@ def prepare_input():
             itemstrings = [s.decode(sys.stdout.encoding) for s in itemstrings]
         # return list_of_items_from_strings
 
-    # File system mode.
-    log.info("Validate paths and extract time information.")
+    log.info("Interprete items as file system entries.")
+    log.info("Validate paths and extract modification time.")
     fses = []
     for path in itemstrings:
-        log.debug("Type of path: %s", type(path))
+        log.debug("Type of path string: %s.", type(path))
 
         # On the one hand, a unicode-aware Python program should only use
         # unicode type strings internally. On the other hand, when it comes
@@ -352,7 +357,7 @@ def prepare_input():
             fses.append(FileSystemEntry(path, modtime))
         except OSError:
             err("Cannot access '%s'." % path)
-    log.debug("Created %s items from file system entries.", len(fses))
+    log.debug("Created %s item(s) (type: file system entry).", len(fses))
     return fses
 
 
