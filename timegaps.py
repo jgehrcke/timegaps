@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
-#
+# Copyright 2014 Jan-Philip Gehrcke (http://gehrcke.de).
+# See LICENSE file for details.
 
 from __future__ import unicode_literals
 
@@ -10,8 +10,8 @@ Feature / TODO brainstorm:
     - symlink support (elaborate specifics)
 """
 
-EXTENDED_HELP = """
 
+EXTENDED_HELP = """
 timegaps accepts or rejects file system entries based on modification time
 categorization. Its input is a set of paths and a set of classification rules.
 In the default mode, the output is to two sets of paths, the rejected and the
@@ -135,7 +135,16 @@ import re
 import time
 from timegaps import TimeFilter, TimeFilterError, FileSystemEntry, __version__
 
+
 WINDOWS = sys.platform == "win32"
+log = logging.getLogger()
+log.setLevel(logging.ERROR)
+ch = logging.StreamHandler()
+formatter = logging.Formatter(
+    '%(asctime)s,%(msecs)-6.1f - %(levelname)s: %(message)s',
+    datefmt='%H:%M:%S')
+ch.setFormatter(formatter)
+log.addHandler(ch)
 
 # Global for options, to be populated by argparse from cmdline arguments.
 options = None
@@ -148,46 +157,46 @@ def main():
     elif options.verbose == 2:
         log.setLevel(logging.DEBUG)
 
-    # Be explicit about output encoding.
+    # Be explicit about input and output encoding.
     # Also see http://stackoverflow.com/a/4374457/145400
     if sys.stdout.encoding is None:
-        err(("Don't know which encoding to use when writing data to stdout. "
-            "Please set environment variable PYTHONIOENCODING. "
+        err(("Please explicitly specify the codec that should be used for "
+            "decoding data read from stdin, and for encoding data that is to "
+            "be written to stdout: set environment variable PYTHONIOENCODING. "
             "Example: export PYTHONIOENCODING=UTF-8."))
 
     log.debug("Options namespace:\n%s", options)
 
-    # Validate options (logic not tested automatically by `argparse`).
-
+    # SECTION I: bootstrap. validate and process some arguments.
+    # ==========================================================
     # If the user misses to provide either RULES or an ITEM, it is not catched
     # by argparse (0 ITEMs is allowed when --stdin is set). Validate RULES and
     # ITEMs here in the order as consumed by argparse (first RULES, then ITEMS).
     # Doing it the other way round could produce confusing error messages.
     # Parse RULES argument.
-    # TODO: Py3
     # sys.stdout.encoding is either derived from LC_CTYPE (set on your typical
     # Unix system) or from environment variable PYTHONIOENCODING, which is good
     # for overriding and making guarantees, e.g. on Windows.
     rules_unicode = options.rules
-    if not isinstance(rules_unicode, unicode):
+    if not isinstance(rules_unicode, unicode): # TODO: Py3
         rules_unicode = options.rules.decode(sys.stdout.encoding)
     log.debug("Decode rules string.")
     try:
         rules = parse_rules_from_cmdline(rules_unicode)
-        log.info("Using rules: %s", rules)
     except ValueError as e:
         err("Error while parsing rules: '%s'." % e)
+    log.info("Using rules: %s", rules)
     if not options.stdin:
         if len(options.items) == 0:
-            err("At least one ITEM must be provided (if --stdin not set).")
+            err("At least one ITEM must be provided (-s/--stdin not set).")
     else:
         if len(options.items) > 0:
-            err("No ITEM must be provided when --stdin is set.")
+            err("No ITEM must be provided on command line (-s/--stdin is set).")
 
     # Determine reference time and set up `TimeFilter` instance. Do this as
     # early as possible: might raise error.
     if options.reference_time is not None:
-        log.debug("Parse reference time from cmdline.")
+        log.debug("Parse reference time from command line.")
         raise NotImplemented
     else:
         log.debug("Get reference time: now.")
@@ -203,12 +212,17 @@ def main():
         if not os.path.isdir(options.move):
             err("--move target not a directory: '%s'" % options.move)
 
-    # Item input section.
+
+    # SECTION II: collect and validate items.
+    # =======================================
     log.info("Start collecting item(s).")
     items = prepare_input()
-    log.info("Start filtering %s item(s).", len(items))
+    log.info("Collected %s item(s).", len(items))
 
-    # Classification section.
+
+    # SECTION 3) item classification.
+    # ===============================
+    log.info("Start item classification.")
     accepted, rejected = timefilter.filter(items)
     rejected = list(rejected)
     log.info("Number of accepted items: %s", len(accepted))
@@ -216,30 +230,31 @@ def main():
     log.debug("Accepted item(s):\n%s" % "\n".join("%s" % a for a in accepted))
     log.debug("Rejected item(s):\n%s" % "\n".join("%s" % r for r in rejected))
 
-    actonitems = rejected if not options.accepted else accepted
 
-    # Item output section. Write binary data directly to stdout. Use pre-
-    # existing binary data (e.g. paths on Unix) or encode unicode to
-    # %whateverencoding%.
-    # sys.stdout.encoding might not always be the right thing:
+    # SECTION 4) item output.
+    # =======================
+    # Write binary data to stdout. Use pre-existing binary data ("pass-through"
+    # mode, useful e.g. for paths on Unix) or encode unicode to output encoding.
+    # If automatically chosen, sys.stdout.encoding might not always be the right
+    # thing:
     # http://drj11.wordpress.com/2007/05/14/python-how-is-sysstdoutencoding-chosen/
-    # However, if PYTHONIOENCODING was set, then sys.stdout.encoding is that.
-    enc = sys.stdout.encoding
-    sep = "\n"
-    if options.nullsep:
-        sep = "\0"
-    sep_bytes = sep.encode(enc)
-    for ai in actonitems:
-        # If `ai` of `FileSystemEntry` type, then `path` attribute can be
+    # However, via PYTHONIOENCODING sys.stdout.encoding can be explicitly set
+    # by the user, which is ideal behavior (an educated guess is still a guess).
+    outenc = sys.stdout.encoding
+    sep = "\0" is options.nullsep else "\n"
+    sep_bytes = sep.encode(outenc)
+    actionitems = rejected if not options.accepted else accepted
+    for ai in actionitems:
+        # If `ai` is of FileSystemEntry type, then `path` attribute can be
         # unicode or bytes. If bytes, then write them as they are. If unicode,
-        # encode with `enc`.
+        # encode with `outenc`.
         if isinstance(ai, FileSystemEntry):
-            itemstring_bytes = ai.path # path is byte string
+            itemstring_bytes = ai.path
             if isinstance(ai.path, unicode): # TODO: Py3.
-                itemstring_bytes = ai.path.encode(enc)
+                itemstring_bytes = ai.path.encode(outenc)
         else:
-            # `ai` is type FilterItem, `text` attribute always is unicode.
-            itemstring_bytes = ai.text.encode(enc)
+            # `ai` is of type FilterItem: `text` attribute always is unicode.
+            itemstring_bytes = ai.text.encode(outenc)
         sys.stdout.write("%s%s" % (itemstring_bytes, sep_bytes))
         # In Python 3, write bytes to stdout buffer (after detach).
 
@@ -412,16 +427,14 @@ def parse_rules_from_cmdline(s):
 
 
 def err(s):
-    """Log error message `s` in logging's error category and exit with code 1.
-    """
+    """Log error message as ERROR level and exit with code 1."""
     log.error(s)
     log.info("Exit with code 1.")
     sys.exit(1)
 
 
 def parse_options():
-    """Set up and parse commandline options using `argparse`.
-    """
+    """Define and parse command line options using argparse."""
     class ExtHelpAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
             print(EXTENDED_HELP)
@@ -563,20 +576,4 @@ if WINDOWS:
 
 
 if __name__ == "__main__":
-    log = logging.getLogger()
-    log.setLevel(logging.ERROR)
-    ch = logging.StreamHandler()
-    #fh = RotatingFileHandler(
-    #    LOGFILE_PATH,
-    #    mode='a',
-    #    maxBytes=500*1024,
-    #    backupCount=30,
-    #    encoding='utf-8')
-    formatter = logging.Formatter(
-        '%(asctime)s,%(msecs)-6.1f - %(levelname)s: %(message)s',
-        datefmt='%H:%M:%S')
-    ch.setFormatter(formatter)
-    #fh.setFormatter(formatter)
-    log.addHandler(ch)
-    #log.addHandler(fh)
     main()
