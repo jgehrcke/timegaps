@@ -4,10 +4,14 @@
 
 from __future__ import unicode_literals
 import os
+import sys
 import shutil
 import logging
 import subprocess
 import traceback
+
+
+WINDOWS = sys.platform == "win32"
 
 
 logging.basicConfig(
@@ -86,10 +90,7 @@ class CmdlineInterfaceTest(object):
     which is PROGRAM. For bash, this is documented: "The equivalent of a bare
     exit is exit $? or even just omitting the exit."
     (http://tldp.org/LDP/abs/html/exit-status.html)
-
-    TODO:
-        - look up behavior of cmd.exe on Windows.
-        - add features for test inspection/validation
+    Seems to be the same behavior for cmd.exe on Windows 7 (reference?).
     """
     # If required, these defaults should be overridden in a sub class.
     shellpath = "/bin/bash"
@@ -130,7 +131,19 @@ class CmdlineInterfaceTest(object):
         preamble = self.preamble if self.preamble else ""
         return "%s%s\n" % (preamble, cmd_unicode)
 
-    def run(self, cmd_unicode, expect_rc=0, stdin=None, log_output=True):
+    def run(self, cmd_unicode, expect_rc=0, stdinbytes=None, log_output=True):
+        if stdinbytes is not None:
+            log.debug("Prepare file for stdin data.")
+            assert isinstance(stdinbytes, str) # TODO: Py3
+            bn = "_clitest_stdin"
+            with open(os.path.join(self.rundir, bn), "w") as f:
+                f.write(stdinbytes)
+            if not WINDOWS:
+                cmd_unicode = "cat %s | %s" % (bn, cmd_unicode)
+            else:
+                # type is Windows' analogue command to Unix' cat.
+                cmd_unicode = "type %s | %s" % (bn, cmd_unicode)
+
         shellscript_content_bytes = self._script_contents(cmd_unicode).encode(
             self.shellscript_encoding)
         self.add_file(self.shellscript_name, shellscript_content_bytes)
@@ -141,17 +154,12 @@ class CmdlineInterfaceTest(object):
         cmd.append(self.shellscript_name)
         of = open(self.outfilepath, "w")
         ef = open(self.errfilepath, "w")
-        sin = None
-        if stdin is not None:
-            assert isinstance(stdin, str) # Must be bytestring, check for Py3.
-            sin = subprocess.PIPE
         log.debug("Popen with cmd: %s", cmd)
         try:
             sp = subprocess.Popen(
-                cmd, stdout=of, stderr=ef, stdin=sin, cwd=self.rundir)
-            if stdin is not None:
-                sp.stdin.write(stdin)
-                sp.stdin.close()
+                cmd, stdout=of, stderr=ef, stdin=None, cwd=self.rundir)
+            #sp.stdin.write(stdin)
+            #sp.stdin.close()
             sp.wait()
             rc = sp.returncode
             log.info("Test returncode: %s", rc)
