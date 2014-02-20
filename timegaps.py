@@ -215,12 +215,16 @@ def main():
     except TimeFilterError as e:
         err("Error upon time filter setup: %s" % e)
 
-    if
-
     if options.move is not None:
         if not os.path.isdir(options.move):
             err("--move target not a directory: '%s'" % options.move)
 
+    # Currently, string mode with file system action defined is unspecified
+    # behavior. Forbid.
+    if options.time_from_string is not None::
+        if options.move or options.delete:
+            err(("String interpretation mode is not allowed in combination "
+                "with file system actions.")
 
     # SECTION II: collect and validate items.
     # =======================================
