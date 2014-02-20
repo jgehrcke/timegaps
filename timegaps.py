@@ -259,7 +259,12 @@ def read_items_from_stdin():
     # opens stdin in normal "r" (newline flattening) mide, not in binary mode.
     # Get the binary data, depending on the Python version.
 
-    # In Python 2 on Windows, change mode to binary (don't mess with newlines).
+    # In Python 2 on Windows, change mode to binary. Otherwise, two bytes \r\n
+    # end up to be only one byte \n. This might be a convenient auto-correction,
+    # in certain situations, when the user does not take great care of item
+    # separation in stdin, this might make the input to magically work. However,
+    # prefer not to magically, implicitly mess with the byte stream on standard
+    # input.
     # http://cygwin.com/cygwin-ug-net/using-textbinary.html
     # http://stackoverflow.com/a/4160894/145400
     # http://code.activestate.com/lists/python-list/20426/
