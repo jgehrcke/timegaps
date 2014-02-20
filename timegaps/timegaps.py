@@ -60,7 +60,7 @@ class FileSystemEntry(FilterItem):
         self.path: path to file system entry.
     """
     def __init__(self, path, modtime=None):
-        log.debug("Creating FileSystemEntry from path '%s'.", path)
+        log.debug("Creating FileSystemEntry from path %r.", path)
         try:
             # os.lstat(path)
             # Perform the equivalent of an lstat() system call on the given

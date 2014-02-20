@@ -254,6 +254,19 @@ def read_items_from_stdin():
     # strings.
     # Read until EOF.
     log.debug("Read binary data from standard input, until EOF.")
+
+    # Python 3 opens stdin in text mode (i.e. decodes to unicode). Python 2
+    # opens stdin in normal "r" (newline flattening) mide, not in binary mode.
+    # Get the binary data, depending on the Python version.
+
+    # In Python 2 on Windows, change mode to binary (don't mess with newlines).
+    # http://cygwin.com/cygwin-ug-net/using-textbinary.html
+    # http://stackoverflow.com/a/4160894/145400
+    # http://code.activestate.com/lists/python-list/20426/
+    if WINDOWS:
+        import msvcrt
+        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+
     # TODO: protect with try/except.
     bytedata = sys.stdin.read()
     log.debug("%s bytes have been read.", len(bytedata))
@@ -267,6 +280,7 @@ def read_items_from_stdin():
 
     log.debug("Split stdin data on separator %r", sep_bytes)
     records = bytedata.split(sep_bytes)
+    log.debug("Identified %s records. Decode them using %s.", len(records), enc)
     records_unicode = [r.decode(enc) for r in records]
     return records_unicode
 
@@ -300,7 +314,7 @@ def prepare_input():
     # File system mode.
     log.info("Validate paths and extract time information.")
     fses = []
-    for path in options.items:
+    for path in itemstrings:
         log.debug("Type of path: %s", type(path))
 
         # On the one hand, a unicode-aware Python program should only use
