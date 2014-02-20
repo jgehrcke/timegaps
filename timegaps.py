@@ -58,7 +58,7 @@ Actions:
         system interaction errors (e.g. due to invalid permissions) are written
         to stderr and the program proceeds. By default, the deletion of
         directories requires the directory to be empty. Entire directory trees
-        can be removed using -r/--delete- recursive.
+        can be removed using -r/--delete-recursive.
 
 
 Classification method:
@@ -182,8 +182,8 @@ def main():
 
     log.debug("Options namespace:\n%s", options)
 
-    # SECTION I: bootstrap. validate and process some arguments.
-    # ==========================================================
+    # SECTION I: bootstrap. validate and process certain command line arguments.
+    # ==========================================================================
     # If the user misses to provide either RULES or an ITEM, it is not catched
     # by argparse (0 ITEMs is allowed when --stdin is set). Validate RULES and
     # ITEMs here in the order as consumed by argparse (first RULES, then ITEMS).
@@ -233,6 +233,10 @@ def main():
         if options.move or options.delete:
             err(("String interpretation mode is not allowed in combination "
                 "with file system actions."))
+
+    if options.delete_recursive:
+        if not options.delete:
+            err("-r/--delete-recursive not allowed without -d/--delete.")
 
     # SECTION II: collect and validate items.
     # =======================================
@@ -529,6 +533,8 @@ def parse_options():
         metavar="DIR",
         help="Attempt to move rejected paths to directory DIR.")
 
+    parser.add_argument("-r", "--delete-recursive", action="store_true",
+        help="Enable deletion of non-empty directories.")
 
     parser.add_argument("-s", "--stdin", action="store_true",
         help=("Read input items from stdin (default separator: newline).")
