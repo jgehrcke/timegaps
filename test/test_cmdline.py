@@ -163,7 +163,7 @@ class TestArgumentErrors(Base):
     def test_valid_rules_missing_item_cmdline(self):
         # TODO: also test missing item / valid rules for stdin mode.
         t = self.run("days5", rc=1)
-        t.assert_in_stderr("one ITEM must be provided (if --stdin not set")
+        t.assert_in_stderr("one ITEM must be provided (-s/--stdin not set")
         t.assert_no_stdout()
 
     def test_invalid_rulesstring_missing_item(self):
@@ -207,7 +207,7 @@ class TestArgumentErrors(Base):
 
     def test_one_item_if_stdin(self):
         t = self.run("--stdin days5 .", rc=1)
-        t.assert_in_stderr("No ITEM must be provided when --stdin")
+        t.assert_in_stderr(["No ITEM must be provided", "(-s/--stdin is set)"])
         t.assert_no_stdout()
 
     def test_all_zero_rules(self):

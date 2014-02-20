@@ -241,7 +241,7 @@ def main():
     # However, via PYTHONIOENCODING sys.stdout.encoding can be explicitly set
     # by the user, which is ideal behavior (an educated guess is still a guess).
     outenc = sys.stdout.encoding
-    sep = "\0" is options.nullsep else "\n"
+    sep = "\0" if options.nullsep else "\n"
     sep_bytes = sep.encode(outenc)
     actionitems = rejected if not options.accepted else accepted
     for ai in actionitems:
