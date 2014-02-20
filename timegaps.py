@@ -47,11 +47,18 @@ Output:
 Actions:
         An action can be performed on each item, based on its classification.
         Currently, the deletion (--delete) or displacement (--move DIR) of items
-        is supported for file system entries. By default, no action is
-        performed. If not changed via --accepted, an action is performed on
-        rejected items only. Independent of actions, items are written to stdout
-        based on their classification. --time-from-string mode is not allowed in
-        combination with --delete or --move.
+        is supported. By default, no action is performed. If an action is
+        specified, it is by default performed on rejected items only. This
+        behavior can be changed with the --accepted switch. Note that accepted
+        or rejected items are written to stdout just like in non-action mode.
+
+        Remarks: the --time-from-string mode is not allowed in combination with
+        --delete or --move. The displacement action renames within one file
+        system and copy-deletes in all other cases (cf. bit.ly/shutilmove). File
+        system interaction errors (e.g. due to invalid permissions) are written
+        to stderr and the program proceeds. By default, the deletion of
+        directories requires the directory to be empty. Entire directory trees
+        can be removed using -r/--delete- recursive.
 
 
 Classification method:
@@ -136,6 +143,7 @@ Exit status:
 
 import os
 import sys
+import shutil
 import argparse
 import logging
 import re
@@ -221,10 +229,10 @@ def main():
 
     # Currently, string mode with file system action defined is unspecified
     # behavior. Forbid.
-    if options.time_from_string is not None::
+    if options.time_from_string is not None:
         if options.move or options.delete:
             err(("String interpretation mode is not allowed in combination "
-                "with file system actions.")
+                "with file system actions."))
 
     # SECTION II: collect and validate items.
     # =======================================
@@ -278,9 +286,21 @@ def main():
 
 def action(item):
     """Perform none or one action on item."""
+    assert isinstance(item, FileSystemEntry)
     if options.move:
-        log.info("Moving ")
+        tdir = options.move
+        log.info("Moving '%s' to directory '%s'.", item.path, tdir)
+        try:
+            shutil.move(item.path, tdir)
+        # It is unclear to me at the moment if OSError is the only class of
+        # regular errors to be raised by shutil. Be more general.
+        except Exception as e:
+            log.error("Cannot move '%s': %e", item.path, e)
     if options.delete:
+        log.info("Delete %s '%s'", item.type, item.path)
+        if item.type == "dir":
+            os.rmdir()
+        elif item.type ==
 
     return
 
