@@ -11,11 +11,21 @@ from clitest import CmdlineInterfaceTest, CmdlineTestError, WrongExitCode
 sys.path.insert(0, os.path.abspath('..'))
 from timegaps import __version__
 
+import logging
+logging.basicConfig(
+    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
+    datefmt='%H:%M:%S')
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
+
 
 RUNDIRTOP = "./cmdline-test"
 TIMEGAPS_NAME = "../../../timegaps.py"
 PYTHON_EXE = "python"
 WINDOWS = sys.platform == "win32"
+
+# Tests involving stdin involve creation of byte strings in this encoding.
+STDINENC = "utf-8"
 
 
 if WINDOWS:
@@ -83,16 +93,17 @@ class Base(object):
         pass
         #self.cmdlinetest.clear()
 
-    def run(self, arguments_unicode, rc=0):
+    def run(self, arguments_unicode, rc=0, sin=None):
         cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_NAME, arguments_unicode)
         log.info("Test command:\n%s" % cmd)
-        self.cmdlinetest.run(cmd_unicode=cmd, expect_rc=rc)
+        self.cmdlinetest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
         return self.cmdlinetest
 
 
 class TestArgparseFeatures(Base):
     """Make sure that argparse is set up properly (and works as exepected).
     """
+
     def test_version(self):
         t = self.run("--version")
         # argparse makes this go to stderr, weird, help goes to stdout.
@@ -148,6 +159,7 @@ class TestArgumentErrors(Base):
     """Test argument error detection not performed by argparse,
     validate error messages.
     """
+
     def test_valid_rules_missing_item_cmdline(self):
         # TODO: also test missing item / valid rules for stdin mode.
         t = self.run("days5", rc=1)
@@ -209,6 +221,7 @@ class TestSimpleFilterFeaturesCWD(Base):
     system entry used in these tests is the current working directory, which
     has just (recently!) been modified.
     """
+
     def test_accept_cwd_recent(self):
         # CWD should *just* have been created, so it is recent-accepted.
         # All accepted means no stdout. No verbosity means no stderr.
@@ -276,6 +289,18 @@ class TestStdinAndSeparation(Base):
     def test_simple_nullcharsep_2(self):
         t = self.run("-0 years1 . . . . . .")
         t.assert_is_stdout(".\0.\0.\0.\0.\0.\0")
+        t.assert_no_stderr()
+
+    def test_stdin_one_recent(self):
+        s = ".\n".encode(STDINENC)
+        t = self.run("-vv --stdin recent1", sin=s)
+        t.assert_no_stdout()
+        t.assert_no_stderr()
+        t = self.run("-S recent1", sin=s)
+        t.assert_no_stdout()
+        t.assert_no_stderr()
+        t = self.run("-a -S recent1", sin=s)
+        t.assert_is_stdout(".\n")
         t.assert_no_stderr()
 
 
