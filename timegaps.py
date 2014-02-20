@@ -45,10 +45,13 @@ Output:
 
 
 Actions:
-        Certain actions such as removal or renaming (moving) can be performed
-        on items based on their classification. By default, no actions are
-        performed. If not further specified, activated actions are performed on
-        rejected items only.
+        An action can be performed on each item, based on its classification.
+        Currently, the deletion (--delete) or displacement (--move DIR) of items
+        is supported for file system entries. By default, no action is
+        performed. If not changed via --accepted, an action is performed on
+        rejected items only. Independent of actions, items are written to stdout
+        based on their classification. --time-from-string mode is not allowed in
+        combination with --delete or --move.
 
 
 Classification method:
@@ -93,7 +96,7 @@ Classification method:
         not yield an item. Considering the example rules above, only 11 items
         are accepted from the <hours> category if the program does not find an
         item for the <5-hours> sub-category, but at least one item for the
-        other <hours> sub-categories.
+        other <X-hours> sub-categories.
 
         Younger time categories have higher priority than older ones. This is
         only relevant when, according to the rules, two <category>:<maxcount>
@@ -103,28 +106,32 @@ Classification method:
             weeks:  1
 
         An item fitting into one of the <7/8/9/10-days> sub-categories would
-        also fit the <1-weeks> sub-category. This is a rules overlap. In this
-        case, the <X-days> sub-categories will be populated first, since <days>
-        is the younger category than <weeks>. If there is an 11 days old item
-        in the input, it will populate the <1-week> sub-category, because it is
-        the newest 1-week-old item *not consumed by a younger category*.
+        also fit the <1-weeks> sub-category. In this case, the <X-days> sub-
+        categories will be populated first, since <days> is a younger category
+        than <weeks>. If there is an 11 days old item in the input, it will
+        populate the <1-week> sub-category, because it is the newest 1-week-old
+        item *not consumed by a younger category*.
 
 
-        Time categories and their meaning:
+        Currently supported time categories and their meaning:
 
-            hours:  60 minutes (    3600 seconds)
-            days:   24 hours   (   86400 seconds)
-            weeks:   7 days    (  604800 seconds)
-            months: 30 days    ( 2592000 seconds)
-            years: 365 days    (31536000 seconds)
+            hours:   60 minutes     (3600 seconds)
+            days:    24 hours      (86400 seconds)
+            weeks:    7 days      (604800 seconds)
+            months:  30 days     (2592000 seconds)
+            years:  365 days    (31536000 seconds)
 
-        The special category <recent> keeps track of all items younger than
-        1 hour. It it not further sub-categorized. If specified in the rules,
-        the <maxcount> newest items from this category re accepted.
+        The special category <recent> keeps track of all items younger than the
+        youngest of the categories above, i.e. younger than 1 hour. It is not
+        further sub-categorized. If specified in the rules, the <maxcount>
+        newest recent items become accepted.
 
 
 Exit status:
-    TODO
+    0 upon success.
+    1 upon all expected (runtime) errors detected by the program.
+    2 upon argument errors as detected by argparse.
+    >0 for all other (unexpected) errors.
 """
 
 import os
@@ -208,6 +215,8 @@ def main():
     except TimeFilterError as e:
         err("Error upon time filter setup: %s" % e)
 
+    if
+
     if options.move is not None:
         if not os.path.isdir(options.move):
             err("--move target not a directory: '%s'" % options.move)
@@ -231,8 +240,11 @@ def main():
     log.debug("Rejected item(s):\n%s" % "\n".join("%s" % r for r in rejected))
 
 
-    # SECTION 4) item output.
-    # =======================
+    # SECTION 4) item action and item output.
+    # =======================================
+    # - determine action items (either the rejected or the accepted ones)
+    # - for each action item, perform one or none action, and write to stdout
+
     # Write binary data to stdout. Use pre-existing binary data ("pass-through"
     # mode, useful e.g. for paths on Unix) or encode unicode to output encoding.
     # If automatically chosen, sys.stdout.encoding might not always be the right
@@ -257,6 +269,16 @@ def main():
             itemstring_bytes = ai.text.encode(outenc)
         sys.stdout.write("%s%s" % (itemstring_bytes, sep_bytes))
         # In Python 3, write bytes to stdout buffer (after detach).
+        action(ai)
+
+
+def action(item):
+    """Perform none or one action on item."""
+    if options.move:
+        log.info("Moving ")
+    if options.delete:
+
+    return
 
 
 def read_items_from_stdin():
