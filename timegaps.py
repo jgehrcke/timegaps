@@ -484,7 +484,7 @@ def parse_options():
             "strptime() at bit.ly/strptime). Use this time as reference time "
             "(default is time of program invocation).")
         )
-    parser.add_argument("-S", "--follow-symlinks", action="store_true",
+    parser.add_argument("--follow-symlinks", action="store_true",
         help=("Retrieve modification time from symlink target, .. "
             "TODO: other implications?")
         )
