@@ -291,16 +291,30 @@ class TestStdinAndSeparation(Base):
         t.assert_is_stdout(".\0.\0.\0.\0.\0.\0")
         t.assert_no_stderr()
 
-    def test_stdin_one_recent(self):
+    def test_stdin_one_recent_newline(self):
+        # CWD is recently modified.
         s = ".\n".encode(STDINENC)
-        t = self.run("-vv --stdin recent1", sin=s)
+        t = self.run("--stdin recent1", sin=s)
         t.assert_no_stdout()
         t.assert_no_stderr()
-        t = self.run("-S recent1", sin=s)
+        t = self.run("-s recent1", sin=s)
         t.assert_no_stdout()
         t.assert_no_stderr()
-        t = self.run("-a -S recent1", sin=s)
+        t = self.run("-a -s recent1", sin=s)
         t.assert_is_stdout(".\n")
+        t.assert_no_stderr()
+
+    def test_stdin_one_recent_null(self):
+        # CWD is recently modified.
+        s = ".\0".encode(STDINENC)
+        t = self.run("--nullsep --stdin recent1", sin=s)
+        t.assert_no_stdout()
+        t.assert_no_stderr()
+        t = self.run("-0 -s recent1", sin=s)
+        t.assert_no_stdout()
+        t.assert_no_stderr()
+        t = self.run("-a -0 -s recent1", sin=s)
+        t.assert_is_stdout(".\0")
         t.assert_no_stderr()
 
 
