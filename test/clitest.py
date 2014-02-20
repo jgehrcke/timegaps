@@ -133,10 +133,13 @@ class CmdlineInterfaceTest(object):
 
     def run(self, cmd_unicode, expect_rc=0, stdinbytes=None, log_output=True):
         if stdinbytes is not None:
-            log.debug("Prepare file for stdin data.")
+            log.debug("Prepare stdin data file.")
+            log.debug("stdin data repr:\n%r", stdinbytes)
             assert isinstance(stdinbytes, str) # TODO: Py3
             bn = "_clitest_stdin"
-            with open(os.path.join(self.rundir, bn), "w") as f:
+            # Open in 'binary' mode. Is noop on Unix, but disables newline-
+            # processing on Windows.
+            with open(os.path.join(self.rundir, bn), "wb") as f:
                 f.write(stdinbytes)
             if not WINDOWS:
                 cmd_unicode = "cat %s | %s" % (bn, cmd_unicode)
@@ -175,8 +178,10 @@ class CmdlineInterfaceTest(object):
         with open(self.errfilepath) as f:
             self.rawerr = f.read()
         if log_output:
-            log.info("Test stdout repr:\n%s", repr(self.rawout))
-            log.info("Test stderr repr:\n%s", repr(self.rawerr))
+            log.info("Test stdout:\n%s", self.rawout)
+            log.info("Test stdout repr:\n%r", self.rawout)
+            log.info("Test stderr:\n%s", self.rawerr)
+            log.info("Test stderr repr:\n%r", self.rawerr)
         if rc != expect_rc:
             raise WrongExitCode("Expected %s, got %s" % (expect_rc, rc))
 
