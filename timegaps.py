@@ -244,18 +244,59 @@ def main():
         # In Python 3, write bytes to stdout buffer (after detach).
 
 
+def read_items_from_stdin():
+    # Regarding stdin decoding: http://stackoverflow.com/a/16549381/145400
+    # Reading a stream of chunks/records with a different separator than newline
+    # is not easily possible with stdlib (http://bugs.python.org/issue1152248).
+    # Take simplest approach for now: read all data (processing cannot start
+    # before that anyway), then split data (byte string) at sep byte occurrences
+    # (NUL or newline), then decode each record and return list of unicode
+    # strings.
+    # Read until EOF.
+    log.debug("Read binary data from standard input, until EOF.")
+    # TODO: protect with try/except.
+    bytedata = sys.stdin.read()
+    log.debug("%s bytes have been read.", len(bytedata))
+
+    # TODO: Py3
+    enc = sys.stdout.encoding
+    sep = "\n"
+    if options.nullsep:
+        sep = "\0"
+    sep_bytes = sep.encode(enc)
+
+    log.debug("Split stdin data on separator %r", sep_bytes)
+    records = bytedata.split(sep_bytes)
+    records_unicode = [r.decode(enc) for r in records]
+    return records_unicode
+
+
 def prepare_input():
     """Return a list of objects that can be classified by a `TimeFilter`
     instance.
     """
-    # When reading from stdin, take a different path than `options.items`.
-    # Regarding stdin decoding: http://stackoverflow.com/a/16549381/145400
-    #
+    if not options.stdin:
+        # `itemstrings` can be either unicode or byte strings. On Unix, we
+        # want to keep cmdline arguments as raw binary data. In FS mode, keep
+        # paths as byte strings. In time-from-string mode, decode itemstrings
+        # later.
+        itemstrings = options.items
+    else:
+        # `itemstrings` are only unicode objects.
+        itemstrings = read_items_from_stdin()
+
     if options.time_from_string is not None:
         # TODO: change mode to pure string parsing, w/o item-wise file system
         # interaction
         raise NotImplemented
+        # Decoding of *each single item string*.
+        if isinstance(itemstrings[0], str): # TODO: Py3
+            # Either console or filesystem encoding would make sense here..
+            # Use the one that can be easiest changed by the user, i.e.
+            # set via PYTHONIOENCODING, i.e. sys.stdout.encoding.
+            itemstrings = [s.decode(sys.stdout.encoding) for s in itemstrings]
         # return list_of_items_from_strings
+
     # File system mode.
     log.info("Validate paths and extract time information.")
     fses = []
