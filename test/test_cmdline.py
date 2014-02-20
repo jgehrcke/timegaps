@@ -279,6 +279,20 @@ class TestStdinAndSeparation(Base):
     """Test minimal invocation signatures, use --stdin mode and NUL character
     separation of items. The only file system entry used in these tests is the
     current working directory, which has just (recently!) been modified.
+
+    timegaps interprets stdin data as byte chunks separated by a byte string
+    separator. Each chunk is decoded to unicode using a certain codec. The
+    inverse operation for the creation of such stdin data is:
+        - create unicode item strings
+        - encode these to byte strings (each of them yielding a "chunk")
+        - sep.join() these chunks with `sep` being the byte string separator
+
+    Here, we make our lives simpler. The stdin data as specified in these tests
+    is usually created as unicode strings *including* separators and then, as
+    a whole, encoded to UTF-8. For UTF-8 the result is the same as with the
+    multi-step process described above, because \0 and \n have the same byte
+    representation in UTF-8 and ASCII (and we use ASCII to create the bytes
+    considered as separators: null character x00 and newline x0A).
     """
     def test_simple_nullcharsep_1(self):
         # CWD should just have been modified, so it is years-rejected.
@@ -292,7 +306,6 @@ class TestStdinAndSeparation(Base):
         t.assert_no_stderr()
 
     def test_stdin_one_recent_newline(self):
-        # CWD is recently modified.
         s = ".\n".encode(STDINENC)
         t = self.run("--stdin recent1", sin=s)
         t.assert_no_stdout()
@@ -305,7 +318,6 @@ class TestStdinAndSeparation(Base):
         t.assert_no_stderr()
 
     def test_stdin_one_recent_null(self):
-        # CWD is recently modified.
         s = ".\0".encode(STDINENC)
         t = self.run("--nullsep --stdin recent1", sin=s)
         t.assert_no_stdout()
@@ -315,6 +327,49 @@ class TestStdinAndSeparation(Base):
         t.assert_no_stderr()
         t = self.run("-a -0 -s recent1", sin=s)
         t.assert_is_stdout(".\0")
+        t.assert_no_stderr()
+
+    def test_stdin_two_recent_various_seps(self):
+        # Missing trailing sep.
+        s = ".\n.".encode(STDINENC)
+        t = self.run("-a -s recent2", sin=s)
+        t.assert_is_stdout(".\n.\n")
+        t.assert_no_stderr()
+
+        # Additional leading sep.
+        s = "\n.\n.\n".encode(STDINENC)
+        t = self.run("-a -s recent2", sin=s)
+        t.assert_is_stdout(".\n.\n")
+        t.assert_no_stderr()
+
+        # Two separators + no trailing.
+        s = ".\n\n.".encode(STDINENC)
+        t = self.run("-a -s recent2", sin=s)
+        t.assert_is_stdout(".\n.\n")
+        t.assert_no_stderr()
+
+        # Three separators + no trailing.
+        s = ".\n\n\n.".encode(STDINENC)
+        t = self.run("-a -s recent2", sin=s)
+        t.assert_is_stdout(".\n.\n")
+        t.assert_no_stderr()
+
+        # Multi + trailing.
+        s = ".\n\n.\n".encode(STDINENC)
+        t = self.run("-a -s recent2", sin=s)
+        t.assert_is_stdout(".\n.\n")
+        t.assert_no_stderr()
+
+        # Multi + multi trailing.
+        s = ".\n\n.\n\n".encode(STDINENC)
+        t = self.run("-a -s recent2", sin=s)
+        t.assert_is_stdout(".\n.\n")
+        t.assert_no_stderr()
+
+        # Multi leading + multi + multi trailing.
+        s = "\n\n.\n\n.\n\n".encode(STDINENC)
+        t = self.run("-a -s recent2", sin=s)
+        t.assert_is_stdout(".\n.\n")
         t.assert_no_stderr()
 
 
