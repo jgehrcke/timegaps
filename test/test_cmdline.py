@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import logging
+from itertools import chain
 from py.test import raises, mark
 from clitest import CmdlineInterfaceTest, CmdlineTestError, WrongExitCode
 
@@ -82,8 +83,7 @@ log.setLevel(logging.DEBUG)
 
 
 class Base(object):
-    """Implement methods shared by all test classes.
-    """
+    """Implement methods shared by all test classes."""
 
     def setup_method(self, method):
         testname = "%s_%s" % (type(self).__name__, method.__name__)
@@ -445,7 +445,39 @@ class TestFileFilterActions(Base):
     (delete, move). Involves creation and modification of temporary files in the
     file system.
     """
-    pass
+
+    def test_10_days_2_weeks_move_files(self):
+        self._10_days_2_weeks_move_dirs_or_files(self.mfile)
+
+    def _10_days_2_weeks_move_dirs_or_files(self, mfile_or_dir):
+        # `mfile_or_dir` is either self.mfile or self.mdir, so that this test
+        # can easily be run against a set of files or dirs.
+        # Test logic is explained in test_api.
+        now = time.time()
+        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        name_time_pairs = [
+            ("t%s" % (i+1,), t) for i,t in enumerate(nowminusXdays)]
+        # Create dir or file of name `name` for each name-mtime pair.
+        for name, mtime in name_time_pairs:
+            mfile_or_dir(name, mtime)
+
+        itemargs = " ".join(name for name, _ in name_time_pairs)
+        tdir = "movehere"
+        a = ["t%s\n" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
+        r = ["t12\n", "t13\n", "t15\n"]
+
+        a_paths = ["t%s" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
+        a_paths_moved = [os.path.join(tdir, _) for _ in a_paths]
+        r_paths = ["t12", "t13", "t15"]
+        r_paths_moved = [os.path.join(tdir, _) for _ in r_paths]
+
+        os.mkdir(os.path.join(self.rundir, tdir))
+
+        t = self.run("--move %s days10,weeks2 %s" % (tdir, itemargs))
+        t.assert_in_stdout(r)
+        t.assert_not_in_stdout(a)
+        t.assert_no_stderr()
+        t.assert_paths_exist(list(chain(a_paths, r_paths_moved)))
 
 
 class TestMisc(Base):
