@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 import os
 import sys
+import time
 import logging
 from py.test import raises, mark
 from clitest import CmdlineInterfaceTest, CmdlineTestError, WrongExitCode
@@ -87,7 +88,8 @@ class Base(object):
     def setup_method(self, method):
         testname = "%s_%s" % (type(self).__name__, method.__name__)
         print("\n\n%s" % testname)
-        self.cmdlinetest = CLITest(testname)
+        self.clitest = CLITest(testname)
+        self.rundir = self.clitest.rundir
 
     def teardown_method(self, method):
         pass
@@ -96,8 +98,8 @@ class Base(object):
     def run(self, arguments_unicode, rc=0, sin=None):
         cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_NAME, arguments_unicode)
         log.info("Test command:\n%s" % cmd)
-        self.cmdlinetest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
-        return self.cmdlinetest
+        self.clitest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
+        return self.clitest
 
 
 class TestArgparseFeatures(Base):
@@ -374,10 +376,71 @@ class TestStdinAndSeparation(Base):
 
 
 class TestFileFilter(Base):
-    """Tests that involve filtering of file system entries. Involves creation
-    of temporary mock files in the file system.
-    """
-    pass
+    """Tests that involve creation of real (temp) files in the file system."""
+
+    def mfile(self, relpath, mtime):
+        # http://stackoverflow.com/a/1160227/145400
+        # Insignificant race condition.
+        p = os.path.join(self.rundir, relpath)
+        with open(p, "w"):
+            os.utime(p, (mtime, mtime))
+
+    def mdir(self, relpath, mtime):
+        p = os.path.join(self.rundir, relpath)
+        os.mkdir(p)
+        os.utime(p, (mtime, mtime))
+
+    def test_10_days_2_weeks_noaction(self):
+        # Logically, this is a copy of test_10_days_2_weeks in test_api.py.
+        # This time, use real files.
+        # FSEs 1-11,14 must be accepted (12 FSEs). 15 FSEs are used as input
+        # (1 to 15 days old), i.e. 3 are to be rejected (FSEs 12, 13, 15).
+        now = time.time()
+        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        name_time_pairs = [
+            ("f%s" % (i+1,), t) for i,t in enumerate(nowminusXdays)]
+        for name, mtime in name_time_pairs:
+            self.mfile(name, mtime)
+        itemargs = " ".join(name for name, _ in name_time_pairs)
+
+        t = self.run("days10,weeks2 %s" % itemargs)
+        a = ["f%s\n" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
+        r = ["f12\n", "f13\n", "f15\n"]
+        t.assert_in_stdout(r)
+        t.assert_not_in_stdout(a)
+        t.assert_no_stderr()
+
+        # Invert output.
+        t = self.run("-a days10,weeks2 %s" % itemargs)
+        t.assert_in_stdout(a)
+        t.assert_not_in_stdout(r)
+        t.assert_no_stderr()
+
+        # Use stdin input.
+        s = "\n".join(name for name, _ in name_time_pairs).encode(STDINENC)
+        t = self.run("-s -a days10,weeks2", sin=s)
+        t.assert_in_stdout(a)
+        t.assert_not_in_stdout(r)
+        t.assert_no_stderr()
+
+
+        # fses = [FilterItem(modtime=t) for t in nowminusXdays]
+        # rules = {"days": 10, "weeks": 2}
+        # a, r = TimeFilter(rules, now).filter(fses)
+        # r = list(r)
+        # assert len(a) == 12
+        # # Check if first 11 fses are in accepted list (order can be predicted
+        # # according to current implementation, but should not be tested, as it
+        # # is not guaranteed according to the current specification).
+        # for fse in fses[:11]:
+        #     assert fse in a
+        # # Check if 14th FSE is accepted.
+        # assert fses[13] in a
+        # # Check if FSEs 12, 13, 15 are rejected.
+        # assert len(r) == 3
+        # for i in (11, 12, 14):
+        #     assert fses[i] in r
+
 
 
 class TestFileFilterActions(Base):

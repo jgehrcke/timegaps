@@ -517,8 +517,8 @@ class TestTimeFilterBasic(object):
         r = list(r)
         assert len(a) == 12
         # Check if first 11 fses are in accepted list (order can be predicted
-        # according to current implementation, but should not tested, as it is
-        # not guaranteed according to the current specification).
+        # according to current implementation, but should not be tested, as it
+        # is not guaranteed according to the current specification).
         for fse in fses[:11]:
             assert fse in a
         # Check if 14th FSE is accepted.
