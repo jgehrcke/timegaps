@@ -482,6 +482,34 @@ class TestFileFilterActions(Base):
         t.assert_no_stderr()
         t.assert_paths_exist(list(chain(a_paths, r_paths_moved)))
 
+    def test_10_days_2_weeks_delete_files(self):
+        self._10_days_2_weeks_delete_dirs_or_files(self.mfile)
+
+    def test_10_days_2_weeks_delete_dirs(self):
+        self._10_days_2_weeks_delete_dirs_or_files(self.mdir)
+
+    def _10_days_2_weeks_delete_dirs_or_files(self, mfile_or_dir):
+        now = time.time()
+        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        name_time_pairs = [
+            ("t%s" % (i+1,), t) for i,t in enumerate(nowminusXdays)]
+        # Create dir or file of name `name` for each name-mtime pair.
+        for name, mtime in name_time_pairs:
+            mfile_or_dir(name, mtime)
+
+        itemargs = " ".join(name for name, _ in name_time_pairs)
+        a_paths = ["t%s" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
+        r_paths = ["t12", "t13", "t15"]
+        a = ["%s\n" % _ for _ in a_paths]
+        r = ["%s\n" % _ for _ in r_paths]
+
+        t = self.run("--delete days10,weeks2 %s" % itemargs)
+        t.assert_in_stdout(r)
+        t.assert_not_in_stdout(a)
+        t.assert_no_stderr()
+        t.assert_paths_not_exist(r_paths)
+        t.assert_paths_exist(a_paths)
+
 
 class TestMisc(Base):
     """Tests that do not fit in other categories.
