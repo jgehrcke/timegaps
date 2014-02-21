@@ -331,12 +331,28 @@ class CmdlineInterfaceTest(object):
         Use os.path.exists, which fails for broken symbolic links any may fail
         for invalid permissions.
         """
+        self._paths_exist(p)
+
+    def assert_paths_not_exist(self, p):
+        """Validate that path(s) do not exist relative to run directory.
+
+        `p` must be a single string or a list of strings (byte or unicode).
+        Use os.path.exists, which fails for broken symbolic links any may fail
+        for invalid permissions.
+        """
+        self._paths_exist(p, invert=True)
+
+    def _paths_exist(self, p, invert=False):
         _, pathlist = _list_string_type(p)
         for path in pathlist:
             assert isinstance(path, basestring) #TODO: Py3
             testpath = os.path.join(self.rundir, path)
             if not os.path.exists(testpath):
-                raise WrongFile("Path does not exist: '%s'")
+                if not invert:
+                    raise WrongFile("Path does not exist: '%s'" % path)
+                return
+            if invert:
+                raise WrongFile("Path should not exist: '%s'" % path)
 
 
 def _list_string_type(o):
