@@ -36,6 +36,10 @@ class WrongStderr(CmdlineTestError):
     pass
 
 
+class WrongFile(CmdlineTestError):
+    pass
+
+
 class CmdlineInterfaceTest(object):
     """Command line interface test abstraction for a given CLI program, called
     PROGRAM from here on.
@@ -319,6 +323,20 @@ class CmdlineInterfaceTest(object):
         if encoding is None:
             encoding = self.shellscript_encoding
         return raw.decode(encoding)
+
+    def assert_paths_exist(self, p):
+        """Validate that path(s) exist relative to run directory.
+
+        `p` must be a single string or a list of strings (byte or unicode).
+        Use os.path.exists, which fails for broken symbolic links any may fail
+        for invalid permissions.
+        """
+        _, pathlist = _list_string_type(p)
+        for path in pathlist:
+            assert isinstance(path, basestring) #TODO: Py3
+            testpath = os.path.join(self.rundir, path)
+            if not os.path.exists(testpath):
+                raise WrongFile("Path does not exist: '%s'")
 
 
 def _list_string_type(o):
