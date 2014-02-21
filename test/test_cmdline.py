@@ -449,6 +449,9 @@ class TestFileFilterActions(Base):
     def test_10_days_2_weeks_move_files(self):
         self._10_days_2_weeks_move_dirs_or_files(self.mfile)
 
+    def test_10_days_2_weeks_move_dirs(self):
+        self._10_days_2_weeks_move_dirs_or_files(self.mdir)
+
     def _10_days_2_weeks_move_dirs_or_files(self, mfile_or_dir):
         # `mfile_or_dir` is either self.mfile or self.mdir, so that this test
         # can easily be run against a set of files or dirs.
