@@ -101,6 +101,18 @@ class Base(object):
         self.clitest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
         return self.clitest
 
+    def mfile(self, relpath, mtime):
+        # http://stackoverflow.com/a/1160227/145400
+        # Insignificant race condition.
+        p = os.path.join(self.rundir, relpath)
+        with open(p, "w"):
+            os.utime(p, (mtime, mtime))
+
+    def mdir(self, relpath, mtime):
+        p = os.path.join(self.rundir, relpath)
+        os.mkdir(p)
+        os.utime(p, (mtime, mtime))
+
 
 class TestArgparseFeatures(Base):
     """Make sure that argparse is set up properly (and works as exepected).
@@ -378,19 +390,15 @@ class TestStdinAndSeparation(Base):
 class TestFileFilter(Base):
     """Tests that involve creation of real (temp) files in the file system."""
 
-    def mfile(self, relpath, mtime):
-        # http://stackoverflow.com/a/1160227/145400
-        # Insignificant race condition.
-        p = os.path.join(self.rundir, relpath)
-        with open(p, "w"):
-            os.utime(p, (mtime, mtime))
+    def test_10_days_2_weeks_noaction_files(self):
+        self._10_days_2_weeks_noaction_dirs_or_files(self.mfile)
 
-    def mdir(self, relpath, mtime):
-        p = os.path.join(self.rundir, relpath)
-        os.mkdir(p)
-        os.utime(p, (mtime, mtime))
+    def test_10_days_2_weeks_noaction_dirs(self):
+        self._10_days_2_weeks_noaction_dirs_or_files(self.mdir)
 
-    def test_10_days_2_weeks_noaction(self):
+    def _10_days_2_weeks_noaction_dirs_or_files(self, mfile_or_dir):
+        # `mfile_or_dir` is either self.mfile or self.mdir, so that this test
+        # can easily be run against a set of files or dirs.
         # Logically, this is a copy of test_10_days_2_weeks in test_api.py.
         # This time, use real files.
         # FSEs 1-11,14 must be accepted (12 FSEs). 15 FSEs are used as input
@@ -400,12 +408,13 @@ class TestFileFilter(Base):
         name_time_pairs = [
             ("f%s" % (i+1,), t) for i,t in enumerate(nowminusXdays)]
         for name, mtime in name_time_pairs:
-            self.mfile(name, mtime)
-        itemargs = " ".join(name for name, _ in name_time_pairs)
+            mfile_or_dir(name, mtime)
 
-        t = self.run("days10,weeks2 %s" % itemargs)
+        itemargs = " ".join(name for name, _ in name_time_pairs)
         a = ["f%s\n" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
         r = ["f12\n", "f13\n", "f15\n"]
+
+        t = self.run("days10,weeks2 %s" % itemargs)
         t.assert_in_stdout(r)
         t.assert_not_in_stdout(a)
         t.assert_no_stderr()
@@ -417,30 +426,18 @@ class TestFileFilter(Base):
         t.assert_no_stderr()
 
         # Use stdin input.
-        s = "\n".join(name for name, _ in name_time_pairs).encode(STDINENC)
+        s = "\n".join(itemargs.split()).encode(STDINENC)
         t = self.run("-s -a days10,weeks2", sin=s)
         t.assert_in_stdout(a)
         t.assert_not_in_stdout(r)
         t.assert_no_stderr()
 
-
-        # fses = [FilterItem(modtime=t) for t in nowminusXdays]
-        # rules = {"days": 10, "weeks": 2}
-        # a, r = TimeFilter(rules, now).filter(fses)
-        # r = list(r)
-        # assert len(a) == 12
-        # # Check if first 11 fses are in accepted list (order can be predicted
-        # # according to current implementation, but should not be tested, as it
-        # # is not guaranteed according to the current specification).
-        # for fse in fses[:11]:
-        #     assert fse in a
-        # # Check if 14th FSE is accepted.
-        # assert fses[13] in a
-        # # Check if FSEs 12, 13, 15 are rejected.
-        # assert len(r) == 3
-        # for i in (11, 12, 14):
-        #     assert fses[i] in r
-
+        # Use stdin input, nullchar separation.
+        s = "\0".join(itemargs.split()).encode(STDINENC)
+        t = self.run("-0 -s -a days10,weeks2", sin=s)
+        t.assert_in_stdout(["f%s\0" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)])
+        t.assert_not_in_stdout(["f12\0", "f13\0", "f15\0"])
+        t.assert_no_stderr()
 
 
 class TestFileFilterActions(Base):
