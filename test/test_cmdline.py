@@ -443,8 +443,21 @@ class TestFileFilter(Base):
 class TestFileFilterActions(Base):
     """Tests that involve filtering of file system entries. Tests apply actions
     (delete, move). Involves creation and modification of temporary files in the
-    file system.
+    test run directory.
     """
+    def test_simple_delete_file(self):
+        self._test_simple_delete_file_or_dir(self.mfile)
+
+    def test_simple_delete_dir(self):
+        self._test_simple_delete_file_or_dir(self.mdir)
+
+    def _test_simple_delete_file_or_dir(self, mfile_or_dir):
+        mfile_or_dir("test", time.time())
+        t = self.run("--delete days1 test")
+        t.assert_in_stdout("test")
+        t.assert_no_stderr()
+        t.assert_paths_not_exist("test")
+
     def gen_files_or_dirs(self, mfile_or_dir):
         # `mfile_or_dir` is either self.mfile or self.mdir, so that this test
         # can easily be run against a set of files or dirs.
@@ -496,6 +509,19 @@ class TestFileFilterActions(Base):
         t.assert_no_stderr()
         t.assert_paths_not_exist(r_paths)
         t.assert_paths_exist(a_paths)
+
+    def test_delete_recursive(self):
+        d = "notempty"
+        f = "testfile"
+        now = time.time()
+        self.mdir(d, now)
+        self.mfile(os.path.join(d, f), now)
+        t = self.run("-v --delete days1 %s" % d)
+        t.assert_in_stdout(d)
+        #t.assert_not_in_stdout(a)
+        #t.assert_no_stderr()
+        #t.assert_paths_not_exist(r_paths)
+        #t.assert_paths_exist(a_paths)
 
 
 class TestMisc(Base):
