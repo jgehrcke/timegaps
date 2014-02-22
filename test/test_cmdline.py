@@ -510,18 +510,28 @@ class TestFileFilterActions(Base):
         t.assert_paths_not_exist(r_paths)
         t.assert_paths_exist(a_paths)
 
+    def test_delete_notempty(self):
+        d = "testdir"
+        f = "testfile"
+        now = time.time()
+        self.mdir(d, now)
+        self.mfile(os.path.join(d, f), now)
+        t = self.run("--delete days1 %s" % d)
+        t.assert_in_stdout(d)
+        t.assert_in_stderr(["ERROR", "Cannot rmdir", "not", "empty"])
+        # TODO: think about specification. Should this be a positive error
+        # code, even in non-strict mode?
+
     def test_delete_recursive(self):
         d = "notempty"
         f = "testfile"
         now = time.time()
         self.mdir(d, now)
         self.mfile(os.path.join(d, f), now)
-        t = self.run("-v --delete days1 %s" % d)
+        t = self.run("--delete --delete-recursive days1 %s" % d)
         t.assert_in_stdout(d)
-        #t.assert_not_in_stdout(a)
-        #t.assert_no_stderr()
-        #t.assert_paths_not_exist(r_paths)
-        #t.assert_paths_exist(a_paths)
+        t.assert_no_stderr()
+        t.assert_paths_not_exist(d)
 
 
 class TestMisc(Base):
