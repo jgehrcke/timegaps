@@ -312,20 +312,20 @@ def action(item):
                 # point to a directory (but not a symbolic link to a directory).
                 try:
                     shutil.rmtree(item.path)
-                except Exception:
+                except Exception as e:
                     log.error("Error while recursively deleting '%s': %e",
                         item.path, e)
                 return
             try:
                 # Raises OSError if dir not empty.
                 os.rmdir(item.path)
-            except Exception:
-                log.error("Cannot rmdir '%s': %e", item.path, e)
+            except Exception as e:
+                log.error("Cannot rmdir '%s': %s", item.path, e)
             return
         elif item.type == "file":
             try:
                 os.remove(item.path)
-            except Exception:
+            except Exception as e:
                 log.error("Cannot delete file '%s': %e", item.path, e)
             return
         else:
