@@ -472,16 +472,10 @@ class TestFileFilterActions(Base):
     def _10_days_2_weeks_move_dirs_or_files(self, mfile_or_dir):
         a, r, a_paths, r_paths, itemargs = self.gen_files_or_dirs(mfile_or_dir)
         tdir = "movehere"
-        #a = ["t%s\n" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
-        #r = ["t12\n", "t13\n", "t15\n"]
-
-        #a_paths = ["t%s" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
         a_paths_moved = [os.path.join(tdir, _) for _ in a_paths]
-        #r_paths = ["t12", "t13", "t15"]
         r_paths_moved = [os.path.join(tdir, _) for _ in r_paths]
 
         os.mkdir(os.path.join(self.rundir, tdir))
-
         t = self.run("--move %s days10,weeks2 %s" % (tdir, itemargs))
         t.assert_in_stdout(r)
         t.assert_not_in_stdout(a)
