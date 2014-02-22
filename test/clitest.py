@@ -159,8 +159,8 @@ class CmdlineInterfaceTest(object):
         # If additional args are defined, append them (noop if list is empty).
         cmd.extend(self.shellargs)
         cmd.append(self.shellscript_name)
-        of = open(self.outfilepath, "w")
-        ef = open(self.errfilepath, "w")
+        of = open(self.outfilepath, "wb")
+        ef = open(self.errfilepath, "wb")
         log.debug("Popen with cmd: %s", cmd)
         try:
             sp = subprocess.Popen(
