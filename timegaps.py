@@ -187,7 +187,7 @@ def main():
 
     # SECTION I: bootstrap. validate and process certain command line arguments.
     # ==========================================================================
-    # If the user misses to provide either RULES or an ITEM, it is not catched
+    # If the user misses to provide either RULES or an ITEM, it is not caught
     # by argparse (0 ITEMs is allowed when --stdin is set). Validate RULES and
     # ITEMs here in the order as consumed by argparse (first RULES, then ITEMS).
     # Doing it the other way round could produce confusing error messages.
@@ -296,7 +296,7 @@ def action(item):
     assert isinstance(item, FileSystemEntry)
     if options.move:
         tdir = options.move
-        log.info("Moving '%s' to directory '%s'.", item.path, tdir)
+        log.info("Moving %s to directory %s: %s", item.type, tdir, item.path)
         try:
             shutil.move(item.path, tdir)
         # It is unclear to me at the moment if OSError is the only class of
@@ -305,7 +305,7 @@ def action(item):
             log.error("Cannot move '%s': %e", item.path, e)
         return
     if options.delete:
-        log.info("Delete %s '%s'", item.type, item.path)
+        log.info("Deleting %s: %s", item.type, item.path)
         if item.type == "dir":
             if options.delete_recursive:
                 # shutil.rmtree: Delete an entire directory tree; path must
@@ -344,7 +344,7 @@ def read_items_from_stdin():
     log.debug("Read binary data from standard input, until EOF.")
 
     # Python 3 opens stdin in text mode (i.e. decodes to unicode). Python 2
-    # opens stdin in normal "r" (newline flattening) mide, not in binary mode.
+    # opens stdin in normal "r" (newline flattening) mode, not in binary mode.
     # Get the binary data, depending on the Python version.
 
     # In Python 2 on Windows, change mode to binary. Otherwise, two bytes \r\n
