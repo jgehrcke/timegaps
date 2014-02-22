@@ -445,6 +445,23 @@ class TestFileFilterActions(Base):
     (delete, move). Involves creation and modification of temporary files in the
     file system.
     """
+    def gen_files_or_dirs(self, mfile_or_dir):
+        # `mfile_or_dir` is either self.mfile or self.mdir, so that this test
+        # can easily be run against a set of files or dirs.
+        # Test logic is explained in test_api: 10_days_2_weeks.
+        now = time.time()
+        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        name_time_pairs = [
+            ("t%s" % (i+1,), t) for i,t in enumerate(nowminusXdays)]
+        # Create dir or file of name `name` for each name-mtime pair.
+        for name, mtime in name_time_pairs:
+            mfile_or_dir(name, mtime)
+        itemargs = " ".join(name for name, _ in name_time_pairs)
+        a_paths = ["t%s" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
+        r_paths = ["t12", "t13", "t15"]
+        a = ["%s\n" % _ for _ in a_paths]
+        r = ["%s\n" % _ for _ in r_paths]
+        return a, r, a_paths, r_paths, itemargs
 
     def test_10_days_2_weeks_move_files(self):
         self._10_days_2_weeks_move_dirs_or_files(self.mfile)
@@ -453,25 +470,14 @@ class TestFileFilterActions(Base):
         self._10_days_2_weeks_move_dirs_or_files(self.mdir)
 
     def _10_days_2_weeks_move_dirs_or_files(self, mfile_or_dir):
-        # `mfile_or_dir` is either self.mfile or self.mdir, so that this test
-        # can easily be run against a set of files or dirs.
-        # Test logic is explained in test_api.
-        now = time.time()
-        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
-        name_time_pairs = [
-            ("t%s" % (i+1,), t) for i,t in enumerate(nowminusXdays)]
-        # Create dir or file of name `name` for each name-mtime pair.
-        for name, mtime in name_time_pairs:
-            mfile_or_dir(name, mtime)
-
-        itemargs = " ".join(name for name, _ in name_time_pairs)
+        a, r, a_paths, r_paths, itemargs = self.gen_files_or_dirs(mfile_or_dir)
         tdir = "movehere"
-        a = ["t%s\n" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
-        r = ["t12\n", "t13\n", "t15\n"]
+        #a = ["t%s\n" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
+        #r = ["t12\n", "t13\n", "t15\n"]
 
-        a_paths = ["t%s" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
+        #a_paths = ["t%s" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
         a_paths_moved = [os.path.join(tdir, _) for _ in a_paths]
-        r_paths = ["t12", "t13", "t15"]
+        #r_paths = ["t12", "t13", "t15"]
         r_paths_moved = [os.path.join(tdir, _) for _ in r_paths]
 
         os.mkdir(os.path.join(self.rundir, tdir))
@@ -489,20 +495,7 @@ class TestFileFilterActions(Base):
         self._10_days_2_weeks_delete_dirs_or_files(self.mdir)
 
     def _10_days_2_weeks_delete_dirs_or_files(self, mfile_or_dir):
-        now = time.time()
-        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
-        name_time_pairs = [
-            ("t%s" % (i+1,), t) for i,t in enumerate(nowminusXdays)]
-        # Create dir or file of name `name` for each name-mtime pair.
-        for name, mtime in name_time_pairs:
-            mfile_or_dir(name, mtime)
-
-        itemargs = " ".join(name for name, _ in name_time_pairs)
-        a_paths = ["t%s" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)]
-        r_paths = ["t12", "t13", "t15"]
-        a = ["%s\n" % _ for _ in a_paths]
-        r = ["%s\n" % _ for _ in r_paths]
-
+        a, r, a_paths, r_paths, itemargs = self.gen_files_or_dirs(mfile_or_dir)
         t = self.run("--delete days10,weeks2 %s" % itemargs)
         t.assert_in_stdout(r)
         t.assert_not_in_stdout(a)
