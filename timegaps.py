@@ -215,8 +215,9 @@ def main():
     # Determine reference time and set up `TimeFilter` instance. Do this as
     # early as possible: might raise error.
     if options.reference_time is not None:
-        log.debug("Parse reference time from command line.")
-        raise NotImplemented
+        log.info("Parse reference time from command line.")
+        reference_time = seconds_since_epoch_from_localtime_string(
+            options.reference_time, "%Y%m%d-%H%M%S")
     else:
         log.debug("Get reference time: now.")
         reference_time = time.time()
