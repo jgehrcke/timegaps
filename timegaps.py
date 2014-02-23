@@ -294,7 +294,9 @@ def main():
 
 def action(item):
     """Perform none or one action on item."""
-    assert isinstance(item, FileSystemEntry)
+    if not isinstance(item, FileSystemEntry):
+        # Don't perform actions for FilterItems.
+        return
     if options.move:
         tdir = options.move
         log.info("Moving %s to directory %s: %s", item.type, tdir, item.path)
@@ -401,6 +403,7 @@ def prepare_input():
     if options.time_from_string is not None:
         # TODO: change mode to pure string parsing, w/o item-wise file system
         # interaction
+        log.info("--time-from-string set, don't interpret items as paths.")
         fmt = options.time_from_string
         # Decoding of *each single item string*.
         if isinstance(itemstrings[0], str): # TODO: Py3
@@ -410,7 +413,9 @@ def prepare_input():
             itemstrings = [s.decode(sys.stdout.encoding) for s in itemstrings]
         items = []
         for s in itemstrings:
+            log.debug("Parsing seconds since epoch from item: %r", s)
             mtime = seconds_since_epoch_from_localtime_string(s, fmt)
+            log.debug("seconds since epoch: %s" % mtime)
             items.append(FilterItem(modtime=mtime, text=s))
         return items
 
