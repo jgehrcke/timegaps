@@ -476,6 +476,20 @@ class TestReferenceTime(Base):
         t.assert_is_stdout("19990101-000000\n")
         t.assert_no_stderr()
 
+    def test_log(self):
+        t = self.run(("-v -t 20000101-000000 --time-from-string %Y%m%d-%H%M%S "
+            "days1 19990101-000000"))
+        t.assert_is_stdout("19990101-000000\n")
+        t.assert_in_stderr(["INFO: Parse reference time from command line",
+            "Jan 01 00:00:00 2000"])
+
+    def test_negative(self):
+        t = self.run(("-t 20000101-000000 --time-from-string %Y%m%d-%H%M%S "
+            "years1 20010101-000000"), rc=1)
+        t.assert_no_stdout()
+        t.assert_in_stderr(["ERROR: Error while filtering items",
+            "not earlier than reference"])
+
 
 class TestFileFilter(Base):
     """Tests that involve creation of real (temp) files in the file system."""
