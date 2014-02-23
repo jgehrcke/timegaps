@@ -151,7 +151,8 @@ import argparse
 import logging
 import re
 import time
-from timegaps import TimeFilter, TimeFilterError, FileSystemEntry, __version__
+from timegaps import (TimeFilter, TimeFilterError, FileSystemEntry, FilterItem,
+    __version__)
 
 
 WINDOWS = sys.platform == "win32"
@@ -400,14 +401,18 @@ def prepare_input():
     if options.time_from_string is not None:
         # TODO: change mode to pure string parsing, w/o item-wise file system
         # interaction
-        raise NotImplemented
+        fmt = options.time_from_string
         # Decoding of *each single item string*.
         if isinstance(itemstrings[0], str): # TODO: Py3
             # Either console or filesystem encoding would make sense here..
             # Use the one that can be easiest changed by the user, i.e.
             # set via PYTHONIOENCODING, i.e. sys.stdout.encoding.
             itemstrings = [s.decode(sys.stdout.encoding) for s in itemstrings]
-        # return list_of_items_from_strings
+        items = []
+        for s in itemstrings:
+            mtime = seconds_since_epoch_from_localtime_string(s, fmt)
+            items.append(FilterItem(modtime=mtime, text=s))
+        return items
 
     log.info("Interprete items as file system entries.")
     log.info("Validate paths and extract modification time.")
@@ -447,6 +452,31 @@ def prepare_input():
             err("Cannot access '%s'." % path)
     log.debug("Created %s item(s) (type: file system entry).", len(fses))
     return fses
+
+
+def seconds_since_epoch_from_localtime_string(s, fmt):
+    """Extract local time from string `s` according to format string `fmt`.
+    Return floating point number, indicating seconds since epoch (non-localized
+    time, compatible with e.g. stat result st_mtime.
+    """
+    try:
+        time_struct_local = time.strptime(s, fmt)
+    except:
+        pass
+    try:
+        seconds_since_epoch = time.mktime(time_struct_local)
+    except:
+        pass
+    return seconds_since_epoch
+
+
+def time_from_dirname(d):
+    # dirs are of type 2013.08.15_20.29.31
+    return time.strptime(d, "%Y.%m.%d_%H.%M.%S")
+
+
+def dirname_from_time(t):
+    return time.strftime("%Y.%m.%d_%H.%M.%S", t)
 
 
 def time_from_basename(path):
@@ -602,15 +632,6 @@ def parse_options():
         )
 
     options = parser.parse_args()
-
-
-def time_from_dirname(d):
-    # dirs are of type 2013.08.15_20.29.31
-    return time.strptime(d, "%Y.%m.%d_%H.%M.%S")
-
-
-def dirname_from_time(t):
-    return time.strftime("%Y.%m.%d_%H.%M.%S", t)
 
 
 # TODO: Py3 (this hack should not be necessary for 3.3, at least).
