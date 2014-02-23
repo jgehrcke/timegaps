@@ -23,6 +23,7 @@ log.setLevel(logging.DEBUG)
 
 RUNDIRTOP = "./cmdline-test"
 TIMEGAPS_NAME = "../../../timegaps.py"
+#PYTHON_EXE = "coverage -x"
 PYTHON_EXE = "python"
 WINDOWS = sys.platform == "win32"
 
@@ -227,6 +228,24 @@ class TestArgumentErrors(Base):
     def test_all_zero_rules(self):
         t = self.run("-a days0 .", rc=1)
         t.assert_in_stderr("one count > 0 required")
+        t.assert_no_stdout()
+
+    def test_action_string_interpr_mode_1(self):
+        t = self.run("-m . --time-from-string FMT days1 .", rc=1)
+        t.assert_in_stderr(["String interpretation mode is not allowed",
+         "actions"])
+        t.assert_no_stdout()
+
+    def test_action_string_interpr_mode_2(self):
+        t = self.run("-d --time-from-string FMT days1 .", rc=1)
+        t.assert_in_stderr(["String interpretation mode is not allowed",
+         "actions"])
+        t.assert_no_stdout()
+
+    def test_recursive_delete_wo_delete(self):
+        t = self.run("-r days1 .", rc=1)
+        t.assert_in_stderr(
+            "-r/--delete-recursive not allowed without -d/--delete")
         t.assert_no_stdout()
 
 
