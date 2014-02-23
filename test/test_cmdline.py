@@ -97,6 +97,7 @@ class Base(object):
         #self.cmdlinetest.clear()
 
     def run(self, arguments_unicode, rc=0, sin=None):
+        arguments_unicode = self._escape_args(arguments_unicode)
         cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_NAME, arguments_unicode)
         log.info("Test command:\n%s" % cmd)
         self.clitest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
@@ -113,6 +114,17 @@ class Base(object):
         p = os.path.join(self.rundir, relpath)
         os.mkdir(p)
         os.utime(p, (mtime, mtime))
+
+    def _escape_args(self, args):
+        if WINDOWS:
+            # On Windows, clitest executes the test command through a batch
+            # file. Batch file processing is different from normal command line
+            # processing. Regarding percent signs used in time format strings:
+            # In the normal command line, single percent signs work well. In the
+            # batch file, they must be escaped by another percent sign.
+            # http://stackoverflow.com/a/4095133/145400
+            args = args.replace("%", "%%")
+        return args
 
 
 class TestArgparseFeatures(Base):
@@ -411,7 +423,7 @@ class TestStringInterpretationMode(Base):
     as simple strings containing time information.
     """
 
-    fmt = "%%Y%%m%%d-%%H%%M%%S"
+    fmt = "%Y%m%d-%H%M%S"
 
     def test_onearg(self):
         t = self.run("--time-from-string %s days1 20001112-111213" % self.fmt)
@@ -452,12 +464,16 @@ class TestStringInterpretationMode(Base):
 class TestReferenceTime(Base):
     """Test -t/--reference-time parsing and logic."""
 
-    fmt = "%%Y%%m%%d-%%H%%M%%S"
-
     def test_reject(self):
-        t = self.run(
-            "-t 20000101-000000 --time-from-string %s days1 20001112-111213" % self.fmt)
-        t.assert_is_stdout("20001112-111213\n")
+        t = self.run(("-t 20000101-000000 --time-from-string %Y%m%d-%H%M%S "
+            "days1 19990101-000000"))
+        t.assert_is_stdout("19990101-000000\n")
+        t.assert_no_stderr()
+
+    def test_accept(self):
+        t = self.run(("-a -t 20000201-000000 --time-from-string %Y%m%d-%H%M%S "
+            "years1 19990101-000000"))
+        t.assert_is_stdout("19990101-000000\n")
         t.assert_no_stderr()
 
 
