@@ -490,6 +490,32 @@ class TestReferenceTime(Base):
             "not earlier than reference"])
 
 
+class TestPathBasenameTime(Base):
+    """Test --time-from-basename parsing and logic."""
+
+    def test_file_error(self):
+        t = self.run(("-t 20000101-000000 --time-from-basename "
+            "%Y%m%d-%H%M%S.dat days1 19990101-000000.dat"), rc=1)
+        t.assert_no_stdout()
+        t.assert_in_stderr(["ERROR: Cannot access", "19990101-000000.dat"])
+
+    def test_reject(self):
+        fn = "19990101-000000.dat"
+        self.clitest.add_file(fn, b"")
+        t = self.run(("-t 20000101-000000 --time-from-basename "
+            "%Y%m%d-%H%M%S.dat days1 19990101-000000.dat"), rc=0)
+        t.assert_is_stdout("19990101-000000.dat\n")
+        t.assert_no_stderr()
+
+    def test_accept(self):
+        fn = "19990101-000000.dat"
+        self.clitest.add_file(fn, b"")
+        t = self.run(("-a -t 20000201-000000 --time-from-string "
+            "%Y%m%d-%H%M%S.dat years1 19990101-000000.dat"))
+        t.assert_is_stdout("19990101-000000.dat\n")
+        t.assert_no_stderr()
+
+
 class TestFileFilter(Base):
     """Tests that involve creation of real (temp) files in the file system."""
 
