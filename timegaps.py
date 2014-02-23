@@ -456,8 +456,9 @@ def prepare_input():
         if options.time_from_basename:
             bn = os.path.basename(path)
             fmt = options.time_from_basename
-            log.debug("Parsing time from basename: %r", bn)
+            log.debug("Parsing modification time from basename: %r", bn)
             modtime = seconds_since_epoch_from_localtime_string(bn, fmt)
+            log.debug("Modification time (seconds since epoch): %s", modtime)
         try:
             fses.append(FileSystemEntry(path, modtime))
         except OSError:
