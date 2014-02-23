@@ -410,14 +410,43 @@ class TestStringInterpretationMode(Base):
     """Test string interpretation mode, i.e. do not treat items as paths, just
     as simple strings containing time information.
     """
+
+    fmt = "%%Y%%m%%d-%%H%%M%%S"
+
+    def test_onearg(self):
+        t = self.run("--time-from-string %s days1 20001112-111213" % self.fmt)
+        t.assert_is_stdout("20001112-111213\n")
+        t.assert_no_stderr()
+
     def test_onearg_debuglog(self):
-        fmt = "%%Y%%m%%d-%%H%%M%%S"
-        t = self.run("-vv --time-from-string %s days1 20001112-111213" % fmt)
+        t = self.run(
+            "-vv --time-from-string %s days1 20001112-111213" % self.fmt)
         t.assert_is_stdout("20001112-111213\n")
         t.assert_in_stderr([
             "INFO: --time-from-string set, don't interpret items as paths.",
             "seconds since epoch:",
             "FilterItem(text: 20001112-111213, moddate: 2000-11-12 11:12:13)"])
+
+    def test_onearg_fmterror_1(self):
+        t = self.run("--time-from-string %s days1 xxx" % self.fmt, rc=1)
+        t.assert_in_stderr(["ERROR", "xxx", "does not match format"])
+
+    def test_onearg_fmterror_2(self):
+        t = self.run(
+            "--time-from-string %s days1 20000000-111213" % self.fmt, rc=1)
+        t.assert_in_stderr(["ERROR", "20000000", "does not match format"])
+
+    def test_multi_item_stdin(self):
+        items = ["20001112-111213", "20001112-111214","20001112-111215"]
+        s = "\n".join(items).encode(STDINENC)
+        t = self.run("--stdin --time-from-string %s days1" % self.fmt, sin=s)
+        t.assert_is_stdout("%s\n" % s)
+        t.assert_no_stderr()
+
+        s = "\0".join(items).encode(STDINENC)
+        t = self.run("-s -0 --time-from-string %s days1" % self.fmt, sin=s)
+        t.assert_is_stdout("%s\0" % s)
+        t.assert_no_stderr()
 
 
 class TestReferenceTime(Base):
@@ -479,8 +508,8 @@ class TestFileFilter(Base):
 
 class TestFileFilterActions(Base):
     """Tests that involve filtering of file system entries. Tests apply actions
-    (delete, move). Involves creation and modification of temporary files in the
-    test run directory.
+    (delete, move). Tests involve creation and modification of temporary files
+    in the test run directory.
     """
     def test_simple_delete_file(self):
         self._test_simple_delete_file_or_dir(self.mfile)
