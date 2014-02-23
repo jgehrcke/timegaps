@@ -450,7 +450,15 @@ class TestStringInterpretationMode(Base):
 
 
 class TestReferenceTime(Base):
-    pass
+    """Test -t/--reference-time parsing and logic."""
+
+    fmt = "%%Y%%m%%d-%%H%%M%%S"
+
+    def test_reject(self):
+        t = self.run(
+            "-t 20000101-000000 --time-from-string %s days1 20001112-111213" % self.fmt)
+        t.assert_is_stdout("20001112-111213\n")
+        t.assert_no_stderr()
 
 
 class TestFileFilter(Base):
