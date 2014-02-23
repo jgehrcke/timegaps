@@ -484,39 +484,6 @@ def seconds_since_epoch_from_localtime_string(s, fmt):
     return seconds_since_epoch
 
 
-def time_from_dirname(d):
-    # dirs are of type 2013.08.15_20.29.31
-    return time.strptime(d, "%Y.%m.%d_%H.%M.%S")
-
-
-def dirname_from_time(t):
-    return time.strftime("%Y.%m.%d_%H.%M.%S", t)
-
-
-def time_from_basename(path):
-    """Parse `path`, extract time from basename, according to format string
-    in `options.time_from_basename`. Treat time string as local time.
-
-    Return non-localized Unix timestamp.
-    """
-    # When extracting time from path (basename), use path and format string as
-    # unicode objects.
-    #
-    # On Python 3, argv comes as unicode objects (possibly with surrogate
-    # chars).
-    #
-    # On Python 2, both the format string and the path
-    # come as byte strings from sys.argv. By default, attempt to decode
-    # both using sys.getfilesystemencoding(), as the best possible
-    # guess. Or let the user override via --encoding-args
-
-
-
-    #
-    raise NotImplemented
-    # use options.time_from_basename for parsing string.
-
-
 def parse_rules_from_cmdline(s):
     """Parse strings such as 'hours12,days5,weeks4' into rules dictionary.
     """
