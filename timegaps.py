@@ -603,9 +603,9 @@ def parse_options():
             "instead of newline character.")
         )
     parser.add_argument("-t", "--reference-time", action="store",
-        metavar="FMT",
-        help=("Parse time from formatstring FMT (cf. documentation of Python's "
-            "strptime() at bit.ly/strptime). Use this time as reference time "
+        metavar="T",
+        help=("Parse time from string T. Required format is YYYYmmDD-HHMMSS. "
+            "Use this time as reference time "
             "(default is time of program invocation).")
         )
     parser.add_argument("--follow-symlinks", action="store_true",
