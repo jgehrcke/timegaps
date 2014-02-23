@@ -467,8 +467,7 @@ def seconds_since_epoch_from_localtime_string(s, fmt):
     try:
         time_struct_local = time.strptime(s, fmt)
     except Exception as e:
-        err(("Error while parsing time from string %r. Format string: %r. "
-            "Error: %s" % (s, fmt, e)))
+        err("Error while parsing time from item string. Error: %s" % e)
     try:
         seconds_since_epoch = time.mktime(time_struct_local)
     except Exception as e:
