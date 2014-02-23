@@ -78,6 +78,8 @@ class FileSystemEntry(FilterItem):
             # inode. This is a Unix timestamp, seconds since epoch. Not
             # localized.
             modtime = self._stat.st_mtime
+        else:
+            log.debug("Don't use stat mtime, use %s.", modtime)
         self.path = path
         # FilterItem requires unicode `text` attribute, decode path if not
         # already unicode:
