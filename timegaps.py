@@ -305,7 +305,7 @@ def action(item):
         # It is unclear to me at the moment if OSError is the only class of
         # regular errors to be raised by shutil. Be more general.
         except Exception as e:
-            log.error("Cannot move '%s': %e", item.path, e)
+            log.error("Cannot move '%s': %s", item.path, e)
         return
     if options.delete:
         log.info("Deleting %s: %s", item.type, item.path)
@@ -316,7 +316,7 @@ def action(item):
                 try:
                     shutil.rmtree(item.path)
                 except Exception as e:
-                    log.error("Error while recursively deleting '%s': %e",
+                    log.error("Error while recursively deleting '%s': %s",
                         item.path, e)
                 return
             try:
@@ -329,7 +329,7 @@ def action(item):
             try:
                 os.remove(item.path)
             except Exception as e:
-                log.error("Cannot delete file '%s': %e", item.path, e)
+                log.error("Cannot delete file '%s': %s", item.path, e)
             return
         else:
             raise NotImplementedError
@@ -466,12 +466,14 @@ def seconds_since_epoch_from_localtime_string(s, fmt):
     """
     try:
         time_struct_local = time.strptime(s, fmt)
-    except:
-        pass
+    except Exception as e:
+        err(("Error while parsing time from string %r. Format string: %r. "
+            "Error: %s" % (s, fmt, e)))
     try:
         seconds_since_epoch = time.mktime(time_struct_local)
-    except:
-        pass
+    except Exception as e:
+        err(("Error while converting time struct to seconds since epoch. "
+            "Struct: %s. Error: %s" % (t, e)))
     return seconds_since_epoch
 
 
