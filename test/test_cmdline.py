@@ -406,6 +406,24 @@ class TestStdinAndSeparation(Base):
         t.assert_no_stderr()
 
 
+class TestStringInterpretationMode(Base):
+    """Test string interpretation mode, i.e. do not treat items as paths, just
+    as simple strings containing time information.
+    """
+    def test_onearg_debuglog(self):
+        fmt = "%%Y%%m%%d-%%H%%M%%S"
+        t = self.run("-vv --time-from-string %s days1 20001112-111213" % fmt)
+        t.assert_is_stdout("20001112-111213\n")
+        t.assert_in_stderr([
+            "INFO: --time-from-string set, don't interpret items as paths.",
+            "seconds since epoch:",
+            "FilterItem(text: 20001112-111213, moddate: 2000-11-12 11:12:13)"])
+
+
+class TestReferenceTime(Base):
+    pass
+
+
 class TestFileFilter(Base):
     """Tests that involve creation of real (temp) files in the file system."""
 
