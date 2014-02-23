@@ -480,8 +480,7 @@ class TestReferenceTime(Base):
         t = self.run(("-v -t 20000101-000000 --time-from-string %Y%m%d-%H%M%S "
             "days1 19990101-000000"))
         t.assert_is_stdout("19990101-000000\n")
-        t.assert_in_stderr(["INFO: Parse reference time from command line",
-            "Jan 01 00:00:00 2000"])
+        t.assert_in_stderr("INFO: Parse reference time from command line")
 
     def test_negative(self):
         t = self.run(("-t 20000101-000000 --time-from-string %Y%m%d-%H%M%S "
