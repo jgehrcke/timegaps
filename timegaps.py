@@ -177,7 +177,7 @@ if WINDOWS:
 # character on input. Line feed characters are translated into CR-LF
 # combinations on output. Passing _O_BINARY sets binary (untranslated) mode, in
 # which these translations are suppressed."
-# In Python 2 on Windows, change mode of all standard streams to _O_BINARY, i.e.
+# On Windows, change mode of all standard streams to _O_BINARY, i.e.
 # untranslated. The translation might be a convenient auto-correction
 # in certain situations, when the user does not take great care of item
 # separation in stdin or when precise control of stdout is not desired. However,
@@ -188,9 +188,12 @@ if WINDOWS:
 # http://cygwin.com/cygwin-ug-net/using-textbinary.html
 # http://stackoverflow.com/a/4160894/145400
 # http://code.activestate.com/lists/python-list/20426/
-if WINDOWS and sys.version < '3':
+if WINDOWS:
     for standard_stream in (sys.stdout, sys.stderr, sys.stdin):
-        msvcrt.setmode(standard_stream.fileno(), os.O_BINARY)
+        if sys.version < '3':
+            msvcrt.setmode(standard_stream.fileno(), os.O_BINARY)
+        else:
+            msvcrt.setmode(standard_stream.buffer.fileno(), os.O_BINARY)
 
 
 log = logging.getLogger()
