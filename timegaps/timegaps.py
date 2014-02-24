@@ -8,6 +8,15 @@ import datetime
 import logging
 
 
+# Make the same code base run with Python 2 and 3.
+if sys.version < '3':
+    text_type = unicode
+    binary_type = str
+else:
+    text_type = str
+    binary_type = bytes
+
+
 log = logging.getLogger("timegaps")
 
 
@@ -26,9 +35,8 @@ class FilterItem(object):
         self.modtime: last change as float, seconds since Unix epoch (nonlocal).
     """
     def __init__(self, modtime, text=None):
-        # TODO: text type validation that works for Py2+3.
         if text is not None:
-            assert isinstance(text, unicode)
+            assert isinstance(text, text_type)
         self.text = text
         if isinstance(modtime, float) :
             self.modtime = modtime
@@ -84,8 +92,7 @@ class FileSystemEntry(FilterItem):
         # FilterItem requires unicode `text` attribute, decode path if not
         # already unicode:
         t = path
-        # TODO: Py3
-        if not isinstance(t, unicode):
+        if not isinstance(t, text_type):
             t = t.decode(sys.getfilesystemencoding())
         FilterItem.__init__(self, text=t, modtime=modtime)
 
