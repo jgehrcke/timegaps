@@ -99,7 +99,7 @@ class TimeFilter(object):
         # returns an iterable over rejected items via itertools'
         # `chain.from_iterable()`.
 
-        for catlabel in self.rules.keys()[:-1]:
+        for catlabel in list(self.rules.keys())[:-1]:
             setattr(self, "_%s_dict" % catlabel, defaultdict(list))
         self._recent_items = []
         accepted_objs = []
@@ -155,7 +155,7 @@ class TimeFilter(object):
         # be accepted. Remove newest from the list via pop() (should be of
         # constant time complexity for the last item of a list). Then reject
         # the (modified, if item has been popped) list.
-        for catlabel in self.rules.keys()[:-1]:
+        for catlabel in list(self.rules.keys())[:-1]:
             catdict = getattr(self, "_%s_dict" % catlabel)
             for timecount in catdict:
                 catdict[timecount].sort(key=lambda f: f.modtime)
