@@ -535,7 +535,7 @@ def parse_options():
     parser.add_argument("-h", "--help", action="help",
         help="Show help message and exit.")
     parser.add_argument("--extended-help", action=ExtHelpAction, nargs=0,
-        help="Show extended help and exit.")
+        help="Show extended help message and exit.")
     parser.add_argument("--version", action="version",
         version=__version__, help="Show version information and exit.")
 
@@ -554,9 +554,45 @@ def parse_options():
     # arg if --stdin is defined. Overall, allow an arbitrary number, and
     # validate later.
     parser.add_argument("items", metavar="ITEM", action="store", nargs='*',
-        help=("Items for filtering. Interpreted as paths to file system "
-            "entries by default. Must be omitted in --stdin mode. It is your "
-            "responsibility to not provide duplicate items.")
+        help=("Treated as paths to file system entries (default) or  as "
+            "strings (--time-from-string mode). Must be omitted in --stdin "
+            "mode. Warning: duplicate items are treated independently.")
+        )
+
+    parser.add_argument("-s", "--stdin", action="store_true",
+        help=("Read input items from stdin. The default separator is one "
+            "newline character.")
+        )
+    parser.add_argument("-0", "--nullsep", action="store_true",
+        help=("Input and output item separator is NUL character "
+            "instead of newline character.")
+        )
+
+    parser.add_argument('-a', '--accepted', action='store_true',
+        help=("Output accepted items and perform actions on accepted items "
+            "instead of (on) rejected ones.")
+        )
+
+    parser.add_argument("-t", "--reference-time", action="store",
+        metavar="TIME",
+        help=("Parse reference time from local time string TIME. Required "
+            "format is YYYYmmDD-HHMMSS. Default reference time is the time of "
+            "program invocation.")
+        )
+
+    timeparsegroup = parser.add_mutually_exclusive_group()
+    timeparsegroup.add_argument("--time-from-basename", action="store",
+        metavar="FMT",
+        help=("Parse item modification time from the item path basename, "
+            "according to format string FMT (cf. Python's "
+            "strptime() docs at bit.ly/strptime). This overrides the default "
+            "behavior, which is to extract the modification time from the "
+            "inode.")
+        )
+    timeparsegroup.add_argument("--time-from-string", action="store",
+        metavar="FMT",
+        help=("Treat items as strings (do not validate paths). Parse time "
+            "from item string using format string FMT (cf. bit.ly/strptime).")
         )
 
     filehandlegroup = parser.add_mutually_exclusive_group()
@@ -570,41 +606,9 @@ def parse_options():
     parser.add_argument("-r", "--delete-recursive", action="store_true",
         help="Enable deletion of non-empty directories.")
 
-    parser.add_argument("-s", "--stdin", action="store_true",
-        help=("Read input items from stdin (default separator: newline).")
-        )
-    parser.add_argument("-0", "--nullsep", action="store_true",
-        help=("Input and output item separator is NUL character "
-            "instead of newline character.")
-        )
-    parser.add_argument("-t", "--reference-time", action="store",
-        metavar="T",
-        help=("Parse time from string T. Required format is YYYYmmDD-HHMMSS. "
-            "Use this time as reference time "
-            "(default is time of program invocation).")
-        )
     parser.add_argument("--follow-symlinks", action="store_true",
         help=("Retrieve modification time from symlink target, .. "
             "TODO: other implications?")
-        )
-
-    timeparsegroup = parser.add_mutually_exclusive_group()
-    timeparsegroup.add_argument("--time-from-basename", action="store",
-        metavar="FMT",
-        help=("Don't extract an item's modification time from inode (which is "
-            "the default). Instead, parse time from basename of path according "
-            "to formatstring FMT (cf. documentation of Python's strptime() at "
-            "bit.ly/strptime).")
-        )
-    timeparsegroup.add_argument("--time-from-string", action="store",
-        metavar="FMT",
-        help=("Treat items as strings (don't validate paths) and parse time "
-            "from strings using formatstring FMT (cf. bit.ly/strptime).")
-        )
-
-    parser.add_argument('-a', '--accepted', action='store_true',
-        help=("Output accepted items and perform actions on accepted items "
-            "instead of (on) rejected ones.")
         )
 
     parser.add_argument('-v', '--verbose', action='count', default=0,
