@@ -525,7 +525,7 @@ def parse_options():
             sys.exit(0)
 
     global options
-    description = "Accept or reject files/items based on time categorization."
+    description = "Accept or reject items based on time categorization."
     parser = argparse.ArgumentParser(
         prog="timegaps",
         description=description,
@@ -542,7 +542,7 @@ def parse_options():
 
     parser.add_argument("rules", action="store",
         metavar="RULES",
-        help=("A string defining the filter rules of the form "
+        help=("A string defining the categorization rules. Must be of the form "
             "<category><maxcount>[,<category><maxcount>[, ... ]]. "
             "Example: 'recent5,days12,months5'. "
             "Valid <category> values: %s. Valid <maxcount> values: "
@@ -554,13 +554,13 @@ def parse_options():
     # arg if --stdin is defined. Overall, allow an arbitrary number, and
     # validate later.
     parser.add_argument("items", metavar="ITEM", action="store", nargs='*',
-        help=("Treated as paths to file system entries (default) or  as "
-            "strings (--time-from-string mode). Must be omitted in --stdin "
+        help=("Treated as path to file system entry (default) or as "
+            "string (--time-from-string mode). Must be omitted in --stdin "
             "mode. Warning: duplicate items are treated independently.")
         )
 
     parser.add_argument("-s", "--stdin", action="store_true",
-        help=("Read input items from stdin. The default separator is one "
+        help=("Read items from stdin. The default separator is one "
             "newline character.")
         )
     parser.add_argument("-0", "--nullsep", action="store_true",
@@ -569,15 +569,16 @@ def parse_options():
         )
 
     parser.add_argument('-a', '--accepted', action='store_true',
-        help=("Output accepted items and perform actions on accepted items "
-            "instead of (on) rejected ones.")
+        help=("Output accepted items and perform actions on accepted items. "
+            "Overrides default, which is to output rejected items (and act on "
+            "them).")
         )
 
     parser.add_argument("-t", "--reference-time", action="store",
         metavar="TIME",
         help=("Parse reference time from local time string TIME. Required "
-            "format is YYYYmmDD-HHMMSS. Default reference time is the time of "
-            "program invocation.")
+            "format is YYYYmmDD-HHMMSS. Overrides default reference time, "
+            "which is the time of program invocation.")
         )
 
     timeparsegroup = parser.add_mutually_exclusive_group()
@@ -608,12 +609,12 @@ def parse_options():
 
     parser.add_argument("--follow-symlinks", action="store_true",
         help=("Retrieve modification time from symlink target, .. "
-            "TODO: other implications?")
+            "TODO: other implications? Not implemented yet.")
         )
 
     parser.add_argument('-v', '--verbose', action='count', default=0,
         help=("Control verbosity. Can be specified multiple times for "
-            "increasing logging level. Levels: error (default), info, debug.")
+            "increasing verbosity level. Levels: error (default), info, debug.")
         )
 
     options = parser.parse_args()
