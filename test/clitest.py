@@ -138,13 +138,16 @@ class CmdlineInterfaceTest(object):
         assert isinstance(content_bytestring, binary_type)
         p = os.path.join(self.rundir, name)
         # 'b' mode is required on Python 3, otherwise
-        # TypeError: must be str, not bytes
+        # TypeError: must be str, not bytes.
         with open(p, "wb") as f:
             f.write(content_bytestring)
 
     def _script_contents(self, cmd_unicode):
         preamble = self.preamble if self.preamble else ""
-        return "%s%s\n" % (preamble, cmd_unicode)
+        # The native Windows line break (\r\n) makes batch files work more
+        # reliable than a simple line feed.
+        sep = "\r\n" if WINDOWS else "\n"
+        return "%s%s%s%s" % (preamble, sep, cmd_unicode, sep)
 
     def run(self, cmd_unicode, expect_rc=0, stdinbytes=None, log_output=True):
         if stdinbytes is not None:
