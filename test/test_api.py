@@ -14,9 +14,9 @@ import tempfile
 
 # Make the same code base run with Python 2 and 3.
 if sys.version < '3':
-    range = range
+    range = xrange
 else:
-    binary_type = bytes
+    pass
 
 
 # py.test runs tests in order of definition. This is useful for running simple,
