@@ -142,15 +142,6 @@ Exit status:
 """
 
 
-# Make the same code base run with Python 2 and 3.
-if sys.version < '3':
-    text_type = unicode
-    binary_type = str
-else:
-    text_type = str
-    binary_type = bytes
-
-
 import os
 import sys
 import shutil
@@ -160,6 +151,15 @@ import re
 import time
 from timegaps import (TimeFilter, TimeFilterError, FileSystemEntry, FilterItem,
     __version__)
+
+
+# Make the same code base run with Python 2 and 3.
+if sys.version < '3':
+    text_type = unicode
+    binary_type = str
+else:
+    text_type = str
+    binary_type = bytes
 
 
 WINDOWS = sys.platform == "win32"
