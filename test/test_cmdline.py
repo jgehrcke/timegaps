@@ -217,6 +217,12 @@ class TestArgumentErrors(Base):
         t.assert_in_stderr(["Invalid", "token", "foo"])
         t.assert_no_stdout()
 
+    def test_invalid_rulesstring_negative_count(self):
+        # Rules are checked first, error must indicate invalid rules.
+        t = self.run("days-1 nofile", rc=1)
+        t.assert_in_stderr(["Invalid", "token", "days"])
+        t.assert_no_stdout()
+
     def test_invalid_itempath_1(self):
         t = self.run("days5 nofile", rc=1)
         t.assert_in_stderr(["nofile", "Cannot access"])
