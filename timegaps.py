@@ -166,6 +166,33 @@ else:
 
 
 WINDOWS = sys.platform == "win32"
+if WINDOWS:
+    import msvcrt
+
+
+# See http://msdn.microsoft.com/en-us/library/tw4k6df8.aspx
+# "The _setmode function sets to mode the translation mode of the file given by
+# fd. Passing _O_TEXT as mode sets text (that is, translated) mode. Carriage
+# return–line feed (CR-LF) combinations are translated into a single line feed
+# character on input. Line feed characters are translated into CR-LF
+# combinations on output. Passing _O_BINARY sets binary (untranslated) mode, in
+# which these translations are suppressed."
+# In Python 2 on Windows, change mode of all standard streams to _O_BINARY, i.e.
+# untranslated. The translation might be a convenient auto-correction
+# in certain situations, when the user does not take great care of item
+# separation in stdin or when precise control of stdout is not desired. However,
+# I prefer not to magically, implicitly mess with the standard byte streams.
+# In untranslated mode, the program's test suite can largely be the same on
+# Windows and Unix. In translated mode the specification of item separation in
+# input and output becomes tedious.
+# http://cygwin.com/cygwin-ug-net/using-textbinary.html
+# http://stackoverflow.com/a/4160894/145400
+# http://code.activestate.com/lists/python-list/20426/
+if WINDOWS and sys.version < '3':
+    for standard_stream in (sys.stdout, sys.stderr, sys.stdin):
+        msvcrt.setmode(standard_stream.fileno(), os.O_BINARY)
+
+
 log = logging.getLogger()
 log.setLevel(logging.ERROR)
 ch = logging.StreamHandler()
@@ -360,22 +387,7 @@ def read_items_from_stdin():
     # Read until EOF.
     log.debug("Read binary data from standard input, until EOF.")
 
-    # Python 3 opens stdin in text mode (i.e. decodes to unicode). Python 2
-    # opens stdin in normal "r" (newline flattening) mode, not in binary mode.
-    # Get the binary data, depending on the Python version.
-
-    # In Python 2 on Windows, change mode to binary. Otherwise, two bytes \r\n
-    # end up to be only one byte \n. This might be a convenient auto-correction,
-    # in certain situations, when the user does not take great care of item
-    # separation in stdin, this might make the input to magically work. However,
-    # prefer not to magically, implicitly mess with the byte stream on standard
-    # input.
-    # http://cygwin.com/cygwin-ug-net/using-textbinary.html
-    # http://stackoverflow.com/a/4160894/145400
-    # http://code.activestate.com/lists/python-list/20426/
-    if WINDOWS:
-        import msvcrt
-        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+    # Get the raw binary data from stdin , depending on the Python version.
 
     # TODO: protect with try/except.
     bytedata = sys.stdin.read()
