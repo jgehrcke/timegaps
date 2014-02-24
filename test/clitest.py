@@ -11,6 +11,15 @@ import subprocess
 import traceback
 
 
+# Make the same code base run with Python 2 and 3.
+if sys.version < '3':
+    text_type = unicode
+    binary_type = str
+else:
+    text_type = str
+    binary_type = bytes
+
+
 WINDOWS = sys.platform == "win32"
 
 
@@ -126,7 +135,7 @@ class CmdlineInterfaceTest(object):
             pass
 
     def add_file(self, name, content_bytestring):
-        assert isinstance(content_bytestring, str) # TODO: Py3
+        assert isinstance(content_bytestring, binary_type)
         p = os.path.join(self.rundir, name)
         with open(p, 'w') as f:
             f.write(content_bytestring)
@@ -139,7 +148,7 @@ class CmdlineInterfaceTest(object):
         if stdinbytes is not None:
             log.debug("Prepare stdin data file.")
             log.debug("stdin data repr:\n%r", stdinbytes)
-            assert isinstance(stdinbytes, str) # TODO: Py3
+            assert isinstance(stdinbytes, binary_type)
             bn = "_clitest_stdin"
             # Open in 'binary' mode. Is noop on Unix, but disables newline-
             # processing on Windows.
@@ -313,9 +322,9 @@ class CmdlineInterfaceTest(object):
         Return (out_or_err, stringlist) tuple. `stringlist` is a list with at
         least one element, `out_or_err` is either byte string or unicode string.
         """
-        assert isinstance(out_or_err, str) # TODO: Py3
+        assert isinstance(out_or_err, binary_type)
         stringtype, stringlist = _list_string_type(string_or_stringlist)
-        if stringtype == unicode:
+        if stringtype == text_type:
             out_or_err = self._decode(out_or_err, encoding)
         return out_or_err, stringlist
 
@@ -345,7 +354,7 @@ class CmdlineInterfaceTest(object):
     def _paths_exist(self, p, invert=False):
         _, pathlist = _list_string_type(p)
         for path in pathlist:
-            assert isinstance(path, basestring) #TODO: Py3
+            assert isinstance(path, binary_type) or isinstance(path, text_type)
             testpath = os.path.join(self.rundir, path)
             if not os.path.exists(testpath):
                 if not invert:
@@ -368,7 +377,7 @@ def _list_string_type(o):
     if len(ts) > 1:
         raise Exception("List %r must contain only one data type." % o)
     t = ts[0]
-    if t == str or t == unicode: # TODO: Py3
+    if t == binary_type or t == text_type:
         return t, o
     raise Exception(("Invalid %r: must be a string (byte or unicode) or a list "
         "of strings (of the same type)." % o))
