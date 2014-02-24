@@ -54,6 +54,9 @@ class CmdlineInterfaceTestWindows(CmdlineInterfaceTest):
     rundirtop = RUNDIRTOP
     shellscript_ext = ".bat"
 
+    # TODO: use `preamble_lines` here and hide line separator stuff in clitest
+    # module.
+
     # Use \r\n for separating lines. The batch file is written in 'b' mode,
     # i.e. with Windows' _O_BINARY flag set. This disables magic \n -> \r\n
     # translation. It looks like most of the times a batch file works with
@@ -142,7 +145,7 @@ class TestArgparseFeatures(Base):
         t = self.run("--version")
         # argparse makes this go to stderr, weird, help goes to stdout.
         t.assert_no_stdout()
-        t.assert_is_stderr("%s\n" % __version__)
+        t.assert_in_stderr(__version__)
 
     def test_help(self):
         t = self.run("--help")
