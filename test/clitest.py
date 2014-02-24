@@ -137,7 +137,9 @@ class CmdlineInterfaceTest(object):
     def add_file(self, name, content_bytestring):
         assert isinstance(content_bytestring, binary_type)
         p = os.path.join(self.rundir, name)
-        with open(p, 'w') as f:
+        # 'b' mode is required on Python 3, otherwise
+        # TypeError: must be str, not bytes
+        with open(p, "wb") as f:
             f.write(content_bytestring)
 
     def _script_contents(self, cmd_unicode):
@@ -186,9 +188,10 @@ class CmdlineInterfaceTest(object):
         finally:
             of.close()
             ef.close()
-        with open(self.outfilepath) as f:
+        # Open in 'b' mode for retrieving binary contents in Python 3.
+        with open(self.outfilepath, "rb") as f:
             self.rawout = f.read()
-        with open(self.errfilepath) as f:
+        with open(self.errfilepath, "rb") as f:
             self.rawerr = f.read()
         if log_output:
             log.info("Test stdout:\n%s", self.rawout)
@@ -293,7 +296,7 @@ class CmdlineInterfaceTest(object):
             `WrongStdout` in case of mismatch.
         """
         out = self.rawout
-        if isinstance(s, unicode):
+        if isinstance(s, text_type):
             out = self._decode(self.rawout, encoding)
         if s != out:
             raise WrongStdout("stdout is not '%r'." % s)
@@ -307,7 +310,7 @@ class CmdlineInterfaceTest(object):
             `WrongStderr` in case of mismatch.
         """
         err = self.rawerr
-        if isinstance(s, unicode):
+        if isinstance(s, text_type):
             err = self._decode(self.rawerr, encoding)
         if s != err:
             raise WrongStderr("stderr is not '%r'." % s)

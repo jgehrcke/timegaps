@@ -669,5 +669,4 @@ if WINDOWS and sys.version < '3':
 
 
 if __name__ == "__main__":
-    log.error(sys.version)
     main()
