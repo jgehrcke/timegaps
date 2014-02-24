@@ -12,6 +12,13 @@ import collections
 import tempfile
 
 
+# Make the same code base run with Python 2 and 3.
+if sys.version < '3':
+    range = range
+else:
+    binary_type = bytes
+
+
 # py.test runs tests in order of definition. This is useful for running simple,
 # fundamental tests first and more complex tests later.
 from py.test import raises, mark
@@ -35,7 +42,7 @@ SHORTTIME = 0.01
 
 
 def nrandint(n, min, max):
-    for _ in xrange(n):
+    for _ in range(n):
         yield randint(min, max)
 
 
@@ -418,7 +425,7 @@ class TestTimeFilterBasic(object):
         # Having 15 FSEs, 1 to 15 days in age, the first 10 of them must be
         # accepted according to the 10-day-rule. The last 5 must be rejected.
         now = time.time()
-        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        nowminusXdays = (now-(60*60*24*i+1) for i in range(1,16))
         fses = [FilterItem(modtime=t) for t in nowminusXdays]
         rules = {"days": 10}
         a, r = TimeFilter(rules, now).filter(fses)
@@ -444,11 +451,11 @@ class TestTimeFilterBasic(object):
         # list, because we don't make any guarantees about the
         # accepted-internal ordering.
         now = time.time()
-        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        nowminusXdays = (now-(60*60*24*i+1) for i in range(1,16))
         fses = [FilterItem(modtime=t) for t in nowminusXdays]
         rules = {"days": 10}
         shuffledfses = fses[:]
-        for _ in xrange(100):
+        for _ in range(100):
             shuffle(shuffledfses)
             a, r = TimeFilter(rules, now).filter(shuffledfses)
             r = list(r)
@@ -461,7 +468,7 @@ class TestTimeFilterBasic(object):
 
     def test_create_recent_allow_old(self):
         now = time.time()
-        nowminusXseconds = (now - (i + 1) for i in xrange(1,16))
+        nowminusXseconds = (now - (i + 1) for i in range(1,16))
         fses = [FilterItem(modtime=t) for t in nowminusXseconds]
         rules = {"years": 1}
         a, r = TimeFilter(rules, now).filter(fses)
@@ -474,7 +481,7 @@ class TestTimeFilterBasic(object):
         # recent item. This discovered a mean bug, where items to be rejected
         # ended up in the recent category.
         now = time.time()
-        nowminusXyears = (now-(60*60*24*365 * i + 1) for i in xrange(1,16))
+        nowminusXyears = (now-(60*60*24*365 * i + 1) for i in range(1,16))
         fses = [FilterItem(modtime=t) for t in nowminusXyears]
         rules = {"recent": 1}
         a, r = TimeFilter(rules, now).filter(fses)
@@ -485,7 +492,7 @@ class TestTimeFilterBasic(object):
     def test_create_recent_dont_request_recent(self):
         # Create a few young items (recent ones). Then don't request any.
         now = time.time()
-        nowminusXseconds = (now - (i + 1) for i in xrange(1,16))
+        nowminusXseconds = (now - (i + 1) for i in range(1,16))
         fses = [FilterItem(modtime=t) for t in nowminusXseconds]
         rules = {"years": 1, "recent": 0}
         a, r = TimeFilter(rules, now).filter(fses)
@@ -510,7 +517,7 @@ class TestTimeFilterBasic(object):
         # used as input (1-15 days old), i.e. 3 are to be rejected (FSEs 12,
         # 13, 15).
         now = time.time()
-        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        nowminusXdays = (now-(60*60*24*i+1) for i in range(1,16))
         fses = [FilterItem(modtime=t) for t in nowminusXdays]
         rules = {"days": 10, "weeks": 2}
         a, r = TimeFilter(rules, now).filter(fses)
