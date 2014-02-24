@@ -203,12 +203,12 @@ class CmdlineInterfaceTest(object):
 
     def assert_no_stderr(self):
         """Raise `WrongStderr` if standard error is not empty."""
-        if not self.rawerr == "":
+        if not self.rawerr == b"":
             raise WrongStderr("stderr not empty.")
 
     def assert_no_stdout(self):
         """Raise `WrongStdout` if standard output is not empty."""
-        if not self.rawout == "":
+        if not self.rawout == b"":
             raise WrongStdout("stdout not empty.")
 
     def assert_in_stdout(self, strings, encoding=None):
