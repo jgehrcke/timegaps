@@ -263,7 +263,7 @@ class TestArgumentErrors(Base):
     def test_recursive_delete_wo_delete(self):
         t = self.run("-r days1 .", rc=1)
         t.assert_in_stderr(
-            "-r/--delete-recursive not allowed without -d/--delete")
+            "-r/--recursive-delete not allowed without -d/--delete")
         t.assert_no_stdout()
 
 
@@ -663,7 +663,7 @@ class TestFileFilterActions(Base):
         now = time.time()
         self.mdir(d, now)
         self.mfile(os.path.join(d, f), now)
-        t = self.run("--delete --delete-recursive days1 %s" % d)
+        t = self.run("--delete --recursive-delete days1 %s" % d)
         t.assert_in_stdout(d)
         t.assert_no_stderr()
         t.assert_paths_not_exist(d)

@@ -58,7 +58,7 @@ Actions:
         system interaction errors (e.g. due to invalid permissions) are written
         to stderr and the program proceeds. By default, the deletion of
         directories requires the directory to be empty. Entire directory trees
-        can be removed using -r/--delete-recursive.
+        can be removed using -r/--recursive-delete.
 
         TODO: Add --strict mode or such that makes file system entry action
         errors fatal?
@@ -239,9 +239,9 @@ def main():
             err(("String interpretation mode is not allowed in combination "
                 "with file system actions."))
 
-    if options.delete_recursive:
+    if options.recursive_delete:
         if not options.delete:
-            err("-r/--delete-recursive not allowed without -d/--delete.")
+            err("-r/--recursive-delete not allowed without -d/--delete.")
 
     # SECTION II: collect and validate items.
     # =======================================
@@ -314,7 +314,7 @@ def action(item):
     if options.delete:
         log.info("Deleting %s: %s", item.type, item.path)
         if item.type == "dir":
-            if options.delete_recursive:
+            if options.recursive_delete:
                 # shutil.rmtree: Delete an entire directory tree; path must
                 # point to a directory (but not a symbolic link to a directory).
                 try:
@@ -604,7 +604,7 @@ def parse_options():
         metavar="DIR",
         help="Attempt to move rejected paths to directory DIR.")
 
-    parser.add_argument("-r", "--delete-recursive", action="store_true",
+    parser.add_argument("-r", "--recursive-delete", action="store_true",
         help="Enable deletion of non-empty directories.")
 
     parser.add_argument("--follow-symlinks", action="store_true",
