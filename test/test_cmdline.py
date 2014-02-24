@@ -167,7 +167,10 @@ class TestArgparseLogic(Base):
         # argparse ArgumentParser.error() makes program exit with code 2
         # on Unix. On Windows, it seems to be 1.
         t = self.run("", rc=2)
-        t.assert_in_stderr("too few arguments")
+        if sys.version < '3':
+            t.assert_in_stderr("too few arguments")
+        else:
+            t.assert_in_stderr("arguments are required: RULES, ITEM")
 
     def test_move_missingarg(self):
         t = self.run("--move", rc=2)
