@@ -4,11 +4,8 @@
 
 from __future__ import unicode_literals
 
-"""Accept or reject files/items based on time categorization.
 
-Feature / TODO brainstorm:
-    - symlink support (elaborate specifics)
-"""
+"""Accept or reject items based on time categorization."""
 
 
 EXTENDED_HELP = """
@@ -144,6 +141,16 @@ Exit status:
     >0 for all other (unexpected) errors.
 """
 
+
+# Make the same code base run with Python 2 and 3.
+if sys.version < '3':
+    text_type = unicode
+    binary_type = str
+else:
+    text_type = str
+    binary_type = bytes
+
+
 import os
 import sys
 import shutil
@@ -197,7 +204,7 @@ def main():
     # Unix system) or from environment variable PYTHONIOENCODING, which is good
     # for overriding and making guarantees, e.g. on Windows.
     rules_unicode = options.rules
-    if not isinstance(rules_unicode, unicode): # TODO: Py3
+    if not isinstance(rules_unicode, text_type):
         rules_unicode = options.rules.decode(sys.stdout.encoding)
     log.debug("Decode rules string.")
     try:
@@ -286,7 +293,7 @@ def main():
         # encode with `outenc`.
         if isinstance(ai, FileSystemEntry):
             itemstring_bytes = ai.path
-            if isinstance(ai.path, unicode): # TODO: Py3.
+            if isinstance(ai.path, text_type):
                 itemstring_bytes = ai.path.encode(outenc)
         else:
             # `ai` is of type FilterItem: `text` attribute always is unicode.
@@ -410,7 +417,7 @@ def prepare_input():
         log.info("--time-from-string set, don't interpret items as paths.")
         fmt = options.time_from_string
         # Decoding of *each single item string*.
-        if isinstance(itemstrings[0], str): # TODO: Py3
+        if isinstance(itemstrings[0], binary_type):
             # Either console or filesystem encoding would make sense here..
             # Use the one that can be easiest changed by the user, i.e.
             # set via PYTHONIOENCODING, i.e. sys.stdout.encoding.
@@ -487,7 +494,7 @@ def seconds_since_epoch_from_localtime_string(s, fmt):
 def parse_rules_from_cmdline(s):
     """Parse strings such as 'hours12,days5,weeks4' into rules dictionary.
     """
-    assert isinstance(s, unicode) # TODO: Py3
+    assert isinstance(s, text_type)
     tokens = s.split(",")
     # never happens: http://docs.python.org/2/library/stdtypes.html#str.split
     #if not tokens:
