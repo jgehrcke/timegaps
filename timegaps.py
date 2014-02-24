@@ -620,8 +620,7 @@ def parse_options():
     options = parser.parse_args()
 
 
-# TODO: Py3 (this hack should not be necessary for 3.3, at least).
-if WINDOWS:
+if WINDOWS and sys.version < '3':
     def win32_unicode_argv():
         """Uses shell32.GetCommandLineArgvW to get sys.argv as a list of Unicode
         strings.
@@ -629,6 +628,8 @@ if WINDOWS:
         Versions 2.x of Python don't support Unicode in sys.argv on
         Windows, with the underlying Windows API instead replacing multi-byte
         characters with '?'.
+
+        This hack should not be necessary for 3.3, at least.
 
         Solution copied from http://stackoverflow.com/a/846931/145400
         """
@@ -658,4 +659,5 @@ if WINDOWS:
 
 
 if __name__ == "__main__":
+    log.error(sys.version)
     main()
