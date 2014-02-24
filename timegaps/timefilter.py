@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 
+
+from __future__ import unicode_literals
+
+
 import time
 import logging
 from itertools import chain
@@ -40,7 +44,8 @@ class TimeFilter(object):
         if not len(userrules):
             raise TimeFilterError("Rules dictionary must not be emtpy.")
         greaterzerofound = False
-        for label, count in userrules.iteritems():
+        # `items()` is Py2/3 portable, performance impact on Py2 negligible.
+        for label, count in userrules.items():
             assert isinstance(count, int), "`rules` dict values must be int."
             if count > 0:
                 greaterzerofound = True
@@ -57,6 +62,7 @@ class TimeFilter(object):
         # Build up `self.rules` dict. Set rules not given by user to defaults,
         # keep order of `time_categories` dict (order is crucial).
         self.rules = OrderedDict()
+        # `items()` is Py2/3 portable, performance impact on Py2 negligible.
         for label, defaultcount in time_categories.items():
             if label in userrules:
                 self.rules[label] = userrules[label]
