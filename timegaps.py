@@ -157,9 +157,12 @@ from timegaps import (TimeFilter, TimeFilterError, FileSystemEntry, FilterItem,
 if sys.version < '3':
     text_type = unicode
     binary_type = str
+    stdout_write_bytes = sys.stdout.write
 else:
     text_type = str
     binary_type = bytes
+    # http://docs.python.org/3/library/sys.html#sys.stdout
+    stdout_write_bytes = sys.stdout.buffer.write
 
 
 WINDOWS = sys.platform == "win32"
@@ -298,8 +301,8 @@ def main():
         else:
             # `ai` is of type FilterItem: `text` attribute always is unicode.
             itemstring_bytes = ai.text.encode(outenc)
-        sys.stdout.write("%s%s" % (itemstring_bytes, sep_bytes))
-        # In Python 3, write bytes to stdout buffer (after detach).
+        # __add__ of two byte strings returns byte string in both, Py 2 and 3.
+        stdout_write_bytes(itemstring_bytes + sep_bytes)
         action(ai)
 
 
