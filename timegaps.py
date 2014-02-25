@@ -5,32 +5,34 @@
 from __future__ import unicode_literals
 
 
-"""Accept or reject items based on their time categorization."""
+"""Accept or reject items based on age categorization."""
 
 
 EXTENDED_HELP = """
-timegaps accepts or rejects file system entries based on modification time
-categorization. Its input is a set of paths and a set of classification rules.
-In the default mode, the output is to two sets of paths, the rejected and the
-accepted ones. Details are described below.
+timegaps accepts or rejects file system paths (items) based their modification
+time. Its input is a set of items and certain categorization rules. The items
+are then, according to the rules, split into sets of rejected or accepted items.
+In the default mode, the output is the set of rejected items. If specified,
+accepted or rejected items are deleted or moved. Find the detailed program
+specification below.
 
 
 Input:
     ITEMs:
         By default, an ITEM value is interpreted as a path to a file system
         entry. By default, the timestamp corresponding to this item (which is
-        used for item filtering) is the modification time as reported by
+        used for item categorization) is the modification time as reported by
         stat(). Optionally, this timestamp may also be parsed from the basename
         of the path. When interpreted as paths, all ITEM values must point to
         valid file system entries. In a different mode of operation, ITEM
         values are treated as simple strings w/o path validation, in which case
-        a timestamp must be parsable from the string itself.
+        the "modification time" must be parsable from the string itself.
     RULES:
-        These rules define the amount of items to be accepted for certain time
+        The rules define the amount of items to be accepted for certain time
         categories. All other items become rejected. Supported time categories
-        and the RULES string formatting specification are given in the
-        program's normal help text. The exact method of classification is
-        explained below.
+        and the RULES string format specification are given in the normal help
+        text output of the program (--help). The exact method of item time
+        categorization is explained below.
 
 
 Output:
@@ -50,22 +52,22 @@ Actions:
         or rejected items are written to stdout just like in non-action mode.
 
         Remarks: the --time-from-string mode is not allowed in combination with
-        --delete or --move. The displacement action renames within one file
-        system and copy-deletes in all other cases (cf. bit.ly/shutilmove). File
-        system interaction errors (e.g. due to invalid permissions) are written
-        to stderr and the program proceeds. By default, the deletion of
-        directories requires the directory to be empty. Entire directory trees
-        can be removed using -r/--recursive-delete.
+        --delete or --move. The --move action renames within one file system and
+        copy-deletes in all other cases (cf. bit.ly/shutilmove). File system
+        interaction errors (e.g. due to invalid permissions) are written to
+        stderr and the program proceeds. By default, the deletion of directories
+        requires the directory to be empty. Entire directory trees can be
+        removed using -r/--recursive-delete.
 
         TODO: Add --strict mode or such that makes file system entry action
         errors fatal?
 
 
-Classification method:
+Time categorization method:
         Each item provided as input becomes classified as either accepted or
         rejected, based on its corresponding timestamp and according to the
-        time filter rules given by the user. For the basic meaning of the
-        filter rules, consider this RULES string example:
+        time categorization rules given by the user. For understanding the basic
+        meaning of the categorization rules, consider this RULES string example:
 
             hours12,days5,weeks4
 
@@ -87,23 +89,23 @@ Classification method:
         being 12 h old, yielding at most 12 accepted items from the <hours>
         time category: zero or one for each of the sub-categories.
 
-        An hour is a time unit, as are all time categories except for the
+        An hour is a real time unit, as are all time categories except for the
         <recent> category (explained further below). An item is considered
-        X [timeunits] old if it is older than X [timeunits], but younger than
-        X+1 [timeunits]. For instance, if an item being 45 days old should be
+        X [time unit] old if it is older than X [time unit], but younger than
+        X+1 [time unit]. For instance, if an item being 45 days old should be
         sub-categorized within the 'months' category, it would be considered
         1 month old, because it is older than 30 days (1 month) and younger
-        than 60 days (2 months). Internally, all time category units are
-        treated as linear in time (see below for time category specification).
+        than 60 days (2 months). All time category units are treated as linear
+        in time (see below for time category specification).
 
-        The example rules above can accept at most 12 + 5 + 4 accepted items.
-        If there are multiple items fitting into a certain sub-category (e.g.
-        <3-days>), then the newest of these is accepted. If there is no item
-        fitting into a certain sub-category, then this sub-category simply does
-        not yield an item. Considering the example rules above, only 11 items
-        are accepted from the <hours> category if the program does not find an
-        item for the <5-hours> sub-category, but at least one item for the
-        other <X-hours> sub-categories.
+        The example rules above can accept at most 12 + 5 + 4 accepted items. If
+        there are multiple items fitting into a certain sub-category (e.g.
+        <3-days>), the newest of these is accepted. If there is no item fitting
+        into a certain sub-category, then this sub-category stays unpopulated
+        and does not yield an item. Considering the example rules above, only 11
+        items are accepted from the <hours> category if the input does not
+        contain an item for the <5-hours> sub-category, but at least one item
+        for all other <X-hours> sub-categories.
 
         Younger time categories have higher priority than older ones. This is
         only relevant when, according to the rules, two <category>:<maxcount>
@@ -112,15 +114,15 @@ Classification method:
             days:  10
             weeks:  1
 
-        An item fitting into one of the <7/8/9/10-days> sub-categories would
-        also fit the <1-weeks> sub-category. In this case, the <X-days> sub-
-        categories will be populated first, since <days> is a younger category
-        than <weeks>. If there is an 11 days old item in the input, it will
-        populate the <1-week> sub-category, because it is the newest 1-week-old
-        item *not consumed by a younger category*.
+        An item fitting one of the <7/8/9/10-days> sub-categories would also fit
+        the <1-weeks> sub-category. In this case, the <X-days> sub-categories
+        will be populated first, since <days> is a younger category than
+        <weeks>. If there is an 11 days old item in the input, it will populate
+        the <1-week> sub-category, because it is the newest 1-week-old item not
+        consumed by a younger category.
 
 
-        Currently supported time categories and their meaning:
+        Currently supported time categories and their mathematical meaning:
 
             hours:   60 minutes     (3600 seconds)
             days:    24 hours      (86400 seconds)
