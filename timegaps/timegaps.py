@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 
+
+"""timegaps.timegaps -- core data structures used by the timegaps program."""
+
+
 import os
 import sys
 import stat

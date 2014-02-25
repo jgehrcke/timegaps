@@ -2,9 +2,12 @@
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 
 
+"""
+timegaps.timefilter -- generic time categorization logic as used by timegaps.
+"""
+
+
 from __future__ import unicode_literals
-
-
 import time
 import logging
 from itertools import chain

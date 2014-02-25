@@ -2,6 +2,11 @@
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 
 
+"""
+Command line interface tests (execution through shell).
+"""
+
+
 from __future__ import unicode_literals
 import os
 import sys

@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 
+
+"""
+Test timegaps.timegaps and timegaps.timefilter API. Most importantly, this
+module tests the time categorization logic.
+"""
+
+
+from __future__ import unicode_literals
 import os
 import sys
 import time

@@ -2,6 +2,14 @@
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 
 
+"""A generic command line interface testing framework.
+
+In contrast to other CLI test runners, here each test is a shell script
+(which is created dynamically). Therefore, the tests are as close to actual
+usage as possible.
+"""
+
+
 from __future__ import unicode_literals
 import os
 import sys
