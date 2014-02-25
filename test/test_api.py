@@ -47,7 +47,7 @@ def nrandint(n, min, max):
 
 
 def randstring_fssafe():
-    return b64encode(os.urandom(6)).replace('/','!')
+    return b64encode(os.urandom(6)).replace(b'/',b'!')
 
 
 def fsegen(ref, N_per_cat, max_timecount):
