@@ -21,6 +21,13 @@ log = logging.getLogger()
 log.setLevel(logging.DEBUG)
 
 
+# Make the same code base run with Python 2 and 3.
+if sys.version < '3':
+    range = xrange
+else:
+    pass
+
+
 RUNDIRTOP = "./cmdline-test"
 TIMEGAPS_NAME = "../../../timegaps.py"
 #PYTHON_EXE = "coverage -x"
@@ -543,7 +550,7 @@ class TestFileFilter(Base):
         # FSEs 1-11,14 must be accepted (12 FSEs). 15 FSEs are used as input
         # (1 to 15 days old), i.e. 3 are to be rejected (FSEs 12, 13, 15).
         now = time.time()
-        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        nowminusXdays = (now-(60*60*24*i+1) for i in range(1,16))
         name_time_pairs = [
             ("f%s" % (i+1,), t) for i,t in enumerate(nowminusXdays)]
         for name, mtime in name_time_pairs:
@@ -602,7 +609,7 @@ class TestFileFilterActions(Base):
         # can easily be run against a set of files or dirs.
         # Test logic is explained in test_api: 10_days_2_weeks.
         now = time.time()
-        nowminusXdays = (now-(60*60*24*i+1) for i in xrange(1,16))
+        nowminusXdays = (now-(60*60*24*i+1) for i in range(1,16))
         name_time_pairs = [
             ("t%s" % (i+1,), t) for i,t in enumerate(nowminusXdays)]
         # Create dir or file of name `name` for each name-mtime pair.
