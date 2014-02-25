@@ -110,7 +110,7 @@ class CmdlineInterfaceTest(object):
     rundirtop = "."
     shellscript_encoding = "utf-8"
     shellscript_ext = ".sh"
-    preamble = None
+    preamble_lines = []
     shellargs = []
 
     def __init__(self, name):
@@ -143,11 +143,13 @@ class CmdlineInterfaceTest(object):
             f.write(content_bytestring)
 
     def _script_contents(self, cmd_unicode):
-        preamble = self.preamble if self.preamble else ""
-        # The native Windows line break (\r\n) makes batch files work more
-        # reliable than a simple line feed.
+        # Use \r\n for separating lines. The batch file is written in 'b' mode,
+        # i.e. with Windows' _O_BINARY flag set. This disables magic \n -> \r\n
+        # translation. It looks like most of the times a batch file works with
+        # \n line breaks. Tests involving special chars, however, show that \n
+        # fails where the native Windows line break (\r\n) succeeds.
         sep = "\r\n" if WINDOWS else "\n"
-        return "%s%s%s%s" % (preamble, sep, cmd_unicode, sep)
+        return sep.join(self.preamble_lines + [cmd_unicode] + [""])
 
     def run(self, cmd_unicode, expect_rc=0, stdinbytes=None, log_output=True):
         if stdinbytes is not None:

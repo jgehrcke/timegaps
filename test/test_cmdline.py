@@ -44,7 +44,7 @@ class CmdlineInterfaceTestUnix(CmdlineInterfaceTest):
     rundirtop = RUNDIRTOP
     # Set PYTHONIOENCODING. When connected to pipes (as in the context of
     # py.test, sys.stdout.encoding is None otherwise.)
-    preamble = 'export PYTHONIOENCODING="utf-8"\n'
+    preamble_lines = ['export PYTHONIOENCODING="utf-8"']
 
 
 class CmdlineInterfaceTestWindows(CmdlineInterfaceTest):
@@ -53,15 +53,6 @@ class CmdlineInterfaceTestWindows(CmdlineInterfaceTest):
     shellargs = ["/Q", "/C"]
     rundirtop = RUNDIRTOP
     shellscript_ext = ".bat"
-
-    # TODO: use `preamble_lines` here and hide line separator stuff in clitest
-    # module.
-
-    # Use \r\n for separating lines. The batch file is written in 'b' mode,
-    # i.e. with Windows' _O_BINARY flag set. This disables magic \n -> \r\n
-    # translation. It looks like most of the times a batch file works with
-    # \n line breaks. The TestSpecialChars tests below, however, show that
-    # the native Windows line break (\r\n) is the better means.
 
     # Use PYTHONIOENCODING for enforcing stdout encoding UTF-8 on
     # Windows. I also set console code page via @chcp 65001, but
@@ -78,7 +69,7 @@ class CmdlineInterfaceTestWindows(CmdlineInterfaceTest):
     # for special char command line arguments to be properly passed to Python
     # (with the Win 32 sys.argv hack on the receiving end, sys.argv becomes
     # populated with unicode objects).
-    preamble = "@chcp 65001 > nul\r\n@set PYTHONIOENCODING=utf-8\r\n"
+    preamble_lines = ["@chcp 65001 > nul", "@set PYTHONIOENCODING=utf-8"]
 
 
 CLITest = CmdlineInterfaceTestUnix
