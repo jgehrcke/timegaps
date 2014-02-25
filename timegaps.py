@@ -398,15 +398,15 @@ def read_items_from_stdin():
     # (NUL or newline), then decode each record and return list of unicode
     # strings.
     log.debug("Read binary data from standard input, until EOF.")
-
-    # TODO: protect with try/except.
-    bytedata = stdin_read_bytes_until_eof()
+    try:
+        bytedata = stdin_read_bytes_until_eof()
+    except Exception as e:
+        err("Error reading from stdin: %s", e)
     log.debug("%s bytes have been read.", len(bytedata))
 
     enc = sys.stdout.encoding
     sep = "\0" if options.nullsep else "\n"
     sep_bytes = sep.encode(enc)
-
     log.debug("Split binary stdin data on byte separator %r.", sep_bytes)
     chunks = bytedata.split(sep_bytes)
     log.debug("Decode non-empty chunks using %s.", enc)
@@ -420,18 +420,18 @@ def read_items_from_stdin():
 
 
 def prepare_input():
-    """Return a list of objects that can be classified by a `TimeFilter`
-    instance.
+    """Return a list of objects that can be categorized by `TimeFilter.filter`.
     """
     if not options.stdin:
-        # `itemstrings` can be either unicode or byte strings. On Unix, we
-        # want to keep cmdline arguments as raw binary data. In FS mode, keep
-        # paths as byte strings. In time-from-string mode, decode itemstrings
-        # later.
         itemstrings = options.items
+        # `itemstrings` can be either unicode or byte strings. On Unix, we
+        # want to keep cmdline arguments as raw binary data as long as possible.
+        # On Python 3 argv already comes in as sequence of unicode strings.
+        # In file system mode on Python 2, treat items (i.e. paths) as byte
+        # strings. In time-from-string mode, decode itemstrings (later).
     else:
-        # `itemstrings` are only unicode objects.
         itemstrings = read_items_from_stdin()
+        # `itemstrings` as returned by `read_items_from_stdin()` are unicode.
 
     if options.time_from_string is not None:
         # TODO: change mode to pure string parsing, w/o item-wise file system
