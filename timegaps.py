@@ -170,30 +170,32 @@ if WINDOWS:
     import msvcrt
 
 
-# See http://msdn.microsoft.com/en-us/library/tw4k6df8.aspx
-# "The _setmode function sets to mode the translation mode of the file given by
-# fd. Passing _O_TEXT as mode sets text (that is, translated) mode. Carriage
-# return–line feed (CR-LF) combinations are translated into a single line feed
-# character on input. Line feed characters are translated into CR-LF
-# combinations on output. Passing _O_BINARY sets binary (untranslated) mode, in
-# which these translations are suppressed."
-# On Windows, change mode of all standard streams to _O_BINARY, i.e.
-# untranslated. The translation might be a convenient auto-correction
-# in certain situations, when the user does not take great care of item
-# separation in stdin or when precise control of stdout is not desired. However,
-# I prefer not to magically, implicitly mess with the standard byte streams.
-# In untranslated mode, the program's test suite can largely be the same on
-# Windows and Unix. In translated mode the specification of item separation in
-# input and output becomes tedious.
 # http://cygwin.com/cygwin-ug-net/using-textbinary.html
 # http://stackoverflow.com/a/4160894/145400
 # http://code.activestate.com/lists/python-list/20426/
+# http://msdn.microsoft.com/en-us/library/tw4k6df8.aspx
+# "
+#  The _setmode function sets to mode the translation mode of the file given by
+#  fd. Passing _O_TEXT as mode sets text (that is, translated) mode. Carriage
+#  return–line feed (CR-LF) combinations are translated into a single line feed
+#  character on input. Line feed characters are translated into CR-LF
+#  combinations on output. Passing _O_BINARY sets binary (untranslated) mode, in
+#  which these translations are suppressed.
+# "
+# On Windows, change mode of stdin and stdout to _O_BINARY, i.e. untranslated
+# mode. This translation might be a convenient auto-correction in many
+# situations. However, in this program I want item separation in stdin and
+# stdout to be precisely controlled. So I prefer I prefer not to do this
+# magically, and implicitly mess with the standard byte stream.  In untranslated
+# mode, the program's test suite can largely be the same on Windows and Unix. In
+# translated mode the specification of item separation in input and output
+# unnecessarily complicated.
 if WINDOWS:
-    for standard_stream in (sys.stdout, sys.stderr, sys.stdin):
+    for stream in (sys.stdout, sys.stdin):
         if sys.version < '3':
-            msvcrt.setmode(standard_stream.fileno(), os.O_BINARY)
+            msvcrt.setmode(stream.fileno(), os.O_BINARY)
         else:
-            msvcrt.setmode(standard_stream.buffer.fileno(), os.O_BINARY)
+            msvcrt.setmode(stream.buffer.fileno(), os.O_BINARY)
 
 
 log = logging.getLogger()
@@ -204,6 +206,7 @@ formatter = logging.Formatter(
     datefmt='%H:%M:%S')
 ch.setFormatter(formatter)
 log.addHandler(ch)
+
 
 # Global for options, to be populated by argparse from cmdline arguments.
 options = None
