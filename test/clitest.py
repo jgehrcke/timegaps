@@ -148,8 +148,7 @@ class CmdlineInterfaceTest(object):
         # translation. It looks like most of the times a batch file works with
         # \n line breaks. Tests involving special chars, however, show that \n
         # fails where the native Windows line break (\r\n) succeeds.
-        sep = "\r\n" if WINDOWS else "\n"
-        return sep.join(self.preamble_lines + [cmd_unicode] + [""])
+        return os.linesep.join(self.preamble_lines + [cmd_unicode] + [""])
 
     def run(self, cmd_unicode, expect_rc=0, stdinbytes=None, log_output=True):
         if stdinbytes is not None:
