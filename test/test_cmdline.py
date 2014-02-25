@@ -161,7 +161,8 @@ class TestArgparseFeatures(Base):
 
     def test_extended_help(self):
         t = self.run("--extended-help")
-        t.assert_in_stdout(["Input:","Output:","Actions:", "Classification"])
+        t.assert_in_stdout(
+            ["Input:", "Output:", "Actions:", "Time categorization method:"])
         t.assert_no_stderr()
 
 
