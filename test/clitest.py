@@ -198,9 +198,17 @@ class CmdlineInterfaceTest(object):
         with open(self.errfilepath, "rb") as f:
             self.rawerr = f.read()
         if log_output:
-            log.info("Test stdout:\n%s", self.rawout)
+            try:
+                log.info("Test stdout:\n%s", self.rawout.decode(
+                    sys.stdout.encoding))
+            except UnicodeDecodeError as e:
+                log.info("Cannot decode stdout: %s", e)
             log.info("Test stdout repr:\n%r", self.rawout)
-            log.info("Test stderr:\n%s", self.rawerr)
+            try:
+                log.info("Test stderr:\n%s", self.rawerr.decode(
+                    sys.stdout.encoding))
+            except UnicodeDecodeError as e:
+                log.info("Cannot decode stderr: %s", e)
             log.info("Test stderr repr:\n%r", self.rawerr)
         if rc != expect_rc:
             raise WrongExitCode("Expected %s, got %s" % (expect_rc, rc))
