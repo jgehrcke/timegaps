@@ -158,11 +158,13 @@ if sys.version < '3':
     text_type = unicode
     binary_type = str
     stdout_write_bytes = sys.stdout.write
+    stdin_read_bytes_until_eof = sys.stdin.read
 else:
     text_type = str
     binary_type = bytes
     # http://docs.python.org/3/library/sys.html#sys.stdout
     stdout_write_bytes = sys.stdout.buffer.write
+    stdin_read_bytes_until_eof = sys.stdin.buffer.read
 
 
 WINDOWS = sys.platform == "win32"
@@ -390,20 +392,14 @@ def read_items_from_stdin():
     # before that anyway), then split data (byte string) at sep byte occurrences
     # (NUL or newline), then decode each record and return list of unicode
     # strings.
-    # Read until EOF.
     log.debug("Read binary data from standard input, until EOF.")
 
-    # Get the raw binary data from stdin , depending on the Python version.
-
     # TODO: protect with try/except.
-    bytedata = sys.stdin.read()
+    bytedata = stdin_read_bytes_until_eof()
     log.debug("%s bytes have been read.", len(bytedata))
 
-    # TODO: Py3
     enc = sys.stdout.encoding
-    sep = "\n"
-    if options.nullsep:
-        sep = "\0"
+    sep = "\0" if options.nullsep else "\n"
     sep_bytes = sep.encode(enc)
 
     log.debug("Split binary stdin data on byte separator %r.", sep_bytes)
