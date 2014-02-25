@@ -5,7 +5,7 @@
 from __future__ import unicode_literals
 
 
-"""Accept or reject items based on time categorization."""
+"""Accept or reject items based on their time categorization."""
 
 
 EXTENDED_HELP = """
@@ -434,53 +434,48 @@ def prepare_input():
         # `itemstrings` as returned by `read_items_from_stdin()` are unicode.
 
     if options.time_from_string is not None:
-        # TODO: change mode to pure string parsing, w/o item-wise file system
-        # interaction
         log.info("--time-from-string set, don't interpret items as paths.")
         fmt = options.time_from_string
-        # Decoding of *each single item string*.
+        # Decoding of each single item string.
+        # If items came from stdin, they are already unicode. If they came from
+        # argv and Python 2 on Unix, they are still byte strings.
         if isinstance(itemstrings[0], binary_type):
-            # Either console or filesystem encoding would make sense here..
-            # Use the one that can be easiest changed by the user, i.e.
-            # set via PYTHONIOENCODING, i.e. sys.stdout.encoding.
+            # Again, use sys.stdout.encoding to decode item byte strings, which
+            # can be set/overridden via PYTHONIOENCODING.
             itemstrings = [s.decode(sys.stdout.encoding) for s in itemstrings]
         items = []
         for s in itemstrings:
             log.debug("Parsing seconds since epoch from item: %r", s)
             mtime = seconds_since_epoch_from_localtime_string(s, fmt)
-            log.debug("seconds since epoch: %s" % mtime)
+            log.debug("Seconds since epoch: %s" % mtime)
             items.append(FilterItem(modtime=mtime, text=s))
         return items
 
-    log.info("Interprete items as file system entries.")
+    log.info("Interpret items as paths.")
     log.info("Validate paths and extract modification time.")
     fses = []
     for path in itemstrings:
         log.debug("Type of path string: %s.", type(path))
-
         # On the one hand, a unicode-aware Python program should only use
         # unicode type strings internally. On the other hand, when it comes
-        # to file system interaction, bytestrings are the more portable choice
+        # to file system interaction, byte strings are the more portable choice
         # on Unix-like systems.
         # See https://wiki.python.org/moin/Python3UnicodeDecodeError:
         # "A robust program will have to use only the bytes type to make sure
-        # that it can open / copy / remove any file or directory."
+        #  that it can open / copy / remove any file or directory."
         #
         # On Python 3, which automatically populates argv with unicode objects,
-        # we could therefore re-encode towards bytestrings. See:
+        # we could therefore re-encode towards byte strings. See:
         # http://stackoverflow.com/a/7077803/145400
         # http://bugs.python.org/issue8514
         # https://github.com/oscarbenjamin/opster/commit/61f693a2c553944394ba286baed20abc31958f03
-        # On the other hand,
-        # there is http://www.python.org/dev/peps/pep-0383/ which describes how
-        # surrogate encoding is used by Python 3 for auto-correcting issues
-        # related to wrongly decoded arguments (the encoding assumption upon
-        # decoding might have been wrong).
-        # Also, interesting in this respect:
+        # On the other hand, there is http://www.python.org/dev/peps/pep-0383/
+        # which describes how surrogate encoding is used by Python 3 for
+        # auto-correcting argument decoding issues (unknown byte sequences are
+        # conserved and re-created upon encoding). Interesting in this regard:
         # http://stackoverflow.com/a/846931/145400
 
-        # Definite choice for Python 2 and Unix:
-        # keep paths as byte strings.
+        # Definite choice for Python 2 and Unix: keep paths as byte strings.
         modtime = None
         if options.time_from_basename:
             bn = os.path.basename(path)
@@ -502,6 +497,10 @@ def seconds_since_epoch_from_localtime_string(s, fmt):
     time, compatible with e.g. stat result st_mtime.
     """
     try:
+        # Python 2.7's strptime can deal with `s` and `fmt` being byte string or
+        # unicode. Python 3's strptime requires both to be unicode type. Since
+        # argv is populated with unicode strings in Py 3, this requirement is
+        # always fulfilled.
         time_struct_local = time.strptime(s, fmt)
     except Exception as e:
         err("Error while parsing time from item string. Error: %s" % e)
@@ -518,12 +517,9 @@ def parse_rules_from_cmdline(s):
     """
     assert isinstance(s, text_type)
     tokens = s.split(",")
-    # never happens: http://docs.python.org/2/library/stdtypes.html#str.split
-    #if not tokens:
-    #    raise ValueError("Error extracting rules from string '%s'" % s)
     rules = {}
     for t in tokens:
-        log.debug("Analyze token '%s'", t)
+        log.debug("Analyze token <%s>", t)
         if not t:
             raise ValueError("Token is empty")
         match = re.search(r'([a-z]+)([0-9]+)', t)
@@ -540,7 +536,7 @@ def parse_rules_from_cmdline(s):
 
 
 def err(s):
-    """Log error message as ERROR level and exit with code 1."""
+    """Log message `s` with ERROR level and exit with code 1."""
     log.error(s)
     log.info("Exit with code 1.")
     sys.exit(1)
@@ -553,8 +549,7 @@ def parse_options():
             print(EXTENDED_HELP)
             sys.exit(0)
 
-    global options
-    description = "Accept or reject items based on time categorization."
+    description = __doc__ # Use docstring of *this* module.
     parser = argparse.ArgumentParser(
         prog="timegaps",
         description=description,
@@ -579,9 +574,7 @@ def parse_options():
             "0." %
             ", ".join(TimeFilter.valid_categories))
         )
-    # Require at least one arg if --stdin is not defined. Don't require any
-    # arg if --stdin is defined. Overall, allow an arbitrary number, and
-    # validate later.
+    # Allow an arbitrary number if ITEMs and validate later.
     parser.add_argument("items", metavar="ITEM", action="store", nargs='*',
         help=("Treated as path to file system entry (default) or as "
             "string (--time-from-string mode). Must be omitted in --stdin "
@@ -596,13 +589,11 @@ def parse_options():
         help=("Input and output item separator is NUL character "
             "instead of newline character.")
         )
-
     parser.add_argument('-a', '--accepted', action='store_true',
         help=("Output accepted items and perform actions on accepted items. "
             "Overrides default, which is to output rejected items (and act on "
             "them).")
         )
-
     parser.add_argument("-t", "--reference-time", action="store",
         metavar="TIME",
         help=("Parse reference time from local time string TIME. Required "
@@ -635,45 +626,37 @@ def parse_options():
 
     parser.add_argument("-r", "--recursive-delete", action="store_true",
         help="Enable deletion of non-empty directories.")
-
     parser.add_argument("--follow-symlinks", action="store_true",
         help=("Retrieve modification time from symlink target, .. "
             "TODO: other implications? Not implemented yet.")
         )
-
     parser.add_argument('-v', '--verbose', action='count', default=0,
         help=("Control verbosity. Can be specified multiple times for "
             "increasing verbosity level. Levels: error (default), info, debug.")
         )
 
+    global options
     options = parser.parse_args()
 
 
 if WINDOWS and sys.version < '3':
     def win32_unicode_argv():
-        """Uses shell32.GetCommandLineArgvW to get sys.argv as a list of Unicode
-        strings.
+        """Use shell32.GetCommandLineArgvW to get sys.argv as a list of unicode
+        strings. Credits: http://stackoverflow.com/a/846931/145400
 
-        Versions 2.x of Python don't support Unicode in sys.argv on
-        Windows, with the underlying Windows API instead replacing multi-byte
-        characters with '?'.
-
-        This hack should not be necessary for 3.3, at least.
-
-        Solution copied from http://stackoverflow.com/a/846931/145400
+        Python 2 does not support unicode in sys.argv on Windows, the old
+        Windows used replaces multi-byte characters with '?'. This hack uses
+        the recommended Windows API for retrieving unicode code points. Not
+        necessary for Python 3.
         """
-
         from ctypes import POINTER, byref, cdll, c_int, windll
         from ctypes.wintypes import LPCWSTR, LPWSTR
-
         GetCommandLineW = cdll.kernel32.GetCommandLineW
         GetCommandLineW.argtypes = []
         GetCommandLineW.restype = LPCWSTR
-
         CommandLineToArgvW = windll.shell32.CommandLineToArgvW
         CommandLineToArgvW.argtypes = [LPCWSTR, POINTER(c_int)]
         CommandLineToArgvW.restype = POINTER(LPWSTR)
-
         cmd = GetCommandLineW()
         argc = c_int(0)
         argv = CommandLineToArgvW(cmd, byref(argc))
