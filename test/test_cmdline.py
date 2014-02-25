@@ -266,13 +266,13 @@ class TestArgumentErrors(Base):
     def test_action_string_interpr_mode_1(self):
         t = self.run("-m . --time-from-string FMT days1 .", rc=1)
         t.assert_in_stderr(["String interpretation mode is not allowed",
-         "actions"])
+         "--move"])
         t.assert_no_stdout()
 
     def test_action_string_interpr_mode_2(self):
         t = self.run("-d --time-from-string FMT days1 .", rc=1)
         t.assert_in_stderr(["String interpretation mode is not allowed",
-         "actions"])
+         "--move"])
         t.assert_no_stdout()
 
     def test_recursive_delete_wo_delete(self):
