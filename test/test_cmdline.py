@@ -136,7 +136,7 @@ class TestArgparseFeatures(Base):
         t = self.run("--version")
         # argparse makes this go to stderr, weird, help goes to stdout.
         t.assert_no_stdout()
-        t.assert_in_stderr(__version__)
+        t.assert_is_stderr("%s%s" % (__version__, os.linesep))
 
     def test_help(self):
         t = self.run("--help")
