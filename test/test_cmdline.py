@@ -462,12 +462,12 @@ class TestStringInterpretationMode(Base):
         items = ["20001112-111213", "20001112-111214","20001112-111215"]
         s = "\n".join(items).encode(STDINENC)
         t = self.run("--stdin --time-from-string %s days1" % self.fmt, sin=s)
-        t.assert_is_stdout("%s\n" % s)
+        t.assert_is_stdout(s + b"\n")
         t.assert_no_stderr()
 
         s = "\0".join(items).encode(STDINENC)
         t = self.run("-s -0 --time-from-string %s days1" % self.fmt, sin=s)
-        t.assert_is_stdout("%s\0" % s)
+        t.assert_is_stdout(s + b"\0")
         t.assert_no_stderr()
 
 
