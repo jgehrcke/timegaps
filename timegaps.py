@@ -136,9 +136,9 @@ Classification method:
 
 Exit status:
     0 upon success.
-    1 upon all expected (runtime) errors detected by the program.
+    1 upon expected errors detected by the program.
     2 upon argument errors as detected by argparse.
-    >0 for all other (unexpected) errors.
+    >0 for other (unexpected) errors.
 """
 
 
@@ -186,12 +186,11 @@ if WINDOWS:
 # "
 # On Windows, change mode of stdin and stdout to _O_BINARY, i.e. untranslated
 # mode. This translation might be a convenient auto-correction in many
-# situations. However, in this program I want item separation in stdin and
-# stdout to be precisely controlled. So I prefer I prefer not to do this
-# magically, and implicitly mess with the standard byte stream.  In untranslated
-# mode, the program's test suite can largely be the same on Windows and Unix. In
-# translated mode the specification of item separation in input and output
-# unnecessarily complicated.
+# situations. However, in this program, I want precise control over item
+# separation in stdin and stdout. So I prefer not to let Windows implicitly mess
+# with the byte streams.  In untranslated mode, the program's test suite can
+# largely be the same on Windows and Unix. In translated mode the specification
+# of item separation in input and output unnecessarily complicated.
 if WINDOWS:
     for stream in (sys.stdout, sys.stdin):
         if sys.version < '3':
@@ -221,8 +220,8 @@ def main():
     elif options.verbose == 2:
         log.setLevel(logging.DEBUG)
 
-    # Be explicit about input and output encoding.
-    # Also see http://stackoverflow.com/a/4374457/145400
+    # Be explicit about input and output encoding, at least when connected via
+    # pipes. Also see http://stackoverflow.com/a/4374457/145400
     if sys.stdout.encoding is None:
         err(("Please explicitly specify the codec that should be used for "
             "decoding data read from stdin, and for encoding data that is to "
@@ -231,18 +230,21 @@ def main():
 
     log.debug("Options namespace:\n%s", options)
 
-    # SECTION I: bootstrap. validate and process certain command line arguments.
-    # ==========================================================================
-    # If the user misses to provide either RULES or an ITEM, it is not caught
-    # by argparse (0 ITEMs is allowed when --stdin is set). Validate RULES and
+    # STAGE I: bootstrap. validate and process certain command line arguments.
+
+    # argparse does not catch when the user misses to provide RULES or (one)
+    # ITEM (0 ITEMs is allowed when --stdin is set). Validate RULES and
     # ITEMs here in the order as consumed by argparse (first RULES, then ITEMS).
-    # Doing it the other way round could produce confusing error messages.
-    # Parse RULES argument.
-    # sys.stdout.encoding is either derived from LC_CTYPE (set on your typical
-    # Unix system) or from environment variable PYTHONIOENCODING, which is good
-    # for overriding and making guarantees, e.g. on Windows.
     rules_unicode = options.rules
     if not isinstance(rules_unicode, text_type):
+        # Python 3 should always create unicode/text type arguments (which is
+        # implicit magic, at least on Unix, but a quite well-behaving magic
+        # due to the use of surrogate de(en)coding). Python 2 argv is populated
+        # with byte strings, in which case we want to manually decode the RULES
+        # string before parsing it. sys.stdout.encoding is either derived from
+        # LC_CTYPE (set on the typical Unix system) or from environment
+        # variable PYTHONIOENCODING, which is good for overriding and making
+        # guarantees, e.g. on Windows.
         rules_unicode = options.rules.decode(sys.stdout.encoding)
     log.debug("Decode rules string.")
     try:
@@ -257,8 +259,8 @@ def main():
         if len(options.items) > 0:
             err("No ITEM must be provided on command line (-s/--stdin is set).")
 
-    # Determine reference time and set up `TimeFilter` instance. Do this as
-    # early as possible: might raise error.
+    # Determine reference time and create `TimeFilter` instance. Do this as
+    # early as possible: might raise an exception.
     if options.reference_time is not None:
         log.info("Parse reference time from command line.")
         reference_time = seconds_since_epoch_from_localtime_string(
@@ -277,26 +279,26 @@ def main():
         if not os.path.isdir(options.move):
             err("--move target not a directory: '%s'" % options.move)
 
-    # Currently, string mode with file system action defined is unspecified
-    # behavior. Forbid.
+    # Pure string interpretation mode is currently not compatible with any type
+    # of file system interaction. Forbid.
     if options.time_from_string is not None:
         if options.move or options.delete:
             err(("String interpretation mode is not allowed in combination "
-                "with file system actions."))
+                "with --move or --delete."))
 
     if options.recursive_delete:
         if not options.delete:
             err("-r/--recursive-delete not allowed without -d/--delete.")
 
-    # SECTION II: collect and validate items.
-    # =======================================
+    # STAGE II: collect and validate items.
+
     log.info("Start collecting item(s).")
     items = prepare_input()
     log.info("Collected %s item(s).", len(items))
 
 
-    # SECTION 3) item classification.
-    # ===============================
+    # STAGE III: categorize items.
+
     log.info("Start item classification.")
     try:
         accepted, rejected = timefilter.filter(items)
@@ -309,24 +311,27 @@ def main():
     log.debug("Rejected item(s):\n%s" % "\n".join("%s" % r for r in rejected))
 
 
-    # SECTION 4) item action and item output.
-    # =======================================
-    # - determine action items (either the rejected or the accepted ones)
-    # - for each action item, perform one or none action, and write to stdout
+    # STAGE IV: item action and item output.
 
-    # Write binary data to stdout. Use pre-existing binary data ("pass-through"
-    # mode, useful e.g. for paths on Unix) or encode unicode to output encoding.
+    # - Determine "action items": either the rejected or the accepted ones
+    # - For each action item:
+    #       - write item to stdout
+    #       - perform file system action on item, if specified
+
+    # Write binary data to stdout. If available, use original binary data as
+    # provided via input ("pass-through" mode, useful e.g. for paths on Unix,
+    # easily done with Python 2) or encode unicode to output encoding, which
+    # should re-create the original data as provided via input (Python 3 uses
+    # surrogate decoding when parsing argv to unicode objects).
     # If automatically chosen, sys.stdout.encoding might not always be the right
-    # thing:
-    # http://drj11.wordpress.com/2007/05/14/python-how-is-sysstdoutencoding-chosen/
-    # However, via PYTHONIOENCODING sys.stdout.encoding can be explicitly set
-    # by the user, which is ideal behavior (an educated guess is still a guess).
+    # thing. However, via PYTHONIOENCODING sys.stdout.encoding can be explicitly
+    # set by the user, which is ideal behavior.
     outenc = sys.stdout.encoding
     sep = "\0" if options.nullsep else "\n"
     sep_bytes = sep.encode(outenc)
     actionitems = rejected if not options.accepted else accepted
     for ai in actionitems:
-        # If `ai` is of FileSystemEntry type, then `path` attribute can be
+        # If `ai` is of `FileSystemEntry` type, then `path` attribute can be
         # unicode or bytes. If bytes, then write them as they are. If unicode,
         # encode with `outenc`.
         if isinstance(ai, FileSystemEntry):
@@ -336,24 +341,24 @@ def main():
         else:
             # `ai` is of type FilterItem: `text` attribute always is unicode.
             itemstring_bytes = ai.text.encode(outenc)
-        # __add__ of two byte strings returns byte string in both, Py 2 and 3.
+        # __add__ of two byte strings returns byte string with both, Py 2 and 3.
         stdout_write_bytes(itemstring_bytes + sep_bytes)
         action(ai)
 
 
 def action(item):
-    """Perform none or one action on item."""
+    """Perform none or one action on item.
+
+    Currently, this implements file system actions (delete and move).
+    """
     if not isinstance(item, FileSystemEntry):
-        # Don't perform actions for FilterItems.
         return
     if options.move:
         tdir = options.move
         log.info("Moving %s to directory %s: %s", item.type, tdir, item.path)
         try:
             shutil.move(item.path, tdir)
-        # It is unclear to me at the moment if OSError is the only class of
-        # regular errors to be raised by shutil. Be more general.
-        except Exception as e:
+        except OSError as e:
             log.error("Cannot move '%s': %s", item.path, e)
         return
     if options.delete:
@@ -364,20 +369,20 @@ def action(item):
                 # point to a directory (but not a symbolic link to a directory).
                 try:
                     shutil.rmtree(item.path)
-                except Exception as e:
+                except OSError as e:
                     log.error("Error while recursively deleting '%s': %s",
                         item.path, e)
                 return
             try:
                 # Raises OSError if dir not empty.
                 os.rmdir(item.path)
-            except Exception as e:
+            except OSError as e:
                 log.error("Cannot rmdir '%s': %s", item.path, e)
             return
         elif item.type == "file":
             try:
                 os.remove(item.path)
-            except Exception as e:
+            except OSError as e:
                 log.error("Cannot delete file '%s': %s", item.path, e)
             return
         else:

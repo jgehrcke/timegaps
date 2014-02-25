@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright 2014 Jan-Philip Gehrcke. See LICENSE file for details.
 
+
 from __future__ import unicode_literals
 import os
 import sys
@@ -10,8 +11,10 @@ from itertools import chain
 from py.test import raises, mark
 from clitest import CmdlineInterfaceTest, CmdlineTestError, WrongExitCode
 
+
 sys.path.insert(0, os.path.abspath('..'))
 from timegaps import __version__
+
 
 import logging
 logging.basicConfig(
@@ -33,6 +36,7 @@ TIMEGAPS_NAME = "../../../timegaps.py"
 #PYTHON_EXE = "coverage -x"
 PYTHON_EXE = "python"
 WINDOWS = sys.platform == "win32"
+
 
 # Tests involving stdin involve creation of byte strings in this encoding.
 STDINENC = "utf-8"
