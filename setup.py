@@ -20,7 +20,7 @@ assert timegapsversion
 setup(
     name = "timegaps",
     packages = ["timegaps"],
-    scripts = ['timegaps.py']
+    scripts = ['timegaps.py'],
     version = timegapsversion,
     description = "Accept or reject items based on age categorization.",
     long_description="",
