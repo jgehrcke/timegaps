@@ -457,7 +457,7 @@ class TestStringInterpretationMode(Base):
         t.assert_is_stdout("20001112-111213\n")
         t.assert_in_stderr([
             "INFO: --time-from-string set, don't interpret items as paths.",
-            "seconds since epoch:",
+            "Seconds since epoch:",
             "FilterItem(text: 20001112-111213, moddate: 2000-11-12 11:12:13)"])
 
     def test_onearg_fmterror_1(self):
