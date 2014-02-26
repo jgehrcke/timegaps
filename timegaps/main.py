@@ -235,6 +235,7 @@ def main():
 
     log.debug("Options namespace:\n%s", options)
 
+
     # STAGE I: bootstrap. validate and process certain command line arguments.
 
     # argparse does not catch when the user misses to provide RULES or (one)
@@ -294,6 +295,7 @@ def main():
     if options.recursive_delete:
         if not options.delete:
             err("-r/--recursive-delete not allowed without -d/--delete.")
+
 
     # STAGE II: collect and validate items.
 
@@ -554,7 +556,7 @@ def parse_options():
             print(EXTENDED_HELP)
             sys.exit(0)
 
-    description = __doc__ # Use docstring of *this* module.
+    description = __doc__  # Use docstring of *this* module.
     parser = argparse.ArgumentParser(
         prog="timegaps",
         description=description,
@@ -562,11 +564,14 @@ def parse_options():
         add_help=False
         )
     parser.add_argument("-h", "--help", action="help",
-        help="Show help message and exit.")
+        help="Show help message and exit."
+        )
     parser.add_argument("--extended-help", action=ExtHelpAction, nargs=0,
-        help="Show extended help message and exit.")
+        help="Show extended help message and exit."
+        )
     parser.add_argument("--version", action="version",
-        version=__version__, help="Show version information and exit.")
+        version=__version__, help="Show version information and exit."
+        )
 
 
     parser.add_argument("rules", action="store",
@@ -627,7 +632,8 @@ def parse_options():
         )
     filehandlegroup.add_argument("-m", "--move", action="store",
         metavar="DIR",
-        help="Attempt to move rejected paths to directory DIR.")
+        help="Attempt to move rejected paths to directory DIR."
+        )
 
     parser.add_argument("-r", "--recursive-delete", action="store_true",
         help="Enable deletion of non-empty directories.")
