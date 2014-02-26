@@ -18,7 +18,7 @@ from clitest import CmdlineInterfaceTest, CmdlineTestError, WrongExitCode
 
 
 sys.path.insert(0, os.path.abspath('..'))
-from timegaps import __version__
+from timegaps.main import __version__
 
 
 import logging
@@ -37,7 +37,7 @@ else:
 
 
 RUNDIRTOP = "./cmdline-test"
-TIMEGAPS_NAME = "../../../timegaps.py"
+TIMEGAPS_RUNNER = "../../../timegaps-runner.py"
 #PYTHON_EXE = "coverage -x"
 PYTHON_EXE = "python"
 WINDOWS = sys.platform == "win32"
@@ -115,7 +115,7 @@ class Base(object):
 
     def run(self, arguments_unicode, rc=0, sin=None):
         arguments_unicode = self._escape_args(arguments_unicode)
-        cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_NAME, arguments_unicode)
+        cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_RUNNER, arguments_unicode)
         log.info("Test command:\n%s" % cmd)
         self.clitest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
         return self.clitest
