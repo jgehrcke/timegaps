@@ -104,20 +104,20 @@ class TestBasicFSEntry(object):
             fse = FileSystemEntry(path="gibtsgarantiertnichthier")
 
     def test_dir(self):
-        fse = FileSystemEntry(path='.')
-        assert fse.type == 'dir'
+        fse = FileSystemEntry(path=".")
+        assert fse.type == "dir"
         assert isinstance(fse.moddate, datetime)
 
     def test_file(self):
         with tempfile.NamedTemporaryFile() as t:
             fse = FileSystemEntry(path=t.name)
-            assert fse.type == 'file'
+            assert fse.type == "file"
             assert isinstance(fse.moddate, datetime)
 
     def test_custom_modtime(self):
         with tempfile.NamedTemporaryFile() as t:
             fse = FileSystemEntry(path=t.name, modtime=1.0)
-            assert fse.type == 'file'
+            assert fse.type == "file"
             assert isinstance(fse.moddate, datetime)
 
     def test_custom_modtime_wrongtype(self):
@@ -127,7 +127,7 @@ class TestBasicFSEntry(object):
             with raises(TimegapsError):
                 fse = FileSystemEntry(path=t.name, modtime="foo")
 
-    @mark.skipif('WINDOWS')
+    @mark.skipif("WINDOWS")
     def test_symlink(self):
         linkname = "/tmp/%s" % randstring_fssafe()
         try:
@@ -135,7 +135,7 @@ class TestBasicFSEntry(object):
             fse = FileSystemEntry(path=linkname)
         finally:
             os.unlink(linkname)
-        assert fse.type == 'symlink'
+        assert fse.type == "symlink"
         assert isinstance(fse.moddate, datetime)
 
 
