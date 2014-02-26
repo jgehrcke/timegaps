@@ -21,7 +21,7 @@ setup(
     name = "timegaps",
     packages = ["timegaps"],
     entry_points = {
-        "console_scripts": ['timegaps = timegaps.main:main']
+        "console_scripts": ["timegaps = timegaps.main:main"]
         },
     version = timegapsversion,
     description = "Accept or reject items based on age categorization.",
