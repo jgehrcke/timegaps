@@ -4,12 +4,13 @@
 # See LICENSE file for details.
 
 
-from __future__ import unicode_literals
-
-
 """Accept or reject items based on age categorization."""
 
 
+from __future__ import unicode_literals
+
+
+__version__ = '0.1.0.dev'
 EXTENDED_HELP = """
 timegaps accepts or rejects file system paths (items) based their modification
 time. Its input is a set of items and certain categorization rules. The items
@@ -153,8 +154,8 @@ import argparse
 import logging
 import re
 import time
-from timegaps import (TimeFilter, TimeFilterError, FileSystemEntry, FilterItem,
-    __version__)
+from .timegaps import FileSystemEntry, FilterItem
+from .timefilter import TimeFilter, TimeFilterError
 
 
 # Make the same code base run with Python 2 and 3.
