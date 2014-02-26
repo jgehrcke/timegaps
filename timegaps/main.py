@@ -198,10 +198,16 @@ if WINDOWS:
 # of item separation in input and output unnecessarily complicated.
 if WINDOWS:
     for stream in (sys.stdout, sys.stdin):
-        if sys.version < '3':
-            msvcrt.setmode(stream.fileno(), os.O_BINARY)
-        else:
-            msvcrt.setmode(stream.buffer.fileno(), os.O_BINARY)
+        # Errors such as
+        # ValueError: redirected Stdin is pseudofile, has no fileno()
+        # are possible. Seen when py.test imports the whole package.
+        try:
+            if sys.version < '3':
+                msvcrt.setmode(stream.fileno(), os.O_BINARY)
+            else:
+                msvcrt.setmode(stream.buffer.fileno(), os.O_BINARY)
+        except ValueError as e:
+            log.error("Could not set mode to O_BINARY on %s: %s", stream, e)
 
 
 log = logging.getLogger()
