@@ -13,15 +13,13 @@ import sys
 import time
 import logging
 from itertools import chain
-from py.test import raises, mark
-from clitest import CmdlineInterfaceTest, CmdlineTestError, WrongExitCode
+from clitest import CmdlineInterfaceTest
 
 
 sys.path.insert(0, os.path.abspath('..'))
 from timegaps.main import __version__
 
 
-import logging
 logging.basicConfig(
     format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
     datefmt='%H:%M:%S')
@@ -116,7 +114,7 @@ class Base(object):
     def run(self, arguments_unicode, rc=0, sin=None):
         arguments_unicode = self._escape_args(arguments_unicode)
         cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_RUNNER, arguments_unicode)
-        log.info("Test command:\n%s" % cmd)
+        log.info("Test command:\n%s",  cmd)
         self.clitest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
         return self.clitest
 
