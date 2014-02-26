@@ -1,5 +1,6 @@
 test/cmdline-test
 venvpy33
+venvpy27
 *sublime*
 
 # Byte-compiled / optimized / DLL files
