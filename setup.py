@@ -11,7 +11,7 @@ except ImportError:
 
 timegapsversion = re.search(
     "^__version__\s*=\s*'(.*)'",
-    open('timegaps/__init__.py').read(),
+    open('timegaps/main.py').read(),
     re.M
     ).group(1)
 assert timegapsversion
@@ -20,7 +20,9 @@ assert timegapsversion
 setup(
     name = "timegaps",
     packages = ["timegaps"],
-    scripts = ['timegaps.py'],
+    entry_points = {
+        "console_scripts": ['timegaps = timegaps.main:main']
+        },
     version = timegapsversion,
     description = "Accept or reject items based on age categorization.",
     long_description="",
