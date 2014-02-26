@@ -274,8 +274,8 @@ def main():
     else:
         log.debug("Get reference time: now.")
         reference_time = time.time()
-    log.info("Using reference time %s (%s)." % (
-        reference_time, time.asctime(time.localtime(reference_time))))
+    log.info("Using reference time %s (%s).",
+        reference_time, time.asctime(time.localtime(reference_time)))
     try:
         timefilter = TimeFilter(rules, reference_time)
     except TimeFilterError as e:
@@ -314,8 +314,8 @@ def main():
     rejected = list(rejected)
     log.info("Number of accepted items: %s", len(accepted))
     log.info("Number of rejected items: %s", len(rejected))
-    log.debug("Accepted item(s):\n%s" % "\n".join("%s" % a for a in accepted))
-    log.debug("Rejected item(s):\n%s" % "\n".join("%s" % r for r in rejected))
+    log.debug("Accepted item(s):\n%s", "\n".join("%s" % a for a in accepted))
+    log.debug("Rejected item(s):\n%s", "\n".join("%s" % r for r in rejected))
 
 
     # STAGE IV: item action and item output.
@@ -397,18 +397,21 @@ def action(item):
 
 
 def read_items_from_stdin():
-    # Regarding stdin decoding: http://stackoverflow.com/a/16549381/145400
-    # Reading a stream of chunks/records with a different separator than newline
-    # is not easily possible with stdlib (http://bugs.python.org/issue1152248).
-    # Take simplest approach for now: read all data (processing cannot start
-    # before that anyway), then split data (byte string) at sep byte occurrences
-    # (NUL or newline), then decode each record and return list of unicode
-    # strings.
+    """Read items from standard input.
+
+    Regarding stdin decoding: http://stackoverflow.com/a/16549381/145400
+    Reading a stream of chunks/records with a different separator than newline
+    is not easily possible with stdlib (http://bugs.python.org/issue1152248).
+    Take simplest approach for now: read all data (processing cannot start
+    before that anyway), then split data (byte string) at sep byte occurrences
+    (NUL or newline), then decode each record and return list of unicode
+    strings.
+    """
     log.debug("Read binary data from standard input, until EOF.")
     try:
         bytedata = stdin_read_bytes_until_eof()
-    except Exception as e:
-        err("Error reading from stdin: %s", e)
+    except (OSError, IOError) as e:
+        err("Error reading from stdin: %s" % e)
     log.debug("%s bytes have been read.", len(bytedata))
 
     enc = sys.stdout.encoding
@@ -454,7 +457,7 @@ def prepare_input():
         for s in itemstrings:
             log.debug("Parsing seconds since epoch from item: %r", s)
             mtime = seconds_since_epoch_from_localtime_string(s, fmt)
-            log.debug("Seconds since epoch: %s" % mtime)
+            log.debug("Seconds since epoch: %s", mtime)
             items.append(FilterItem(modtime=mtime, text=s))
         return items
 
@@ -515,7 +518,7 @@ def seconds_since_epoch_from_localtime_string(s, fmt):
         seconds_since_epoch = time.mktime(time_struct_local)
     except Exception as e:
         err(("Error while converting time struct to seconds since epoch. "
-            "Struct: %s. Error: %s" % (t, e)))
+            "Struct: %s. Error: %s" % (time_struct_local, e)))
     return seconds_since_epoch
 
 
@@ -536,7 +539,7 @@ def parse_rules_from_cmdline(s):
             if catid not in TimeFilter.valid_categories:
                 raise ValueError("Time category '%s' invalid" % catid)
             rules[catid] = int(timecount)
-            log.debug("Stored rule: %s: %s" % (catid, timecount))
+            log.debug("Stored rule: %s: %s", catid, timecount)
             continue
         raise ValueError("Invalid token <%s>" % t)
     return rules
