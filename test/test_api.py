@@ -49,9 +49,9 @@ WINDOWS = sys.platform == "win32"
 SHORTTIME = 0.01
 
 
-def nrndint(n, min, max):
+def nrndint(n, imin, imax):
     for _ in range(n):
-        yield randint(min, max)
+        yield randint(imin, imax)
 
 
 def randstring_fssafe():
@@ -101,7 +101,7 @@ class TestBasicFSEntry(object):
 
     def test_invalid_path(self):
         with raises(OSError):
-            fse = FileSystemEntry(path="gibtsgarantiertnichthier")
+            FileSystemEntry(path="gibtsgarantiertnichthier")
 
     def test_dir(self):
         fse = FileSystemEntry(path=".")
@@ -123,9 +123,9 @@ class TestBasicFSEntry(object):
     def test_custom_modtime_wrongtype(self):
         with tempfile.NamedTemporaryFile() as t:
             with raises(TimegapsError):
-                fse = FileSystemEntry(path=t.name, modtime=1)
+                FileSystemEntry(path=t.name, modtime=1)
             with raises(TimegapsError):
-                fse = FileSystemEntry(path=t.name, modtime="foo")
+                FileSystemEntry(path=t.name, modtime="foo")
 
     @mark.skipif("WINDOWS")
     def test_symlink(self):
@@ -162,23 +162,23 @@ class TestTimeFilterInit(object):
 
     def test_invalid_rule_value(self):
         with raises(AssertionError):
-            f = TimeFilter(rules={"days": None})
+            TimeFilter(rules={"days": None})
 
     def test_all_counts_zero(self):
         with raises(TimeFilterError):
-            f = TimeFilter(rules={"days": 0})
+            TimeFilter(rules={"days": 0})
 
     def test_one_count_negative(self):
         with raises(TimeFilterError):
-            f = TimeFilter(rules={"days": -1})
+            TimeFilter(rules={"days": -1})
 
     def test_emtpy_rules_dict(self):
         with raises(TimeFilterError):
-            f = TimeFilter(rules={})
+            TimeFilter(rules={})
 
     def test_wrong_rules_type(self):
         with raises(AssertionError):
-            f = TimeFilter(rules=None)
+            TimeFilter(rules=None)
 
     def test_fillup_rules_default_rules(self):
         f = TimeFilter(rules={"days": 20})
