@@ -156,7 +156,7 @@ class TestArgparseFeatures(Base):
 
     def test_help(self):
         t = self.run("--help")
-        t.assert_in_stdout(["usage","RULES","ITEM"])
+        t.assert_in_stdout(["usage", "RULES", "ITEM"])
         t.assert_no_stderr()
 
     def test_extended_help(self):
@@ -730,4 +730,3 @@ class TestSpecialChars(Base):
     def test_invalid_rulesstring_smiley(self):
         t = self.run("☺", rc=1)
         t.assert_in_stderr(["Invalid", "token", "☺"])
-

@@ -42,7 +42,7 @@ class FilterItem(object):
         if text is not None:
             assert isinstance(text, text_type)
         self.text = text
-        if isinstance(modtime, float) :
+        if isinstance(modtime, float):
             self.modtime = modtime
         else:
             raise TimegapsError(

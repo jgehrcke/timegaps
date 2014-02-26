@@ -188,13 +188,13 @@ class _Timedelta(object):
         if seconds_earlier < 0:
             raise TimeFilterError("Time %s not earlier than reference %s" %
                 (t, ref))
-        self.hours_exact = seconds_earlier / 3600     # 60 * 60
+        self.hours_exact = seconds_earlier / 3600      # 60 * 60
         self.hours = int(self.hours_exact)
-        self.days_exact = seconds_earlier / 86400     # 60 * 60 * 24
+        self.days_exact = seconds_earlier / 86400      # 60 * 60 * 24
         self.days = int(self.days_exact)
-        self.weeks_exact = seconds_earlier / 604800   # 60 * 60 * 24 * 7
+        self.weeks_exact = seconds_earlier / 604800    # 60 * 60 * 24 * 7
         self.weeks = int(self.weeks_exact)
-        self.months_exact = seconds_earlier / 2592000 # 60 * 60 * 24 * 30
+        self.months_exact = seconds_earlier / 2592000  # 60 * 60 * 24 * 30
         self.months = int(self.months_exact)
-        self.years_exact = seconds_earlier / 31536000 # 60 * 60 * 24 * 365
+        self.years_exact = seconds_earlier / 31536000  # 60 * 60 * 24 * 365
         self.years = int(self.years_exact)
