@@ -52,7 +52,7 @@ Now read items from stdin (newline-separated) instead of from the command line::
     $ /bin/ls -1 *tar.gz | timegaps --stdin days20,weeks8,months12 | wc -l
     125
 
-Via ``-0/--nullchar``, timegaps can handle nullchar-separated items on stdin, and then also nullchar-separates items on stdout::
+Via ``-0/--nullsep``, timegaps can handle NUL-separated items on stdin, and then also NUL-separates items on stdout::
 
     $ find . -name "*tar.gz" -print0 | \
         timegaps -0 --stdin days20,weeks8,months12 | \
