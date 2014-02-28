@@ -36,6 +36,10 @@ else:
 
 RUNDIRTOP = "./cmdline-test"
 TIMEGAPS_RUNNER = "../../../timegaps-runner.py"
+# On travis, `python setup.py install` has been executed before and the
+# `timegaps` command must be available.
+if os.environ["TRAVIS"] == "true" and os.environ["CI"] == "true":
+    TIMEGAPS_RUNNER = "timegaps"
 #PYTHON_EXE = "coverage -x"
 PYTHON_EXE = "python"
 WINDOWS = sys.platform == "win32"
