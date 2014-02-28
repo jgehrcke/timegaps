@@ -404,6 +404,13 @@ class TestStdinAndSeparation(Base):
         t.assert_is_stdout(".\0")
         t.assert_no_stderr()
 
+    def test_stdin_one_recent_no_sep(self):
+        s = ".".encode(STDINENC)
+        t = self.run("-a -0 -s recent1", sin=s)
+        t.assert_is_stdout(".\0")
+        t = self.run("-a -s recent1", sin=s)
+        t.assert_is_stdout(".\n")
+
     def test_stdin_two_recent_various_seps(self):
         # Missing trailing sep.
         s = ".\n.".encode(STDINENC)
@@ -521,7 +528,8 @@ class TestReferenceTime(Base):
 
 
 class TestPathBasenameTime(Base):
-    """Test --time-from-basename parsing and logic."""
+    """Test --time-from-basename parsing and logic. These tests may involve
+    creation of temp files."""
 
     def test_file_error(self):
         t = self.run(("-t 20000101-000000 --time-from-basename "
@@ -547,7 +555,9 @@ class TestPathBasenameTime(Base):
 
 
 class TestFileFilter(Base):
-    """More complex filter tests involving real files."""
+    """Filter tests involving temp files. Test various features, but no
+    actions.
+    """
 
     def test_10_days_2_weeks_noaction_files(self):
         self._10_days_2_weeks_noaction_dirs_or_files(self.mfile)
