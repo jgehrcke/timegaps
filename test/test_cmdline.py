@@ -611,7 +611,7 @@ class TestFileFilterActions(Base):
         self._test_simple_delete_file_or_dir(self.mdir)
 
     def _test_simple_delete_file_or_dir(self, mfile_or_dir):
-        mfile_or_dir("test", time.time())
+        mfile_or_dir("test")
         t = self.run("--delete days1 test")
         t.assert_in_stdout("test")
         t.assert_no_stderr()
@@ -735,7 +735,7 @@ class TestSpecialChars(Base):
         t.assert_in_stderr(["Invalid", "token", "☺"])
 
     def test_delete_file(self):
-        self.mfile("☺", time.time())
+        self.mfile("☺")
         t = self.run("--delete days1 ☺")
         t.assert_in_stdout("☺")
         t.assert_no_stderr()
