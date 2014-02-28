@@ -117,6 +117,7 @@ class CmdlineInterfaceTest(object):
     shellpath = "/bin/bash"
     rundirtop = "."
     shellscript_encoding = "utf-8"
+    outerr_encoding = "utf-8"
     shellscript_ext = ".sh"
     preamble_lines = []
     shellargs = []
@@ -208,13 +209,13 @@ class CmdlineInterfaceTest(object):
         if log_output:
             try:
                 log.info("Test stdout:\n%s", self.rawout.decode(
-                    sys.stdout.encoding))
+                    self.outerr_encoding))
             except UnicodeDecodeError as e:
                 log.info("Cannot decode stdout: %s", e)
             log.info("Test stdout repr:\n%r", self.rawout)
             try:
                 log.info("Test stderr:\n%s", self.rawerr.decode(
-                    sys.stdout.encoding))
+                    self.outerr_encoding))
             except UnicodeDecodeError as e:
                 log.info("Cannot decode stderr: %s", e)
             log.info("Test stderr repr:\n%r", self.rawerr)
