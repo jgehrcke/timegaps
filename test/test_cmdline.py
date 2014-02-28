@@ -758,3 +758,12 @@ class TestSpecialChars(Base):
         t.assert_in_stdout("☺")
         t.assert_no_stderr()
         t.assert_paths_exist("rejected/☺")
+
+    def test_stdin_one_recent(self):
+        self.mfile("☺")
+        s = "☺".encode(STDINENC)
+        t = self.run("-a -0 -s recent1", sin=s)
+        t.assert_is_stdout("☺\0")
+        t = self.run("-a -s recent1", sin=s)
+        t.assert_is_stdout("☺\n")
+
