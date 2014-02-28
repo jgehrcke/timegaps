@@ -320,8 +320,8 @@ def main():
     rejected = list(rejected)
     log.info("Number of accepted items: %s", len(accepted))
     log.info("Number of rejected items: %s", len(rejected))
-    log.debug("Accepted item(s):\n%s", "\n".join("%s" % a for a in accepted))
-    log.debug("Rejected item(s):\n%s", "\n".join("%s" % r for r in rejected))
+    log.debug("Accepted item(s):\n%s", "\n".join("%r" % a for a in accepted))
+    log.debug("Rejected item(s):\n%s", "\n".join("%r" % r for r in rejected))
 
 
     # STAGE IV: item action and item output.
