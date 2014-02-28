@@ -31,9 +31,6 @@ else:
 WINDOWS = sys.platform == "win32"
 
 
-logging.basicConfig(
-    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
-    datefmt='%H:%M:%S')
 log = logging.getLogger("clitest")
 
 
