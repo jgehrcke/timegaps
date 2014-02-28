@@ -35,13 +35,12 @@ else:
 
 
 RUNDIRTOP = "./cmdline-test"
-TIMEGAPS_RUNNER = "../../../timegaps-runner.py"
+TIMEGAPS_RUNNER = "python ../../../timegaps-runner.py"
 # On travis, `python setup.py install` has been executed before and the
 # `timegaps` command must be available.
 if os.environ["TRAVIS"] == "true" and os.environ["CI"] == "true":
     TIMEGAPS_RUNNER = "timegaps"
-#PYTHON_EXE = "coverage -x"
-PYTHON_EXE = "python"
+#TIMEGAPS_RUNNER = "coverage -x ../../../timegaps-runner.py"
 WINDOWS = sys.platform == "win32"
 
 
@@ -117,7 +116,7 @@ class Base(object):
 
     def run(self, arguments_unicode, rc=0, sin=None):
         arguments_unicode = self._escape_args(arguments_unicode)
-        cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_RUNNER, arguments_unicode)
+        cmd = "%s %s %s" % (TIMEGAPS_RUNNER, arguments_unicode)
         log.info("Test command:\n%s",  cmd)
         self.clitest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
         return self.clitest
