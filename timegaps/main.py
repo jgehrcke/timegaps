@@ -177,6 +177,16 @@ if WINDOWS:
     import msvcrt
 
 
+log = logging.getLogger()
+log.setLevel(logging.ERROR)
+ch = logging.StreamHandler()
+formatter = logging.Formatter(
+    '%(asctime)s,%(msecs)-6.1f - %(levelname)s: %(message)s',
+    datefmt='%H:%M:%S')
+ch.setFormatter(formatter)
+log.addHandler(ch)
+
+
 # http://cygwin.com/cygwin-ug-net/using-textbinary.html
 # http://stackoverflow.com/a/4160894/145400
 # http://code.activestate.com/lists/python-list/20426/
@@ -208,16 +218,6 @@ if WINDOWS:
                 msvcrt.setmode(stream.buffer.fileno(), os.O_BINARY)
         except ValueError as e:
             log.error("Could not set mode to O_BINARY on %s: %s", stream, e)
-
-
-log = logging.getLogger()
-log.setLevel(logging.ERROR)
-ch = logging.StreamHandler()
-formatter = logging.Formatter(
-    '%(asctime)s,%(msecs)-6.1f - %(levelname)s: %(message)s',
-    datefmt='%H:%M:%S')
-ch.setFormatter(formatter)
-log.addHandler(ch)
 
 
 # Global for options, to be populated by argparse from cmdline arguments.
