@@ -121,14 +121,16 @@ class Base(object):
         self.clitest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
         return self.clitest
 
-    def mfile(self, relpath, mtime):
+    def mfile(self, relpath, mtime=None):
         # http://stackoverflow.com/a/1160227/145400
         # Insignificant race condition.
+        mtime = mtime if mtime is not None else time.time()
         p = os.path.join(self.rundir, relpath)
         with open(p, "w"):
             os.utime(p, (mtime, mtime))
 
-    def mdir(self, relpath, mtime):
+    def mdir(self, relpath, mtime=None):
+        mtime = mtime if mtime is not None else time.time()
         p = os.path.join(self.rundir, relpath)
         os.mkdir(p)
         os.utime(p, (mtime, mtime))
@@ -545,7 +547,7 @@ class TestPathBasenameTime(Base):
 
 
 class TestFileFilter(Base):
-    """Tests that involve creation of real (temp) files in the file system."""
+    """More complex filter tests involving real files."""
 
     def test_10_days_2_weeks_noaction_files(self):
         self._10_days_2_weeks_noaction_dirs_or_files(self.mfile)
@@ -731,3 +733,18 @@ class TestSpecialChars(Base):
     def test_invalid_rulesstring_smiley(self):
         t = self.run("☺", rc=1)
         t.assert_in_stderr(["Invalid", "token", "☺"])
+
+    def test_delete_file(self):
+        self.mfile("☺", time.time())
+        t = self.run("--delete days1 ☺")
+        t.assert_in_stdout("☺")
+        t.assert_no_stderr()
+        t.assert_paths_not_exist("☺")
+
+    def test_move_file(self):
+        self.mfile("☺")
+        self.mdir("rejected")
+        t = self.run("--move rejected days1 ☺")
+        t.assert_in_stdout("☺")
+        t.assert_no_stderr()
+        t.assert_paths_exist("rejected/☺")
