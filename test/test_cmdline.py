@@ -767,3 +767,8 @@ class TestSpecialChars(Base):
         t = self.run("-a -s recent1", sin=s)
         t.assert_is_stdout("☺\n")
 
+    def test_stdin_two_recent(self):
+        self.mfile("☺")
+        s = "☺\n☺".encode(STDINENC)
+        t = self.run("-a -s recent2", sin=s)
+        t.assert_is_stdout("☺\n☺\n")
