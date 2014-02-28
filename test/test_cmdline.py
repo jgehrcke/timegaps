@@ -116,7 +116,7 @@ class Base(object):
 
     def run(self, arguments_unicode, rc=0, sin=None):
         arguments_unicode = self._escape_args(arguments_unicode)
-        cmd = "%s %s %s" % (TIMEGAPS_RUNNER, arguments_unicode)
+        cmd = "%s %s" % (TIMEGAPS_RUNNER, arguments_unicode)
         log.info("Test command:\n%s",  cmd)
         self.clitest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
         return self.clitest
