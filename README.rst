@@ -152,17 +152,17 @@ In a special mode of operation, timegaps can treat items as simple strings witho
 
 Main motivation
 ---------------
-The well-established backup solution rsnapshot has the useful concept of ``hourly/daily/weekly/...`` snapshots already built in and creates such a structure on the fly. Unfortunately, other backup tools usually lack a fine-grained logic for eliminating old backups, and people tend to hack simple filters for deleting backups older than X days. This is where timegaps comes in: you can use the backup solution of your choice for periodically (e.g. hourly) creating a snapshot. You can then -- *independently* -- process the set of snapshots with timegaps and identify those snapshots that need to be eliminated in order to maintain a certain distribution of snapshots in time. This is the main motivation behind timegaps, but of course there different use cases.
+The well-established backup solution `rsnapshot <http://www.rsnapshot.org/>`_ has the useful concept of ``hourly / daily / weekly / ...`` snapshots already built in and creates such a structure on the fly. Unfortunately, other backup tools usually lack such a fine-grained logic for eliminating old backups, and people tend to hack simple filters themselves. This is where timegaps comes in: you can use the backup solution of your choice for periodically (e.g. hourly) creating a snapshot. You can then -- *independently* -- process this set of snapshots with timegaps and identify those snapshots that need to be eliminated (removed or displaced) in order to maintain a certain "logarithmic" distribution of snapshots in time. This is the main motivation behind timegaps, but of course you can use it for filtering any kind of time-dependent data.
 
 
 Requirements
 ------------
-Timegaps is tested on Python 2.7 and Python 3.3 on Linux as well as on Windows.
+Currently, timegaps releases are tested on Python 2.7 and Python 3.3 on Linux as well as on Windows. This is where you can expect it to run properly.
 
 
 How can the unit tests be run?
 ------------------------------
-If you run into troubles with timegaps, it is a good idea to run the unit test suite under your conditions. timegaps' unit tests are written for `pytest <http://pytest.org>`_. With ``timegaps/test`` being the current working directory, run the tests like this::
+If you run into troubles with timegaps, or if you want to verify whether it properly runs on your platform, it is a good idea to run the unit test suite under your conditions. Timegaps' unit tests are written for `pytest <http://pytest.org>`_. With ``timegaps/test`` being the current working directory, run the tests like this::
 
     $ py.test -v
 
