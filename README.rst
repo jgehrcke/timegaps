@@ -1,76 +1,78 @@
 timegaps
 ========
+Timegaps sorts a set of items into *rejected* and *accepted* ones, based on the age of each item and user-given time categorization rules. Timegaps is a command line utility for Unix-like systems and Windows.
 
-Timegaps is a command line utility for Unix-like systems as well as Windows. It sorts a set of items into rejected and accepted ones, based on each item's age and a set of time categorization rules.
+Timegaps allows for thinning out a collection of items, whereas the "time gaps" between accepted items become larger with increasing age of items. This is useful for keeping backups logarithmically distributed in time, e.g. one for each of the last 24 hours, one for each of the last 30 days, one for each of the last 8 weeks, and so on.
 
-Timegaps is developed with a strong focus on reliability and with best intentions in mind. It follows the `Unix philosophy <http://en.wikipedia.org/wiki/Unix_philosophy>`_ and semantic versioning. It is backed by a considerable set of unit tests, including direct command line interface tests, and `automatically tested <https://travis-ci.org/jgehrcke/timegaps>`_ against Python 2.7 and 3.3 via Travis CI on Linux.
+Timegaps is developed with a focus on reliability, with best intentions in mind, following the `Unix philosophy <http://en.wikipedia.org/wiki/Unix_philosophy>`_, and semantic versioning. It is backed by a considerable set of unit tests, including direct command line interface tests. Currently, each commit is `automatically tested <https://travis-ci.org/jgehrcke/timegaps>`_ against CPython 2.7 and 3.3 on Linux via Travis CI.
 
 
 Installation
 ------------
-
-timegaps is hosted on PyPI. Install the latest realease with pip::
+Timegaps is hosted on PyPI. Install the latest release with pip::
 
     $ pip install timegaps
-    
+
 Install the latest development version with pip::
 
     $ pip install git+https://github.com/jgehrcke/timegaps
-    
 
-Quick introduction (hands-on)
------------------------------
 
-Obtain the age of all ``*.tar.gz`` files (which happen to be daily snapshots of something). Age is current time minus file modification time. Accept one snapshot for each of the last 20 days, one for each for the last 8 weeks, and one for each of the last 12 months. Reject all others. Print the rejected ones::
+Hands-on introduction
+---------------------
+Consider the following situation: all ``*.tar.gz`` files in the current working directory happen to be daily snapshots of something. The task is to accept one snapshot for each of the last 20 days, one for each for the last 8 weeks, and one for each of the last 12 months, and to *reject all others*. Use timegaps for performing this categorization into rejected and accepted items and print the rejected ones::
 
     $ timegaps days20,weeks8,months12 *.tar.gz | sort
     daily-2013-09-17-133413.tar.gz
     [...]
     daily-2014-02-27-070001.tar.gz
 
-Count the rejected ones::
+This was a read-only, non-invasive operation. By default, timegaps prints the rejected items to stdout, separated by newline characters (for compatibility with other Unix command line tools). Repeat the operation and count the rejected items::
 
     $ timegaps days20,weeks8,months12 *.tar.gz | wc -l
     125
 
-Move the rejected ones to the directory ``rejected``::
+Given this specific set of rules and set of items, timegaps identified 125 items to be rejected. Move them to the directory ``notneededanymore`` (and suppress stdout)::
 
-    $ mkdir rejected
-    $ timegaps --move rejected days20,weeks8,months12 *.tar.gz > /dev/null
-    $ /bin/ls -1 rejected/* | wc -l
+    $ mkdir notneededanymore
+    $ timegaps --move notneededanymore days20,weeks8,months12 *.tar.gz > /dev/null
+
+Count files in the newly created directory for validation purposes (must also be 125)::
+
+    $ /bin/ls -1 notneededanymore/* | wc -l
     125
 
-This time, do not read the item modification time from the inode via ``stat()``, but read the "modification time" from the basename (which happens to be about the same as the file modification times, in this case)::
+Okay, so far the item modification time was determined from the inode via the ``stat()`` system call. In a different mode of operation (``--time-from-basename``), timegaps can read the "modification time" from the basename. The file names of the tarred snapshots in this hands-on session carry meaningful time information, in a certain format (``daily-%Y-%m-%d-%H%M%S.tar.gz``). Providing this format string, we can instruct timegaps to parse the time from these file names::
 
-    $ mv rejected/* .
+    $ mv notneededanymore/* .
     $ timegaps --time-from-basename daily-%Y-%m-%d-%H%M%S.tar.gz \
         days20,weeks8,months12 *.tar.gz | wc -l
     125
 
-Now read items from stdin (newline-separated) instead of from the command line::
-        
+The above can be useful in cases where the actual file modification time is screwed, and the real timing information is only contained in the file name. In another mode of operation (``--stdin``), timegaps can read newline-separated items from stdin, instead of reading items from the command line::
+
     $ /bin/ls -1 *tar.gz | timegaps --stdin days20,weeks8,months12 | wc -l
     125
 
-Via ``-0/--nullsep``, timegaps can handle NUL-separated items on stdin, and then also NUL-separates items on stdout::
+Given ``-0/--nullsep``, timegaps can handle NUL character-separated items on stdin. In this mode of operation, timegaps also NUL-separates the items on stdout::
 
     $ find . -name "*tar.gz" -print0 | \
         timegaps -0 --stdin days20,weeks8,months12 | \
         tr '\0' '\n' | wc -l
     125
 
-Use ``-t/--reference-time`` for changing the reference time from *now* to an arbitrary date (January 1st, 2020 in this case)::
-    
+By default, the reference time for determining the age of items is the time of program invocation. Use ``-t/--reference-time`` for changing the reference time from *now* to an arbitrary date (January 1st, 2020 in this case)::
+
     $ timegaps --reference-time 20200101-000000 years10 *.tar.gz | wc -l
     153
 
-Instead of printing the rejected items (default), print the accepted ones::
+With a different reference time and different rules the number of rejected items obviously changed (from 125 to 153). Instead of printing the rejected items, timegaps can invert the output and print the accepted ones::
 
     $ timegaps -a -t 20200101-000000 years10 *.tar.gz
     daily-2014-02-27-070001.tar.gz
     daily-2014-01-01-070001.tar.gz
 
-There are some more features, such as deleting files, or a mode in which items are treated as simple strings instead of paths. See the program's help message::
+There are more features, such as deleting files, or a mode in which items are treated as simple strings instead of paths. See the help message::
 
     $ timegaps --help
     usage: timegaps [-h] [--extended-help] [--version] [-s] [-0] [-a] [-t TIME]
@@ -131,40 +133,35 @@ There are some more features, such as deleting files, or a mode in which items a
     Version 0.1.0.dev
 
 
-There also is ``timegaps --extended-help``, mainly specifying the time categorization behavior in all detail.
+For a detailed specification of program behavior and the time categorization method, please confer ``timegaps --extended-help``.
 
 
 Documentation and changelog
 ---------------------------
-
-    - Official docs: this ``README``, ``timegaps --help``, and ``timegaps --extended-help``. Further resources might be found at http://gehrcke.de/timegaps.
-    - Changelog: `Here <https://github.com/jgehrcke/timegaps/blob/master/CHANGELOG.rst>`_,
-      hosted at Github.
+- Docs and resources: the official home of this program is http://gehrcke.de/timegaps. The documentation consists of this ``README``, ``timegaps --help``, and ``timegaps --extended-help``.
+- The changelog is hosted `here <https://github.com/jgehrcke/timegaps/blob/master/CHANGELOG.rst>`_.
 
 
-General description and motivation
-----------------------------------
+General description
+-------------------
+Timegaps' input item set is either provided with command line arguments or read from stdin. The output is the set of rejected or accepted items, written to stdout.
 
-The input item set is either provided with command line arguments or read form stdin. The output is the set of rejected (or accepted) items on stdout.
+Timegaps by default treats items as paths. It retrieves the modification time (``st_mtime``) of the corresponding file system entries via the ``stat`` system call. By default, timegaps works in a non-invasive read-only mode and simply lists the rejected (or accepted) items. If explicitly requested, timegaps can also directly delete or move the corresponding file system entries, using well-established functions from Python's standard ``shutil`` module.
 
-Timegaps by default treats items as paths. It retrieves the modification time of the corresponding file system entries via ``stat()``. Timegaps can be used to write rejected (or accepted) items to stdout, but also delete or move the corresponding file system entries.
+In a special mode of operation, timegaps can treat items as simple strings without path validation and extract the "modification time" from each string, according to a given time string format. This feature can be used for filtering any kind of time-dependent data, but also for filtering e.g. ZFS snapshots.
 
-In a different mode, timegaps can treat items as simple strings and extract the "modification time" from each string, according to a given time string format.
-
-Timegaps allows for thinning out a collection of items, whereas the "time gaps" between accepted items become larger with increasing age of items. This is useful for keeping backups logarithmically distributed in time, e.g. one for each of the last 24 hours, one for each of the last 10 days, and so on (years, months, weeks, days, hours, and recent items are currently supported).
-
-Many rely on the well-established backup solution rsnapshot, which has the concept of ``hourly/daily/weekly/...`` snapshots already built in and creates such a structure on the fly. Other backup tools usually lack a useful logic for eliminating old backups. This is where timegaps comes in: you can use the backup solution of your choice for periodically (e.g. hourly) creating snapshots. You can then independently process the set of snapshots with timegaps and identify those snapshots that need to be eliminated in order to maintain a certain distribution of snapshots in time. This is the main motivation behind timegaps, but of course there different use cases.
+Main motivation
+---------------
+The well-established backup solution rsnapshot has the useful concept of ``hourly/daily/weekly/...`` snapshots already built in and creates such a structure on the fly. Unfortunately, other backup tools usually lack a fine-grained logic for eliminating old backups, and people tend to hack simple filters for deleting backups older than X days. This is where timegaps comes in: you can use the backup solution of your choice for periodically (e.g. hourly) creating a snapshot. You can then -- *independently* -- process the set of snapshots with timegaps and identify those snapshots that need to be eliminated in order to maintain a certain distribution of snapshots in time. This is the main motivation behind timegaps, but of course there different use cases.
 
 
 Requirements
 ------------
-
 Timegaps is tested on Python 2.7 and Python 3.3 on Linux as well as on Windows.
 
 
 How can the unit tests be run?
 ------------------------------
-
 If you run into troubles with timegaps, it is a good idea to run the unit test suite under your conditions. timegaps' unit tests are written for `pytest <http://pytest.org>`_. With ``timegaps/test`` being the current working directory, run the tests like this::
 
     $ py.test -v
@@ -172,6 +169,5 @@ If you run into troubles with timegaps, it is a good idea to run the unit test s
 
 Author & license
 ----------------
-
 Timegaps is written and maintained by `Jan-Philip Gehrcke <http://gehrcke.de>`_. It is licensed under an MIT license (see LICENSE file).
 
