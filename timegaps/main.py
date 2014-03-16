@@ -10,9 +10,9 @@
 from __future__ import unicode_literals
 
 
-__version__ = '0.1.0.dev'
+__version__ = '0.1.0'
 EXTENDED_HELP = """
-timegaps accepts or rejects file system paths (items) based their modification
+Timegaps accepts or rejects file system paths (items) based their modification
 time. Its input is a set of items and certain categorization rules. The items
 are then, according to the rules, classified into rejected and accepted items.
 In the default mode, the output is the set of rejected items. If specified,
@@ -62,8 +62,8 @@ Actions:
         requires the directory to be empty. Entire directory trees can be
         removed using -r/--recursive-delete.
 
-        TODO: Add --strict mode or such that makes file system entry action
-        errors fatal?
+        TODO: Add --strict mode (or something like that) that makes file system
+        entry action errors fatal?
 
 
 Time categorization method:
@@ -177,6 +177,16 @@ if WINDOWS:
     import msvcrt
 
 
+log = logging.getLogger()
+log.setLevel(logging.ERROR)
+ch = logging.StreamHandler()
+formatter = logging.Formatter(
+    '%(asctime)s,%(msecs)-6.1f - %(levelname)s: %(message)s',
+    datefmt='%H:%M:%S')
+ch.setFormatter(formatter)
+log.addHandler(ch)
+
+
 # http://cygwin.com/cygwin-ug-net/using-textbinary.html
 # http://stackoverflow.com/a/4160894/145400
 # http://code.activestate.com/lists/python-list/20426/
@@ -198,23 +208,18 @@ if WINDOWS:
 # of item separation in input and output unnecessarily complicated.
 if WINDOWS:
     for stream in (sys.stdout, sys.stdin):
-        if sys.version < '3':
-            msvcrt.setmode(stream.fileno(), os.O_BINARY)
-        else:
-            msvcrt.setmode(stream.buffer.fileno(), os.O_BINARY)
+        # ValueError: redirected Stdin is pseudofile, has no fileno()
+        # is possible. Seen when py.test imports the package.
+        try:
+            if sys.version < '3':
+                msvcrt.setmode(stream.fileno(), os.O_BINARY)
+            else:
+                msvcrt.setmode(stream.buffer.fileno(), os.O_BINARY)
+        except ValueError as e:
+            log.error("Could not set mode to O_BINARY on %s: %s", stream, e)
 
 
-log = logging.getLogger()
-log.setLevel(logging.ERROR)
-ch = logging.StreamHandler()
-formatter = logging.Formatter(
-    '%(asctime)s,%(msecs)-6.1f - %(levelname)s: %(message)s',
-    datefmt='%H:%M:%S')
-ch.setFormatter(formatter)
-log.addHandler(ch)
-
-
-# Global for options, to be populated by argparse from cmdline arguments.
+# To be populated by argparse from cmdline arguments.
 options = None
 
 
@@ -236,7 +241,7 @@ def main():
     log.debug("Options namespace:\n%s", options)
 
 
-    # STAGE I: bootstrap. validate and process certain command line arguments.
+    # STAGE I: bootstrap, validate and process certain command line arguments.
 
     # argparse does not catch when the user misses to provide RULES or (one)
     # ITEM (0 ITEMs is allowed when --stdin is set). Validate RULES and
@@ -250,7 +255,7 @@ def main():
         # string before parsing it. sys.stdout.encoding is either derived from
         # LC_CTYPE (set on the typical Unix system) or from environment
         # variable PYTHONIOENCODING, which is good for overriding and making
-        # guarantees, e.g. on Windows.
+        # guarantees.
         rules_unicode = options.rules.decode(sys.stdout.encoding)
     log.debug("Decode rules string.")
     try:
@@ -329,7 +334,7 @@ def main():
     # provided via input ("pass-through" mode, useful e.g. for paths on Unix,
     # easily done with Python 2) or encode unicode to output encoding, which
     # should re-create the original data as provided via input (Python 3 uses
-    # surrogate decoding when parsing argv to unicode objects).
+    # surrogates when parsing argv to unicode objects).
     # If automatically chosen, sys.stdout.encoding might not always be the right
     # thing. However, via PYTHONIOENCODING sys.stdout.encoding can be explicitly
     # set by the user, which is ideal behavior.
@@ -503,6 +508,7 @@ def prepare_input():
 
 def seconds_since_epoch_from_localtime_string(s, fmt):
     """Extract local time from string `s` according to format string `fmt`.
+
     Return floating point number, indicating seconds since epoch (non-localized
     time, compatible with e.g. stat result st_mtime.
     """
@@ -576,7 +582,6 @@ def parse_options():
         version=__version__, help="Show version information and exit."
         )
 
-
     parser.add_argument("rules", action="store",
         metavar="RULES",
         help=("A string defining the categorization rules. Must be of the form "
@@ -640,10 +645,10 @@ def parse_options():
 
     parser.add_argument("-r", "--recursive-delete", action="store_true",
         help="Enable deletion of non-empty directories.")
-    parser.add_argument("--follow-symlinks", action="store_true",
-        help=("Retrieve modification time from symlink target, .. "
-            "TODO: other implications? Not implemented yet.")
-        )
+    #parser.add_argument("--follow-symlinks", action="store_true",
+    #    help=("Retrieve modification time from symlink target, .. "
+    #        "TODO: other implications? Not implemented yet.")
+    #    )
     parser.add_argument('-v', '--verbose', action='count', default=0,
         help=("Control verbosity. Can be specified multiple times for "
             "increasing verbosity level. Levels: error (default), info, debug.")
@@ -658,10 +663,9 @@ if WINDOWS and sys.version < '3':
         """Use shell32.GetCommandLineArgvW to get sys.argv as a list of unicode
         strings. Credits: http://stackoverflow.com/a/846931/145400
 
-        Python 2 does not support unicode in sys.argv on Windows, the old
-        Windows used replaces multi-byte characters with '?'. This hack uses
-        the recommended Windows API for retrieving unicode code points. Not
-        necessary for Python 3.
+        Python 2 does not support unicode in sys.argv on Windows, and replaces
+        multi-byte characters with '?'. This hack uses the recommended Windows
+        API for retrieving unicode code points. Not necessary for Python 3.
         """
         from ctypes import POINTER, byref, cdll, c_int, windll
         from ctypes.wintypes import LPCWSTR, LPWSTR

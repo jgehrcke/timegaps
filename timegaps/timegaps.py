@@ -113,9 +113,9 @@ class FileSystemEntry(FilterItem):
         raise TimegapsError("Unsupported file type: '%s'", self.path)
 
     def __str__(self):
-        return "%s(path: %s, moddate: %s)" % (self.__class__.__name__,
+        return "%s(path: %r, moddate: %s)" % (self.__class__.__name__,
             self.path, self.moddate)
 
     def __repr__(self):
-        return "%s(path=%s, modtime=%s)" % (self.__class__.__name__,
+        return "%s(path=%r, modtime=%s)" % (self.__class__.__name__,
             self.path, self.modtime)

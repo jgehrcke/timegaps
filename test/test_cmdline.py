@@ -35,9 +35,12 @@ else:
 
 
 RUNDIRTOP = "./cmdline-test"
-TIMEGAPS_RUNNER = "../../../timegaps-runner.py"
-#PYTHON_EXE = "coverage -x"
-PYTHON_EXE = "python"
+TIMEGAPS_RUNNER = "python ../../../timegaps-runner.py"
+# On travis, `python setup.py install` has been executed before and the
+# `timegaps` command must be available.
+if os.environ.get("TRAVIS") == "true" and os.environ.get("CI") == "true":
+    TIMEGAPS_RUNNER = "timegaps"
+#TIMEGAPS_RUNNER = "coverage -x ../../../timegaps-runner.py"
 WINDOWS = sys.platform == "win32"
 
 
@@ -113,19 +116,21 @@ class Base(object):
 
     def run(self, arguments_unicode, rc=0, sin=None):
         arguments_unicode = self._escape_args(arguments_unicode)
-        cmd = "%s %s %s" % (PYTHON_EXE, TIMEGAPS_RUNNER, arguments_unicode)
+        cmd = "%s %s" % (TIMEGAPS_RUNNER, arguments_unicode)
         log.info("Test command:\n%s",  cmd)
         self.clitest.run(cmd_unicode=cmd, expect_rc=rc, stdinbytes=sin)
         return self.clitest
 
-    def mfile(self, relpath, mtime):
+    def mfile(self, relpath, mtime=None):
         # http://stackoverflow.com/a/1160227/145400
         # Insignificant race condition.
+        mtime = mtime if mtime is not None else time.time()
         p = os.path.join(self.rundir, relpath)
         with open(p, "w"):
             os.utime(p, (mtime, mtime))
 
-    def mdir(self, relpath, mtime):
+    def mdir(self, relpath, mtime=None):
+        mtime = mtime if mtime is not None else time.time()
         p = os.path.join(self.rundir, relpath)
         os.mkdir(p)
         os.utime(p, (mtime, mtime))
@@ -399,6 +404,13 @@ class TestStdinAndSeparation(Base):
         t.assert_is_stdout(".\0")
         t.assert_no_stderr()
 
+    def test_stdin_one_recent_no_sep(self):
+        s = ".".encode(STDINENC)
+        t = self.run("-a -0 -s recent1", sin=s)
+        t.assert_is_stdout(".\0")
+        t = self.run("-a -s recent1", sin=s)
+        t.assert_is_stdout(".\n")
+
     def test_stdin_two_recent_various_seps(self):
         # Missing trailing sep.
         s = ".\n.".encode(STDINENC)
@@ -516,7 +528,8 @@ class TestReferenceTime(Base):
 
 
 class TestPathBasenameTime(Base):
-    """Test --time-from-basename parsing and logic."""
+    """Test --time-from-basename parsing and logic. These tests may involve
+    creation of temp files."""
 
     def test_file_error(self):
         t = self.run(("-t 20000101-000000 --time-from-basename "
@@ -542,7 +555,9 @@ class TestPathBasenameTime(Base):
 
 
 class TestFileFilter(Base):
-    """Tests that involve creation of real (temp) files in the file system."""
+    """Filter tests involving temp files. Test various features, but no
+    actions.
+    """
 
     def test_10_days_2_weeks_noaction_files(self):
         self._10_days_2_weeks_noaction_dirs_or_files(self.mfile)
@@ -606,7 +621,7 @@ class TestFileFilterActions(Base):
         self._test_simple_delete_file_or_dir(self.mdir)
 
     def _test_simple_delete_file_or_dir(self, mfile_or_dir):
-        mfile_or_dir("test", time.time())
+        mfile_or_dir("test")
         t = self.run("--delete days1 test")
         t.assert_in_stdout("test")
         t.assert_no_stderr()
@@ -728,3 +743,32 @@ class TestSpecialChars(Base):
     def test_invalid_rulesstring_smiley(self):
         t = self.run("☺", rc=1)
         t.assert_in_stderr(["Invalid", "token", "☺"])
+
+    def test_delete_file(self):
+        self.mfile("☺")
+        t = self.run("--delete days1 ☺")
+        t.assert_in_stdout("☺")
+        t.assert_no_stderr()
+        t.assert_paths_not_exist("☺")
+
+    def test_move_file(self):
+        self.mfile("☺")
+        self.mdir("rejected")
+        t = self.run("--move rejected days1 ☺")
+        t.assert_in_stdout("☺")
+        t.assert_no_stderr()
+        t.assert_paths_exist("rejected/☺")
+
+    def test_stdin_one_recent(self):
+        self.mfile("☺")
+        s = "☺".encode(STDINENC)
+        t = self.run("-a -0 -s recent1", sin=s)
+        t.assert_is_stdout("☺\0")
+        t = self.run("-a -s recent1", sin=s)
+        t.assert_is_stdout("☺\n")
+
+    def test_stdin_two_recent(self):
+        self.mfile("☺")
+        s = "☺\n☺".encode(STDINENC)
+        t = self.run("-a -s recent2", sin=s)
+        t.assert_is_stdout("☺\n☺\n")

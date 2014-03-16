@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.3"
+  - "2.7"
+# Test installation, must exit with 0.
+install:
+  - python setup.py install
+# Execute tests with py.test.
+script:
+  - cd test
+  - py.test -vsx test_api.py test_cmdline.py
