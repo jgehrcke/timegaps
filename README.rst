@@ -124,13 +124,11 @@ There are more features, such as deleting files, or a mode in which items are tr
       -m DIR, --move DIR    Attempt to move rejected paths to directory DIR.
       -r, --recursive-delete
                             Enable deletion of non-empty directories.
-      --follow-symlinks     Retrieve modification time from symlink target, ..
-                            TODO: other implications? Not implemented yet.
       -v, --verbose         Control verbosity. Can be specified multiple times for
                             increasing verbosity level. Levels: error (default),
                             info, debug.
 
-    Version 0.1.0.dev
+    Version 0.1.0
 
 
 For a detailed specification of program behavior and the time categorization method, please confer ``timegaps --extended-help``.
