@@ -14,7 +14,7 @@ __version__ = '0.1.0.dev'
 EXTENDED_HELP = """
 timegaps accepts or rejects file system paths (items) based their modification
 time. Its input is a set of items and certain categorization rules. The items
-are then, according to the rules, split into sets of rejected or accepted items.
+are then, according to the rules, classified into rejected and accepted items.
 In the default mode, the output is the set of rejected items. If specified,
 accepted or rejected items are deleted or moved. Find the detailed program
 specification below.
