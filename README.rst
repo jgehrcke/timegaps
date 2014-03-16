@@ -18,6 +18,12 @@ Install the latest development version with pip::
     $ pip install git+https://github.com/jgehrcke/timegaps
 
 
+Documentation and changelog
+---------------------------
+- Docs and resources: the official home of this program is http://gehrcke.de/timegaps. The documentation consists of this ``README``, ``timegaps --help``, and ``timegaps --extended-help``.
+- The changelog is hosted `here <https://github.com/jgehrcke/timegaps/blob/master/CHANGELOG.rst>`_.
+
+
 Hands-on introduction
 ---------------------
 Consider the following situation: all ``*.tar.gz`` files in the current working directory happen to be daily snapshots of something. The task is to accept one snapshot for each of the last 20 days, one for each for the last 8 weeks, and one for each of the last 12 months, and to *reject all others*. Use timegaps for performing this categorization into rejected and accepted items and print the rejected ones::
@@ -132,12 +138,6 @@ There are more features, such as deleting files, or a mode in which items are tr
 
 
 For a detailed specification of program behavior and the time categorization method, please confer ``timegaps --extended-help``.
-
-
-Documentation and changelog
----------------------------
-- Docs and resources: the official home of this program is http://gehrcke.de/timegaps. The documentation consists of this ``README``, ``timegaps --help``, and ``timegaps --extended-help``.
-- The changelog is hosted `here <https://github.com/jgehrcke/timegaps/blob/master/CHANGELOG.rst>`_.
 
 
 General description
