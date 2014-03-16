@@ -38,7 +38,7 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3"
+        "Programming Language :: Python :: 3",
         "Topic :: System :: Archiving :: Backup",
         "Topic :: System :: Filesystems",
         "Topic :: System :: Systems Administration",
