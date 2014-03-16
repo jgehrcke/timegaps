@@ -25,7 +25,7 @@ setup(
         },
     version = timegapsversion,
     description = "Accept or reject items based on age categorization.",
-    long_description="",
+    long_description=open("README.rst").read().decode('utf-8'),
     author = "Jan-Philip Gehrcke",
     author_email = "jgehrcke@googlemail.com",
     url = "http://gehrcke.de/timegaps",
