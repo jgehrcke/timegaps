@@ -1,5 +1,5 @@
 #!/bin/bash
-echo ">>> Running timegaps unit tests, investigate code coverage..."
+echo ">>> Running timegaps unit tests."
 cd test && py.test test_api.py test_cmdline.py
 cd ..
 echo -e "\n>>> Running setup.py check..."
