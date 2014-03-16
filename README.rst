@@ -9,7 +9,7 @@ Timegaps is developed with a focus on reliability, with best intentions in mind,
 
 Installation
 ------------
-Timegaps is hosted on PyPI. Install the latest release with pip::
+Timegaps is hosted `on PyPI <https://pypi.python.org/pypi/timegaps/>`_. Install the latest release with pip::
 
     $ pip install timegaps
 
