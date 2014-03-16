@@ -77,7 +77,7 @@ There are more features, such as deleting files, or a mode in which items are tr
     $ timegaps --help
     usage: timegaps [-h] [--extended-help] [--version] [-s] [-0] [-a] [-t TIME]
                     [--time-from-basename FMT | --time-from-string FMT]
-                    [-d | -m DIR] [-r] [--follow-symlinks] [-v]
+                    [-d | -m DIR] [-r] [-v]
                     RULES [ITEM [ITEM ...]]
 
     Accept or reject items based on age categorization.
