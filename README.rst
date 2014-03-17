@@ -1,6 +1,6 @@
 timegaps
 ========
-Timegaps sorts a set of items into *rejected* and *accepted* ones, based on the age of each item and user-given time categorization rules. Timegaps is a command line utility for Unix-like systems and Windows.
+Timegaps sorts a set of items into *rejected* and *accepted* ones, based on the age of each item and user-given time categorization rules. Timegaps is a Python-based command line utility for Unix-like systems and Windows.
 
 Timegaps allows for thinning out a collection of items, whereas the "time gaps" between accepted items become larger with increasing age of items. This is useful for keeping backups logarithmically distributed in time, e.g. one for each of the last 24 hours, one for each of the last 30 days, one for each of the last 8 weeks, and so on.
 
@@ -9,11 +9,15 @@ Timegaps is developed with a focus on reliability, with best intentions in mind,
 
 Installation
 ------------
-Timegaps is hosted `on PyPI <https://pypi.python.org/pypi/timegaps/>`_. Install the latest release with pip::
+Timegaps requires `Python <http://python.org>`_. It is hosted `on PyPI <https://pypi.python.org/pypi/timegaps/>`_, where you can download the latest release. The recommended way, however, is to download and install the latest timegaps release using `pip <http://www.pip-installer.org/en/latest/>`_::
 
     $ pip install timegaps
 
-Install the latest development version with pip::
+A previously installed version can be upgraded via::
+
+    $ pip install --upgrade timegaps 
+
+This is how to install the latest development version::
 
     $ pip install git+https://github.com/jgehrcke/timegaps
 
