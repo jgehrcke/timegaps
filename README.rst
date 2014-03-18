@@ -1,10 +1,10 @@
 timegaps
 ========
-Timegaps sorts a set of items into *rejected* and *accepted* ones, based on the age of each item and user-given time categorization rules. Timegaps is a Python-based command line utility for Unix-like systems and Windows.
+Timegaps is a cross-platform command line program. It sorts a set of items into *rejected* and *accepted* ones, based on the age of each item and user-given time categorization rules.
 
 Timegaps allows for thinning out a collection of items, whereas the "time gaps" between accepted items become larger with increasing age of items. This is useful for keeping backups logarithmically distributed in time, e.g. one for each of the last 24 hours, one for each of the last 30 days, one for each of the last 8 weeks, and so on.
 
-Timegaps is developed with a focus on reliability, with best intentions in mind, following the `Unix philosophy <http://en.wikipedia.org/wiki/Unix_philosophy>`_, and semantic versioning. It is backed by a considerable set of unit tests, including direct command line interface tests. Currently, each commit is `automatically tested <https://travis-ci.org/jgehrcke/timegaps>`_ against CPython 2.7 and 3.3 on Linux via Travis CI.
+Timegaps is developed with a focus on reliability, with best intentions in mind, following the `Unix philosophy <http://en.wikipedia.org/wiki/Unix_philosophy>`_, and semantic versioning. It is backed by a considerable set of unit tests, including direct command line interface tests. Currently, each commit is `automatically tested <https://travis-ci.org/jgehrcke/timegaps>`_ against CPython 2.7 and 3.3 on Linux via Travis CI. Releases are tested on Linux as well as on Windows.
 
 
 Installation
