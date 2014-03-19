@@ -4,7 +4,12 @@ Timegaps is a cross-platform command line program. It sorts a set of items into 
 
 Timegaps allows for thinning out a collection of items, whereas the "time gaps" between accepted items become larger with increasing age of items. This is useful for keeping backups logarithmically distributed in time, e.g. one for each of the last 24 hours, one for each of the last 30 days, one for each of the last 8 weeks, and so on.
 
-Timegaps is developed with a focus on reliability, with best intentions in mind, following the `Unix philosophy <http://en.wikipedia.org/wiki/Unix_philosophy>`_, and semantic versioning. It is backed by a considerable set of unit tests, including direct command line interface tests. Currently, each commit is `automatically tested <https://travis-ci.org/jgehrcke/timegaps>`_ against CPython 2.7 and 3.3 on Linux via Travis CI. Releases are tested on Linux as well as on Windows.
+Timegaps is built with a focus on reliability. It is backed by a considerable set of unit tests, including direct command line interface tests. Currently, each commit is `automatically tested <https://travis-ci.org/jgehrcke/timegaps>`_ against CPython 2.7, 3.3, and 3.4 on Linux via Travis CI. Releases are tested on Linux as well as on Windows. Development is coined by the `Unix philosophy <http://en.wikipedia.org/wiki/Unix_philosophy>`_. The concept of semantic versioning is applied for releases.
+
+
+Requirements
+------------
+Timegaps requires `Python <http://python.org>`_. Releases are tested on Python 2.7, Python 3.3, and Python 3.4, on Linux as well as on Windows. This is where you can expect it to run properly.
 
 
 Installation
@@ -152,14 +157,10 @@ Timegaps by default treats items as paths. It retrieves the modification time (`
 
 In a special mode of operation, timegaps can treat items as simple strings without path validation and extract the "modification time" from each string, according to a given time string format. This feature can be used for filtering any kind of time-dependent data, but also for filtering e.g. ZFS snapshots.
 
+
 Main motivation
 ---------------
 The well-established backup solution `rsnapshot <http://www.rsnapshot.org/>`_ has the useful concept of ``hourly / daily / weekly / ...`` snapshots already built in and creates such a structure on the fly. Unfortunately, other backup tools usually lack such a fine-grained logic for eliminating old backups, and people tend to hack simple filters themselves. This is where timegaps comes in: you can use the backup solution of your choice for periodically (e.g. hourly) creating a snapshot. You can then -- *independently* -- process this set of snapshots with timegaps and identify those snapshots that need to be eliminated (removed or displaced) in order to maintain a certain "logarithmic" distribution of snapshots in time. This is the main motivation behind timegaps, but of course you can use it for filtering any kind of time-dependent data.
-
-
-Requirements
-------------
-Currently, timegaps releases are tested on Python 2.7 and Python 3.3 on Linux as well as on Windows. This is where you can expect it to run properly.
 
 
 How can the unit tests be run?
