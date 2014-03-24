@@ -2,25 +2,25 @@ timegaps
 ========
 Timegaps is a cross-platform command line program. It sorts a set of items into *rejected* and *accepted* ones, based on the age of each item and user-given time categorization rules.
 
-Timegaps allows for thinning out a collection of items, whereas the "time gaps" between accepted items become larger with increasing age of items. This is useful for keeping backups logarithmically distributed in time, e.g. one for each of the last 24 hours, one for each of the last 30 days, one for each of the last 8 weeks, and so on.
+Timegaps allows for thinning out a collection of items, whereas the *time gaps* between accepted items become larger with increasing age of items. This is useful for keeping backups "logarithmically" distributed in time, e.g. one for each of the last 24 hours, one for each of the last 30 days, one for each of the last 8 weeks, and so on.
 
-Timegaps is built with a focus on reliability. It is backed by a considerable set of unit tests, including direct command line interface tests. Currently, each commit is `automatically tested <https://travis-ci.org/jgehrcke/timegaps>`_ against CPython 2.7, 3.3, and 3.4 on Linux via Travis CI. Releases are tested on Linux as well as on Windows. Development is coined by the `Unix philosophy <http://en.wikipedia.org/wiki/Unix_philosophy>`_. The concept of semantic versioning is applied for releases.
+Timegaps is built with a focus on reliability. It is backed by a considerable set of unit tests, including direct command line interface tests. Currently, each commit is `automatically tested <https://travis-ci.org/jgehrcke/timegaps>`_ against CPython 2.7/3.3/3.4 on Linux via Travis CI. Releases are tested on Linux as well as on Windows. Simplicity and compliance with the `Unix philosophy <http://en.wikipedia.org/wiki/Unix_philosophy>`_ are the major design goals of timegaps. Version tags follow the concept of semantic versioning.
 
 
 Requirements
 ------------
-Timegaps requires `Python <http://python.org>`_. Releases are tested on Python 2.7, Python 3.3, and Python 3.4, on Linux as well as on Windows. This is where you can expect it to run properly.
+Timegaps requires `Python <http://python.org>`_. Releases are tested on CPython 2.7/3.3/3.4, on Linux as well as on Windows. This is where you can expect it to run properly.
 
 
 Installation
 ------------
-Timegaps requires `Python <http://python.org>`_. It is hosted `on PyPI <https://pypi.python.org/pypi/timegaps/>`_, where you can download the latest release. The recommended way, however, is to download and install the latest timegaps release using `pip <http://www.pip-installer.org/en/latest/>`_::
+Installation via `pip <http://www.pip-installer.org/en/latest/>`_ is recommended::
 
     $ pip install timegaps
 
-A previously installed version can be upgraded via::
+This downloads the latest timegaps releases `from PyPI <https://pypi.python.org/pypi/timegaps/>`_ and installs it. A previously installed version can be upgraded via::
 
-    $ pip install --upgrade timegaps 
+    $ pip install --upgrade timegaps
 
 This is how to install the latest development version::
 
@@ -30,7 +30,7 @@ This is how to install the latest development version::
 Documentation and changelog
 ---------------------------
 - Docs and resources: the official home of this program is http://gehrcke.de/timegaps. The documentation consists of this ``README``, ``timegaps --help``, and ``timegaps --extended-help``.
-- The changelog is hosted `here <https://github.com/jgehrcke/timegaps/blob/master/CHANGELOG.rst>`_.
+- `Changelog <https://github.com/jgehrcke/timegaps/blob/master/CHANGELOG.rst>`_.
 
 
 Hands-on introduction
