@@ -10,7 +10,7 @@
 from __future__ import unicode_literals
 
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 EXTENDED_HELP = """
 Timegaps accepts or rejects file system paths (items) based their modification
 time. Its input is a set of items and certain categorization rules. The items
