@@ -153,9 +153,14 @@ class TestArgparseFeatures(Base):
 
     def test_version(self):
         t = self.run("--version")
-        # argparse makes this go to stderr, weird, help goes to stdout.
-        t.assert_no_stdout()
-        t.assert_is_stderr("%s%s" % (__version__, os.linesep))
+        # On Python < 3.4, argparse writes this to stderr (help goes to stdout).
+        # http://bugs.python.org/issue18920
+        if sys.version_info[0] >= 3 and sys.version[1] >= 4:
+            t.assert_no_stderr()
+            t.assert_is_stdout("%s%s" % (__version__, os.linesep))
+        else:
+            t.assert_no_stdout()
+            t.assert_is_stderr("%s%s" % (__version__, os.linesep))
 
     def test_help(self):
         t = self.run("--help")
