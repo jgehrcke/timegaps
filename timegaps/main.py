@@ -233,10 +233,17 @@ def main():
     # Be explicit about input and output encoding, at least when connected via
     # pipes. Also see http://stackoverflow.com/a/4374457/145400
     if sys.stdout.encoding is None:
-        err(("Please explicitly specify the codec that should be used for "
-            "decoding data read from stdin, and for encoding data that is to "
-            "be written to stdout: set environment variable PYTHONIOENCODING. "
-            "Example: export PYTHONIOENCODING=UTF-8."))
+        # TODO: this behavior is currently not covered by a cmdline test.
+        errmsg = ("Timegaps can not determine the codec for encoding data when "
+            "writing to stdout (this is the case e.g. when timegaps is run "
+            "non-interactively or when stdout is piped to another process). "
+            "Please specify the codec by setting the environment variable "
+            "PYTHONIOENCODING. Example: export PYTHONIOENCODING=UTF-8.")
+        stdinnote = ("Please note that the same codec is used for decoding "
+            "data provided via stdin.")
+        if options.stdin:
+            err("%s %s" % (errmsg, stdinnote))
+        err(errmsg)
 
     log.debug("Options namespace:\n%s", options)
 
