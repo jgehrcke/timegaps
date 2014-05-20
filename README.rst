@@ -93,13 +93,13 @@ Count files in the newly created directory for validation purposes (must also be
     $ /bin/ls -1 notneededanymore/* | wc -l
     125
 
-Okay, so far the item modification time was determined from the inode via the
-``stat()`` system call. In a different mode of operation (``--time-from-
-basename``), timegaps can read the "modification time" from the basename. The
-file names of the tarred snapshots in this hands-on session carry meaningful
-time information, in a certain format (``daily-%Y-%m-%d-%H%M%S.tar.gz``).
-Providing this format string, we can instruct timegaps to parse the time from
-these file names::
+Okay, so far the item (file) modification time was determined from the
+corresponding inode via the ``stat()`` system call. In a different mode of
+operation (``--time-from-basename``), timegaps can read the "modification time"
+from the basename of the file or directory. The file names of the tarred
+snapshots in this hands-on session carry meaningful time information in the
+format ``daily-%Y-%m-%d-%H%M%S.tar.gz``. Providing this format string, we can
+instruct timegaps to parse the item modification time from the file names::
 
     $ mv notneededanymore/* .
     $ timegaps --time-from-basename daily-%Y-%m-%d-%H%M%S.tar.gz \
@@ -114,9 +114,8 @@ items from stdin, instead of reading items from the command line::
     $ /bin/ls -1 *tar.gz | timegaps --stdin days20,weeks8,months12 | wc -l
     125
 
-Given ``-0/--nullsep``, timegaps can handle NUL character-separated items on
-stdin. In this mode of operation, timegaps also NUL-separates the items on
-stdout::
+Given ``-0/--nullsep``, timegaps expects NUL character-separated items on stdin.
+In this mode of operation, timegaps also NUL-separates the items on stdout::
 
     $ find . -name "*tar.gz" -print0 | \
         timegaps -0 --stdin days20,weeks8,months12 | \
@@ -125,7 +124,8 @@ stdout::
 
 By default, the reference time for determining the age of items is the time of
 program invocation. Use ``-t/--reference-time`` for changing the reference time
-from *now* to an arbitrary date (January 1st, 2020 in this case)::
+from *now* to an arbitrary point in time (January 1st, 2020, 00:00:00 local
+timein this case)::
 
     $ timegaps --reference-time 20200101-000000 years10 *.tar.gz | wc -l
     153
@@ -212,14 +212,14 @@ stdout.
 Timegaps by default treats items as paths. It retrieves the modification time
 (``st_mtime``) of the corresponding file system entries via the ``stat`` system
 call. By default, timegaps works in a non-invasive read-only mode and simply
-lists the rejected (or accepted) items. If explicitly requested, timegaps can
-also directly delete or move the corresponding file system entries, using well-
-established functions from Python's standard ``shutil`` module.
+lists the rejected items. If explicitly requested, timegaps can also directly
+delete or move the corresponding file system entries, using well-established
+functions from the ``shutil`` module in Python's standard library.
 
 In a special mode of operation, timegaps can treat items as simple strings
 without path validation and extract the "modification time" from each string,
 according to a given time string format. This feature can be used for filtering
-any kind of time-dependent data, but also for filtering e.g. ZFS snapshots.
+any kind of time-dependent data, such as e.g. ZFS snapshots (if properly named).
 
 
 Main motivation
