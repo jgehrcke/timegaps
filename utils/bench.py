@@ -10,7 +10,9 @@ from random import randint, shuffle
 import numpy as np
 from matplotlib import pyplot as plt
 
-from timegaps import FileSystemEntry, TimeFilter
+sys.path.insert(0, os.path.abspath('..'))
+from timegaps.timegaps import FileSystemEntry
+from timegaps.timefilter import TimeFilter
 
 import logging
 logging.basicConfig(
@@ -68,8 +70,10 @@ def bench(funcname, samplesize, Ns):
     nbrs_fses = [l[0] for l in nbrs_fses]
 
     n_per_sec = nbrs_fses[-1]/duration_means[-1]
-    linstring = "If linear, from last value pair: %i items/s" % n_per_sec
+    linstring = "From last data point: (mean from n=%s): %i items/s" % (
+        Ns, n_per_sec)
     log.info(linstring)
+    log.info("Last data point std. dev. of duration: %.3f s", duration_stddevs[-1])
     log.info("Plotting durations vs. Ns.")
     plt.errorbar(
         x=nbrs_fses, y=duration_means, yerr=duration_stddevs, marker='o')
@@ -84,8 +88,8 @@ def bench(funcname, samplesize, Ns):
 def main():
     if len(sys.argv) > 1:
         if sys.argv[1] == "--short":
-            bench("test_fixed_rules_8_per_cat_with_N_items", 2,
-            (3*10**4, ))#, 10**5, int(1.5*10**5), 2*10**5, 3*10**5))
+            bench("test_fixed_rules_8_per_cat_with_N_items", 3,
+            (4*10**4, ))#, 10**5, int(1.5*10**5), 2*10**5, 3*10**5))
     else:
         bench("test_fixed_rules_8_per_cat_with_N_items", 10,
         (10**3, 10**4, 5*10**4, 10**5, int(1.5*10**5), 2*10**5, 3*10**5))
