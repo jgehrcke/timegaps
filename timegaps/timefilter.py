@@ -114,7 +114,10 @@ class TimeFilter(object):
         for obj in objs:
             # Might raise AttributeError if `obj` does not have `modtime`
             # attribute or other exceptions upon `_Timedelta` creation.
-            td = _Timedelta(obj.modtime, self.reftime)
+            try:
+                td = _Timedelta(obj.modtime, self.reftime)
+            except _TimedeltaError as e:
+                raise TimeFilterError("Cannot categorize %s: %s" % (obj, e))
             # If timecount in youngest category after 'recent' is 0, then this
             # is a recent item.
             if td.hours == 0:
@@ -171,6 +174,10 @@ class TimeFilter(object):
         return accepted_objs, chain.from_iterable(rejected_objs_lists)
 
 
+class _TimedeltaError(TimeFilterError):
+    pass
+
+
 class _Timedelta(object):
     """
     Represent how many years, months, weeks, days, hours time `t` (float,
@@ -186,8 +193,8 @@ class _Timedelta(object):
         seconds_earlier = ref - t
         assert isinstance(seconds_earlier, float)
         if seconds_earlier < 0:
-            raise TimeFilterError("Time %s not earlier than reference %s" %
-                (t, ref))
+            raise _TimedeltaError(("Modification time %s not " 
+                "earlier than reference time %s.") % (t, ref))
         self.hours_exact = seconds_earlier / 3600      # 60 * 60
         self.hours = int(self.hours_exact)
         self.days_exact = seconds_earlier / 86400      # 60 * 60 * 24
