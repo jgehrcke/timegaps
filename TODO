@@ -5,5 +5,45 @@
 
 - Add --strict mode which yields exitcode > 0 if any file operation failed
 
-- Specifiy symbolic link behavior and implement.
+- Specify symbolic link behavior and implement.
 
+- Item categorization re-design (current paradigm may result in unexpected item
+  rejection for periodic invocations of timegaps). New paradigm: keep the oldest
+  item in each bucket.
+
+    - Keeping the oldest guarantees a transition from one category/timecount
+      bucket to the next older one. Meaning: the oldest item within one bucket
+      MUST be "carried on" and never become rejected in favor of a younger one
+      in the same bucket. If executed periodically, such behavior would result
+      in older buckets staying unpopulated, and the desired distribution of
+      items in time, according to the rules given, will never be met.
+
+    - Clarify behavior for categories that are not tightly bound: an overlap is
+      required in most situations. Example: weeks and months do not have tight
+      boundary: 4 weeks is not 30 days, i.e. is not 1 month, i.e. there is a gap
+      around day 29, where items are older than 4 weeks but still not a month
+      old and might become rejected (whereas the user would usually not expect
+      them to become rejected). Possible solution: clarify that 4 weeks is *NOT*
+      one month, 12 months (12*30 days) is not one year, and advises users to
+      request 5 weeks and 13 months instead. Implement warnings for all
+      dangerous sets of rules, such as for "weeks4,months1".
+
+    - For recent items, we should also keep the older ones so that it is safe to
+      invoke timegaps at any time and at any frequency. In the extreme case this
+      will reject the newest backup and only keep the almost-one-hour-old one,
+      but this is predictable and can be reliably worked around by the user. If
+      we rejected the oldest recent items, however, sudden frequent invocation
+      of item creation and timegaps would reject older items. Instead, sudden
+      frequent invocation of item creation and timegaps should reject the
+      unnecessary amount of newer items. There also is a possible race condition
+      when the user aligns the number of recent items to keep with the
+      invocation period (e.g. 12 recent items for a 5 minute period of item
+      creation and timegaps invocation) -- at some point, 13 items might be
+      classified as recent, in which case one of them has to go. In this case,
+      it is safest to let the oldest item survive in order to ensure propagation
+      towards older buckets within the next iterations. --> reject newest recent
+      items, carry on older ones.
+
+    -> New paradigm: reject newest items in a bucket, always keep the oldest
+      one. The disadvantage of keeping only the oldest item is yet to be found
+      (I hope there is no unexpected rejection scenario).
