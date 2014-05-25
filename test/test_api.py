@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 import os
 import sys
 import time
+import logging
 from base64 import b64encode
 from datetime import datetime
 from itertools import chain
@@ -37,7 +38,6 @@ from timegaps.timegaps import FileSystemEntry, TimegapsError, FilterItem
 from timegaps.timefilter import TimeFilter, _Timedelta, TimeFilterError
 
 
-#import logging
 #logging.basicConfig(
 #    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
 #    datefmt='%H:%M:%S')
