@@ -1,7 +1,5 @@
-- Internal item globbing for Windows users where cmd.exe does not support
-  pathname expansion. Could be handled automatically *only* on Windows, or
-  explicitly, using e.g. --item-globbing, on all platforms. Use Python's
-  glob.glob().
+- Finish item glob feature: implement unit tests, properly document behavior,
+  improve help message.
 
 - Add --strict mode which yields exitcode > 0 if any file operation failed
 
