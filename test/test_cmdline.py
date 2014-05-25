@@ -20,11 +20,11 @@ sys.path.insert(0, os.path.abspath('..'))
 from timegaps.main import __version__
 
 
-logging.basicConfig(
-    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
-    datefmt='%H:%M:%S')
-log = logging.getLogger()
-log.setLevel(logging.DEBUG)
+#logging.basicConfig(
+#    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
+#    datefmt='%H:%M:%S')
+log = logging.getLogger("test_cmdline")
+#log.setLevel(logging.DEBUG)
 
 
 # Make the same code base run with Python 2 and 3.
@@ -612,6 +612,132 @@ class TestFileFilter(Base):
         t.assert_in_stdout(["f%s\0" % _ for _ in (1,2,3,4,5,6,7,8,9,10,11,14)])
         t.assert_not_in_stdout(["f12\0", "f13\0", "f15\0"])
         t.assert_no_stderr()
+
+
+class TestPeriodicRun(Base):
+    """Tests for the scenario where timegaps is run periodically, in
+    conjunction with backup/snapshot creation.
+    """
+
+    def test_scenario_a(self):
+        from timegaps.timefilter import _Timedelta
+        import glob
+        def invoke_timegaps(reftime):
+            # Simulate 1-second-later-invocation.
+            rules = "recent6,hours23,days6,weeks4,months3"
+            reftimestr = time.strftime(
+                "%Y%m%d-%H%M%S", time.localtime(reftime+1))
+            t = self.run("-g -d -t %s %s *.testfile" % (reftimestr, rules))
+
+        def modtime_for_path(filepath):
+            statinfo = os.stat(filepath)
+            return statinfo.st_mtime
+
+        def createfile(modtime):
+            atime, mtime = modtime, modtime
+            ts = time.strftime("%Y%m%d-%H%M%S", time.localtime(modtime))
+            filepath = "%s.testfile" % ts
+            log.debug("Create file %s", filepath)
+            self.mfile(filepath, mtime=modtime)
+
+        def check_files(expected, reftime):
+            log.debug("What we expect: %s", expected)
+            # Build a mapping, for each category/timecount bucket we
+            # save whether we have found a corresponding file or not.
+            # Eventually, all expected category/timecount buckets should
+            # be populated -- if not, that's an error.
+            notrecent_found_mapping = dict()
+            for cat in ("years", "months", "weeks", "days", "hours"):
+                notrecent_found_mapping[cat] = {
+                    n:False for n in range(1,expected[cat]+1)}
+
+            # Go through the files, and categorize them.
+            # TODO: this is still not matching the real categorization,
+            # here "older" categories have higher priority than "younger" one.
+            # Therefore, this check cannot deal with category overlaps so far.
+            # However, it is sufficient for tight boundary tests, i.e. these
+            # rules: recentN,hours23,days6,weeks2
+            fns = glob.glob("%s/*.testfile" % self.rundir)
+            log.debug("Found these files: %s", fns)
+            modtimes = [modtime_for_path(fn) for fn in fns]
+            deltas = [_Timedelta(t=t, ref=reftime) for t in modtimes]
+            for delta, filename in zip(deltas, fns):
+                if delta.hours < 1:
+                    # That is a recent item.
+                    log.debug("Recent item detected: %s", filename)
+                    expected["recent"] -= 1
+                for cat in ("years", "months", "weeks", "days", "hours"):
+                    timecount = getattr(delta, cat)
+                    if timecount > 0:
+                        log.debug("File fits %s/%s.", cat, timecount)
+                        if notrecent_found_mapping[cat][timecount]:
+                            log.error("Already found before: %s/%s",
+                                cat, timecount)
+                            assert False
+                        log.debug("Mark %s/%s as found.", cat, timecount)
+                        notrecent_found_mapping[cat][timecount] = True
+                        break
+
+
+            # Validate result.
+            # The "recent" count must have been decremented to 0:
+            assert expected["recent"] == 0
+            for cat, boolmap in notrecent_found_mapping.items():
+                for timecount, found in boolmap.items():
+                    if not found == True:
+                        log.error("No file found for %s/%s", cat, timecount)
+                        assert False
+
+        def check_state(starttime, currenttime, invocation_interval_mins):
+            expected = dict()
+            for cat in ("years", "months", "weeks", "days", "hours"):
+                expected[cat] = 0
+
+            # Calculate how old starttime is compared to currenttime.
+            delta = _Timedelta(t=starttime, ref=currenttime)
+
+            # Implement the rules recent6,hours23,days7,weeks4
+            if delta.hours < 1:
+                expected["recent"] = 1 + int(
+                    delta.hours_exact*60 // invocation_interval_mins)
+            elif delta.hours < 23:
+                expected["recent"] = 6
+                expected["hours"] = delta.hours
+            elif delta.days < 6:
+                expected["recent"] = 6
+                expected["hours"] = 23
+                expected["days"] = delta.days
+            elif delta.weeks < 4:
+                expected["recent"] = 6
+                expected["hours"] = 23
+                expected["days"] = 6
+                expected["weeks"] = delta.weeks
+            # Check whether the files fulfill the expectations.
+            check_files(expected, reftime=currenttime)
+
+        def test():
+            n_simdays = 8
+            invocation_interval_mins = 10
+
+            starttime = time.time()
+            n_simmins = n_simdays * 24 * 60
+            n_invocations = n_simmins / invocation_interval_mins
+            # Set virtual time to base time.
+            currenttime = starttime
+            log.debug("So many invocations planned: %s", n_invocations)
+            for idx in range(1, n_invocations+1):
+                log.debug("\n\n\n\n ITERATION %s", idx)
+                # Create a test file. Modification time: current virtual time.
+                createfile(modtime=currenttime)
+                # Run timegaps. Reference time: current virtual time.
+                # Delete rejected items.
+                invoke_timegaps(reftime=currenttime)
+                # Check current state.
+                check_state(starttime, currenttime, invocation_interval_mins)
+                # Advance virtual time by N minutes.
+                currenttime = currenttime + invocation_interval_mins * 60
+
+        test()
 
 
 class TestFileFilterActions(Base):
