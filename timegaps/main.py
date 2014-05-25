@@ -452,11 +452,14 @@ def prepare_input():
         # In file system mode on Python 2, treat items (i.e. paths) as byte
         # strings. In time-from-string mode, decode itemstrings (later).
         if options.glob:
-            import glob
-            expandeditems = []
-            for pattern in itemstrings:
-                expandeditems.extend(glob.glob(pattern))
-            itemstrings = expandeditems
+            if WINDOWS:
+                import glob
+                expandeditems = []
+                for pattern in itemstrings:
+                    expandeditems.extend(glob.glob(pattern))
+                itemstrings = expandeditems
+            else:
+                log.info("Item wildcard expansion only allowed on Windows.")
     else:
         itemstrings = read_items_from_stdin()
         # `itemstrings` as returned by `read_items_from_stdin()` are unicode.
