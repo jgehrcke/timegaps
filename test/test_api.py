@@ -37,12 +37,12 @@ from timegaps.timegaps import FileSystemEntry, TimegapsError, FilterItem
 from timegaps.timefilter import TimeFilter, _Timedelta, TimeFilterError
 
 
-import logging
-logging.basicConfig(
-    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
-    datefmt='%H:%M:%S')
-log = logging.getLogger()
-log.setLevel(logging.DEBUG)
+#import logging
+#logging.basicConfig(
+#    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
+#    datefmt='%H:%M:%S')
+log = logging.getLogger("test_api")
+#log.setLevel(logging.DEBUG)
 
 
 WINDOWS = sys.platform == "win32"
