@@ -1,5 +1,5 @@
 - Finish item glob feature: implement unit tests, properly document behavior,
-  improve help message.
+  improve help message. Only allow on Windows?
 
 - Add --strict mode which yields exitcode > 0 if any file operation failed
 
