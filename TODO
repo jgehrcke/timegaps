@@ -9,6 +9,21 @@
   rejection for periodic invocations of timegaps). New paradigm: keep the oldest
   item in each bucket.
 
+    - Update December 2017: I followed up on everything written below via
+      commit e57b1a39aa48714e4aa74 (commit message 'Start implementing new
+      categorization paradigm (keep oldest per bucket)' and subsequent commits
+      in May 2014. I had also started building tests accompanying the new
+      revised approach. I then seem to have found another conceptual problem
+      with the revised approach (judging by a comment I left in the issue
+      tracker and by the fact that development stalled). Unfortunately, I did
+      not take the time to note down the newly discovered challenge(s)
+      concisely. All I can say to date is that the 'keep oldest item' approach
+      has a conceptual problem, too. For me to gain certainty in developing the
+      next-gen approach I will have to focus on building a comprehensive test
+      suite first to generate decent confidence. Formal proof would be ideal
+      but there also should be a way to generate decent statistics with dense
+      sampling.
+
     - Keeping the oldest guarantees a transition from one category/timecount
       bucket to the next older one. Meaning: the oldest item within one bucket
       MUST be "carried on" and never become rejected in favor of a younger one
