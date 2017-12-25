@@ -14,11 +14,16 @@ import sys
 import time
 import logging
 from base64 import b64encode
-from datetime import datetime
+from datetime import datetime, timedelta
 from itertools import chain
 from random import randint, shuffle
 import collections
 import tempfile
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+plt.style.use('ggplot')
 
 
 # Make the same code base run with Python 2 and 3.
@@ -681,3 +686,167 @@ class TestTimeFilterMass(object):
         # days -> 84 accepted items are expected.
         assert len(a) == 84
         assert len(list(r)) == self.N*6 - 84
+
+
+class TestNewtests:
+    """Test filter logic, revisted after some years of pause."""
+
+    def test_same_filter_many_times_shuffled_lists(self):
+        """
+        3 months are 7776000 seconds.
+        5 minutes are 300 seconds.
+
+        Add a bit of margin to 7779000 seconds.
+
+        - Initial condition:
+
+            Have 7779000 / 300 = 25931 items spread across a timeline of ~ 3
+            months with a time delta of precisely 5 minutes between adjacent
+            items.
+
+        - First timegaps run with rules:
+
+            recent12,hours24,days7,weeks5,months2
+
+        - Expect 50 items left.
+        - Test oldest and 2nd oldest items for age.
+        """
+        # Set an arbitrary reference time.
+        reftime = 1514000000.0
+        modification_times = (reftime - n * 300 for n in range(0, 25930+1))
+        items = [FilterItem(modtime=t) for t in modification_times]
+
+        rules = {
+            "months": 2,
+            "weeks": 5,
+            "days": 7,
+            "hours": 24,
+            "recent": 12
+            }
+
+        # Test that the initial filter on the shuffled list of items yields the
+        # expected number of accepted items and that N additional filter
+        # processes (with again radomized item order) still retain the same set
+        # of items.
+        expected_bucketcount = sum(v for k, v in rules.items())
+
+        for _ in range(100):
+            shuffle(items)
+            items, _ = TimeFilter(rules, reftime=reftime).filter(items)
+            assert len(items) == expected_bucketcount, print(items)
+
+        # Inspect the items retained after N filter runs.
+        sorted_items = sorted(items, key=lambda i: i.modtime, reverse=True)
+        item_oldest = sorted_items[-1]
+        item_2ndoldest = sorted_items[-2]
+
+        # The oldest item is expected to be two months old (for the months-2
+        # bucket, and the current filter implementation keeps the newest item
+        # for each category).
+        oldest_expected_modtime = reftime - 2 * 30 * 24 * 60 * 60
+        assert item_oldest.modtime == oldest_expected_modtime
+
+        # The second-oldest item is expected to be 6 weeks old (month-1 bucket,
+        # and not week-5 bucket anymore).
+        second_oldest_expected_modtime = reftime - 6 * 7 * 24 * 60 * 60
+        assert item_2ndoldest.modtime == second_oldest_expected_modtime
+
+    def test_simulate_scenario_B(self):
+        """
+        - Constant item creation rate.
+        - Constant filter run rate.
+        - Fast-forward time in increments.
+        - Along time, the relative distribution of accepted items must remain
+          constant:
+            - the number of items must remain constant.
+            - the time difference between adjacent items must remain constant.
+
+        3 months are 7776000 seconds.
+        5 minutes are 300 seconds.
+
+        Add a bit of margin to 7779000 seconds.
+
+        - Initial condition:
+
+            Have 7779000 / 300 = 25931 items spread across a timeline of ~ 3
+            months with a time delta of precisely 5 minutes between adjacent
+            item.
+
+        - First timegaps run with rules:
+
+            recent12,hours24,days7,weeks5,months2
+
+        - Expect that all items as old as 3 months or older are gone.
+
+`
+        - Now simulate the following:
+
+            - every 5 minutes from `reftime` into the future add a new item.
+            - Every now and then, rather randomly, but at least once per hour,
+              run timegaps
+            - After every simulated timegaps run, see if the distribution of
+              items still matches the expectation.
+
+        """
+        def plot_items(items, value, label):
+            pd_timestamps = [
+                pd.Timestamp(datetime.fromtimestamp(i.modtime)) for i in items]
+            ts = pd.Series([value for i in items], index=pd_timestamps)
+            ts.plot(
+                #linestyle='dashdot',
+                linestyle='None',
+                marker='o',
+                markersize=5,
+                markeredgecolor='gray',
+                legend=True,
+                label=label
+                )
+
+        # Set reference time arbitrarily, generate items.
+        reftime = 1514000000.0
+        modtimes = (reftime - n * 300 for n in range(0, 25930+1))
+        items = [FilterItem(modtime=t) for t in modtimes]
+
+        plot_items(items, reftime-300, 'before_filter')
+
+        rules = {
+            "months": 2,
+            "weeks": 5,
+            "days": 7,
+            "hours": 24,
+            "recent": 12
+            }
+
+        bucketcount = sum(v for k, v in rules.items())
+        shuffle(items)
+        items, _ = TimeFilter(rules, reftime=reftime).filter(items)
+        assert len(items) == bucketcount
+
+        plot_items(items, reftime, 'after_filter')
+
+        try:
+            # After 5 minutes, add an item and run filter. Repeat for 3 months.
+            for attempt in range(25930):
+                print('attempt %s' % (attempt, ))
+
+                # Fast-forward 5 minutes.
+                reftime = reftime + 300
+
+                # Add an item.
+                items.insert(0, FilterItem(modtime=reftime))
+
+                # Run filter.
+                items, _ = TimeFilter(rules, reftime=reftime).filter(items)
+
+                plot_items(items, reftime, 'after_filter')
+
+                assert len(items) == bucketcount, print(items)
+        except Exception:
+            ymin, ymax = plt.ylim()
+            xmin, xmax = plt.xlim()
+            plt.ylim((ymin-1, ymax+1))
+            plt.xlim((xmin, xmax+100))#timedelta(seconds=60*60*24*12)))
+            plt.legend(loc='upper right')
+            plt.tight_layout()
+            plt.show()
+            raise
