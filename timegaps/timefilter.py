@@ -146,19 +146,24 @@ class TimeFilter(object):
                 # `rejected_objs_lists` is a list for items rejected during
                 # categorization).
                 rejected_objs_lists[0].append(obj)
-                #log.debug("Reject %s, does not fit any category.", obj)
+                log.debug("Reject %s, does not fit any category.", obj)
 
         # Sort all category-timecount buckets internally and finish filtering:
         # Accept the oldest element from each bucket, reject all others.
         # The 'recent' items list needs special treatment. Sort, accept the
         # oldest N elements, reject the others.
         self._recent_items.sort(key=lambda f: f.modtime, reverse=True)
+
         accepted_objs.extend(self._recent_items[-self.rules["recent"]:])
+
         rejected_objs_lists.append(self._recent_items[:-self.rules["recent"]])
-        #log.debug("Accepted recent items (n=%s): %s", self.rules["recent"],
-        #    self._recent_items[-self.rules["recent"]:])
-        #log.debug("Rejected recent items: %s",
-        #    self._recent_items[:-self.rules["recent"]])
+
+        log.debug("Accepted recent items (n=%s): %s", self.rules["recent"],
+            self._recent_items[-self.rules["recent"]:])
+
+        log.debug("Rejected recent items: %s",
+            self._recent_items[:-self.rules["recent"]])
+
         # Iterate through all other categories except for 'recent'.
         # `catdict[timecount]` occurrences are lists with at least one item.
         # The oldest item in each of these category-timecount buckets is to
@@ -171,10 +176,13 @@ class TimeFilter(object):
                 catdict[timecount].sort(key=lambda f: f.modtime, reverse=True)
                 accepted_objs.append(catdict[timecount].pop())
                 rejected_objs_lists.append(catdict[timecount])
-                #log.debug("Accept %s: oldest in %s/%s.",
-                #    accepted_objs[-1], catlabel, timecount)
-                #log.debug("Reject all newer items in %s/%s:\n%s",
-                #    catlabel, timecount, catdict[timecount])
+
+                log.debug("Accept %s: oldest in %s/%s.",
+                    accepted_objs[-1], catlabel, timecount)
+
+                log.debug("Reject all newer items in %s/%s:\n%s",
+                    catlabel, timecount, catdict[timecount])
+
         return accepted_objs, chain.from_iterable(rejected_objs_lists)
 
 

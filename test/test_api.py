@@ -43,11 +43,11 @@ from timegaps.timegaps import FileSystemEntry, TimegapsError, FilterItem
 from timegaps.timefilter import TimeFilter, _Timedelta, TimeFilterError
 
 
-#logging.basicConfig(
-#    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
-#    datefmt='%H:%M:%S')
-log = logging.getLogger("test_api")
-#log.setLevel(logging.DEBUG)
+logging.basicConfig(
+    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
+    datefmt='%H:%M:%S')
+log = logging.getLogger()
+log.setLevel(logging.INFO)
 
 
 WINDOWS = sys.platform == "win32"
@@ -753,19 +753,6 @@ class TestNewtests:
 
     def test_simulate_scenario_B(self):
         """
-        - Constant item creation rate.
-        - Constant filter run rate.
-        - Fast-forward time in increments.
-        - Along time, the relative distribution of accepted items must remain
-          constant:
-            - the number of items must remain constant.
-            - the time difference between adjacent items must remain constant.
-
-        3 months are 7776000 seconds.
-        5 minutes are 300 seconds.
-
-        Add a bit of margin to 7779000 seconds.
-
         - Initial condition:
 
             Have 7779000 / 300 = 25931 items spread across a timeline of ~ 3
@@ -778,19 +765,25 @@ class TestNewtests:
 
         - Expect that all items as old as 3 months or older are gone.
 
-`
+        - Calculate expected item count: 50
+
         - Now simulate the following:
 
-            - every 5 minutes from `reftime` into the future add a new item.
-            - Every now and then, rather randomly, but at least once per hour,
-              run timegaps
-            - After every simulated timegaps run, see if the distribution of
-              items still matches the expectation.
+            - Every 5 minutes from `reftime` into the future add a new item.
+
+            - At the same time, after adding the item, run timegaps.
+
+            - After every timegaps run see if the number of
+              accepted items is still 50.
+
 
         """
         def plot_items(items, value, label):
             pd_timestamps = [
                 pd.Timestamp(datetime.fromtimestamp(i.modtime)) for i in items]
+
+            #pd_timestamps = [i.modtime for i in items]
+
             ts = pd.Series([value for i in items], index=pd_timestamps)
             ts.plot(
                 #linestyle='dashdot',
@@ -827,7 +820,7 @@ class TestNewtests:
         try:
             # After 5 minutes, add an item and run filter. Repeat for 3 months.
             for attempt in range(25930):
-                print('attempt %s' % (attempt, ))
+                print('\n\n\n\nattempt %s' % (attempt, ))
 
                 # Fast-forward 5 minutes.
                 reftime = reftime + 300
@@ -838,10 +831,15 @@ class TestNewtests:
                 # Run filter.
                 items, _ = TimeFilter(rules, reftime=reftime).filter(items)
 
-                plot_items(items, reftime, 'after_filter')
+                if attempt == 272:
+                    log.setLevel(logging.DEBUG)
+
+                if attempt > 272:
+                    plot_items(items, reftime, attempt)
 
                 assert len(items) == bucketcount, print(items)
         except Exception:
+            plot_items(items, reftime, attempt)
             ymin, ymax = plt.ylim()
             xmin, xmax = plt.xlim()
             plt.ylim((ymin-1, ymax+1))
@@ -850,3 +848,29 @@ class TestNewtests:
             plt.tight_layout()
             plt.show()
             raise
+
+    def test_simulate_scenario_C(self):
+        """
+
+        - Constant item creation rate.
+        - Constant filter run rate.
+        - Fast-forward time in increments.
+        - Along time, the relative distribution of accepted items must remain
+          constant:
+            - the number of items must remain constant.
+            - the time difference between adjacent items must remain constant.
+        """
+
+
+    def test_simulate_scenario_D(self):
+        """
+        - Constant item creation rate.
+        - Randomly distributed filter run rate.
+        - Fast-forward time in increments.
+        - Along time, the relative distribution of accepted items must remain
+          constant:
+            - the number of items must remain constant.
+            - the time difference between adjacent items must remain constant.
+
+            Is that true, for a randomly distributed filter run rate?
+        """

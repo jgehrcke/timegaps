@@ -61,7 +61,7 @@ class FilterItem(object):
 
     def __repr__(self):
         return "%s(text=%s, modtime=%s)" % (self.__class__.__name__,
-            self.text, self.modtime)
+            self.text, self.moddate)
 
 
 class FileSystemEntry(FilterItem):
