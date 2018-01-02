@@ -15,7 +15,7 @@ import time
 import logging
 from base64 import b64encode
 from datetime import datetime, timedelta
-from itertools import chain
+from itertools import chain, tee
 from random import randint, shuffle
 import collections
 import tempfile
@@ -709,7 +709,6 @@ class TestNewtests:
             recent12,hours24,days7,weeks5,months2
 
         - Expect 50 items left.
-        - Test oldest and 2nd oldest items for age.
         """
         # Set an arbitrary reference time.
         reftime = 1514000000.0
@@ -734,22 +733,6 @@ class TestNewtests:
             shuffle(items)
             items, _ = TimeFilter(rules, reftime=reftime).filter(items)
             assert len(items) == expected_bucketcount, print(items)
-
-        # Inspect the items retained after N filter runs.
-        sorted_items = sorted(items, key=lambda i: i.modtime, reverse=True)
-        item_oldest = sorted_items[-1]
-        item_2ndoldest = sorted_items[-2]
-
-        # The oldest item is expected to be two months old (for the months-2
-        # bucket, and the current filter implementation keeps the newest item
-        # for each category).
-        oldest_expected_modtime = reftime - 2 * 30 * 24 * 60 * 60
-        assert item_oldest.modtime == oldest_expected_modtime
-
-        # The second-oldest item is expected to be 6 weeks old (month-1 bucket,
-        # and not week-5 bucket anymore).
-        second_oldest_expected_modtime = reftime - 6 * 7 * 24 * 60 * 60
-        assert item_2ndoldest.modtime == second_oldest_expected_modtime
 
     def test_simulate_scenario_B(self):
         """
@@ -778,23 +761,6 @@ class TestNewtests:
 
 
         """
-        def plot_items(items, value, label):
-            pd_timestamps = [
-                pd.Timestamp(datetime.fromtimestamp(i.modtime)) for i in items]
-
-            #pd_timestamps = [i.modtime for i in items]
-
-            ts = pd.Series([value for i in items], index=pd_timestamps)
-            ts.plot(
-                #linestyle='dashdot',
-                linestyle='None',
-                marker='o',
-                markersize=5,
-                markeredgecolor='gray',
-                legend=True,
-                label=label
-                )
-
         # Set reference time arbitrarily, generate items.
         reftime = 1514000000.0
         modtimes = (reftime - n * 300 for n in range(0, 25930+1))
@@ -810,12 +776,13 @@ class TestNewtests:
             "recent": 12
             }
 
-        bucketcount = sum(v for k, v in rules.items())
+        expected_bucketcount = sum(v for k, v in rules.items())
+
         shuffle(items)
         items, _ = TimeFilter(rules, reftime=reftime).filter(items)
-        assert len(items) == bucketcount
+        assert len(items) == expected_bucketcount
 
-        plot_items(items, reftime, 'after_filter')
+        plot_items(items, reftime, '1st_filter')
 
         try:
             # After 5 minutes, add an item and run filter. Repeat for 3 months.
@@ -837,7 +804,7 @@ class TestNewtests:
                 if attempt > 272:
                     plot_items(items, reftime, attempt)
 
-                assert len(items) == bucketcount, print(items)
+                assert len(items) == expected_bucketcount, print(items)
         except Exception:
             plot_items(items, reftime, attempt)
             ymin, ymax = plt.ylim()
@@ -851,15 +818,93 @@ class TestNewtests:
 
     def test_simulate_scenario_C(self):
         """
-
         - Constant item creation rate.
         - Constant filter run rate.
         - Fast-forward time in increments.
         - Along time, the relative distribution of accepted items must remain
           constant:
             - the number of items must remain constant.
+            - the time difference between adjacent items is monotonic.
             - the time difference between adjacent items must remain constant.
         """
+        # Set reference time arbitrarily, generate items.
+        reftime = 1514000000.0
+        modtimes = (reftime - n * 300 for n in range(0, 25930+1))
+        items = [FilterItem(modtime=t) for t in modtimes]
+
+        rules = {
+            "months": 2,
+            "weeks": 5,
+            "days": 7,
+            "hours": 24,
+            "recent": 12
+            }
+
+        expected_bucketcount = sum(v for k, v in rules.items())
+
+        def inspect_item_deltas(items):
+            # Calculate time difference between adjacent items.
+            # Sort items from newest (first) to oldest (last).
+            sorted_items = sort_items(items)
+
+            deltas = [b.modtime - a.modtime for a, b in pairwise(sorted_items)]
+
+            assert np_is_descending(np.array(deltas))
+
+            return deltas
+
+        shuffle(items)
+
+        # Perform first filter run.
+        items, _ = TimeFilter(rules, reftime=reftime).filter(items)
+        assert len(items) == expected_bucketcount
+        deltas_reference = inspect_item_deltas(items)
+        print()
+        print(sort_items(items))
+        print(deltas_reference)
+
+
+        plot_items(items, reftime, '1st_filter')
+
+        try:
+            # After 5 minutes, add an item and run filter. Repeat for 3 months.
+            for attempt in range(25930):
+                print('\n\n\n\nattempt %s' % (attempt, ))
+
+                # Fast-forward 5 minutes.
+                reftime = reftime + 300
+
+                # Add an item.
+                items.insert(0, FilterItem(modtime=reftime))
+
+                # Run filter.
+                items, _ = TimeFilter(rules, reftime=reftime).filter(items)
+                assert len(items) == expected_bucketcount
+                deltas = inspect_item_deltas(items)
+                print(sort_items(items))
+                print(deltas)
+
+                # The delta between the oldest and the 2ndoldest can be the
+                # largest delta in the item collection. At some point in time
+                # the oldest gets deleted:
+                #
+                # x       x    x  x x x xxx (nth filter run)
+                #
+                #         x    x  x x x xxx ((n+1)th filter run)
+                #
+                # That is why the leftmost delta must not be used for comparion
+                # in this test. I think.
+                assert deltas_reference[1:] == deltas[:-1]
+        except Exception:
+            plot_items(items, reftime, attempt)
+            ymin, ymax = plt.ylim()
+            xmin, xmax = plt.xlim()
+            plt.ylim((ymin-1, ymax+1))
+            plt.xlim((xmin, xmax+100))#timedelta(seconds=60*60*24*12)))
+            plt.legend(loc='upper right')
+            plt.tight_layout()
+            plt.show()
+            raise
 
 
     def test_simulate_scenario_D(self):
@@ -874,3 +919,89 @@ class TestNewtests:
 
             Is that true, for a randomly distributed filter run rate?
         """
+
+
+def plot_items(items, value, label):
+    pd_timestamps = [
+        pd.Timestamp(datetime.fromtimestamp(i.modtime)) for i in items]
+
+    #pd_timestamps = [i.modtime for i in items]
+
+    ts = pd.Series([value for i in items], index=pd_timestamps)
+    ts.plot(
+        #linestyle='dashdot',
+        linestyle='None',
+        marker='o',
+        markersize=5,
+        markeredgecolor='gray',
+        legend=True,
+        label=label
+        )
+
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
+
+
+def np_is_descending(array):
+    return np.all(array[:-1] >= array[1:])
+
+
+def sort_items(items):
+    # Sort items from newest (first) to oldest (last).
+    return sorted(items, key=lambda i: i.modtime)
+
+
+"""
+Moaaar test ideas after test runs:
+
+- Test oldest and 2nd oldest items for age. Example:
+        # Inspect the items retained after N filter runs.
+
+        # Note(JP): think this through again. The items do not appear to be
+        # sorted from newest to oldest, which is why `item_oldest =
+        # sorted_items[-1]` seems to be wrong. But why did I not notice before
+        # when calculating the expected modification times (why is `assert
+        # item_oldest.modtime == oldest_expected_modtime` corret?). Weird.
+        sorted_items = sorted(items, key=lambda i: i.modtime)
+        item_oldest = sorted_items[-1]
+        item_2ndoldest = sorted_items[-2]
+
+        # The oldest item is expected to be two months old (for the months-2
+        # bucket, and the current filter implementation keeps the newest item
+        # for each category).
+        oldest_expected_modtime = reftime - 2 * 30 * 24 * 60 * 60
+        assert item_oldest.modtime == oldest_expected_modtime
+
+        # The second-oldest item is expected to be 6 weeks old (month-1 bucket,
+        # and not week-5 bucket anymore).
+        second_oldest_expected_modtime = reftime - 6 * 7 * 24 * 60 * 60
+        assert item_2ndoldest.modtime == second_oldest_expected_modtime
+"""
+
+
+"""
+Invariants, from a mathematical point of view:
+
+- The filtered items, sorted by time from newst to oldest, must have a time
+difference between adjacent items that only grows towards the past, and never
+shrinks. (is monotonic)
+
+-
+"""
+
+
+"""
+Pitfalls for usage:
+
+    - Be aware of the width of the oldest timebucket. It can easily happen that
+      at one point in time the item retained in e.g. the year-3 bucket is 3.00
+      years old, whereas at some other point in time it is 3.99 years old. That
+      is, if you care about your oldest backup being at _least_  4 years old,
+      define a rule for years-4.
+
+
+"""
