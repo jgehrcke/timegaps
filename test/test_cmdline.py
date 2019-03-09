@@ -94,11 +94,11 @@ if WINDOWS:
     CLITest = CmdlineInterfaceTestWindows
 
 
-logging.basicConfig(
-    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
-    datefmt='%H:%M:%S')
-log = logging.getLogger()
-log.setLevel(logging.DEBUG)
+# logging.basicConfig(
+#     format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
+#     datefmt='%H:%M:%S')
+# log = logging.getLogger()
+#log.setLevel(logging.DEBUG)
 
 
 class Base(object):

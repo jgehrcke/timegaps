@@ -38,16 +38,45 @@ else:
 from py.test import raises, mark
 
 
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format='%(asctime)s,%(msecs)-5.1f %(levelname)5s %(funcName)s# %(message)s',
+#     datefmt='%H:%M:%S'
+#     )
+
+# print()
+# print(logging.NOTSET)
+# print(logging.DEBUG)
+# print(logging.INFO)
+
+# tl = logging.getLogger("timefilter")
+# l = tl.getEffectiveLevel()
+# print("timefilter level: %s " % l)
+
+# tl = logging.getLogger("")
+# l = tl.getEffectiveLevel()
+# print("root level: %s " % l)
+
+# tl = logging.getLogger("timefilter")
+# l = tl.getEffectiveLevel()
+# print("timefilter level: %s " % l)
+
+# sys.exit(1)
+
 sys.path.insert(0, os.path.abspath('..'))
 from timegaps.timegaps import FileSystemEntry, TimegapsError, FilterItem
 from timegaps.timefilter import TimeFilter, _Timedelta, TimeFilterError
 
 
-logging.basicConfig(
-    format='%(asctime)s,%(msecs)-6.1f %(funcName)s# %(message)s',
-    datefmt='%H:%M:%S')
-log = logging.getLogger()
-log.setLevel(logging.INFO)
+
+# tl = logging.getLogger("timefilter")
+# l = tl.getEffectiveLevel()
+# print("timefilter level: %s " % l)
+
+#sys.exit(1)
+#getEff
+#log = logging.getLogger()
+#log.setLevel(logging.INFO)
 
 
 WINDOWS = sys.platform == "win32"
@@ -825,11 +854,10 @@ class TestNewtests:
           constant:
             - the number of items must remain constant.
             - the time difference between adjacent items is monotonic.
-            - the time difference between adjacent items must remain constant.
         """
         # Set reference time arbitrarily, generate items.
-        reftime = 1514000000.0
-        modtimes = (reftime - n * 300 for n in range(0, 25930+1))
+        reftime_init = 1514000000.0
+        modtimes = (reftime_init - n * 300 for n in range(0, 25930+1))
         items = [FilterItem(modtime=t) for t in modtimes]
 
         rules = {
@@ -842,69 +870,77 @@ class TestNewtests:
 
         expected_bucketcount = sum(v for k, v in rules.items())
 
-        def inspect_item_deltas(items):
-            # Calculate time difference between adjacent items.
-            # Sort items from newest (first) to oldest (last).
-            sorted_items = sort_items(items)
-
-            deltas = [b.modtime - a.modtime for a, b in pairwise(sorted_items)]
-
-            assert np_is_descending(np.array(deltas))
-
-            return deltas
-
         shuffle(items)
 
         # Perform first filter run.
-        items, _ = TimeFilter(rules, reftime=reftime).filter(items)
+        items, _ = TimeFilter(rules, reftime=reftime_init).filter(items)
         assert len(items) == expected_bucketcount
         deltas_reference = inspect_item_deltas(items)
-        print()
-        print(sort_items(items))
-        print(deltas_reference)
+        print(f"deltas after first run:\n{deltas_reference}")
 
+        items_after_first_run = items
 
-        plot_items(items, reftime, '1st_filter')
+        last_10_itemsets = collections.deque(maxlen=10)
 
-        try:
-            # After 5 minutes, add an item and run filter. Repeat for 3 months.
-            for attempt in range(25930):
-                print('\n\n\n\nattempt %s' % (attempt, ))
+        # After 5 minutes, add an item and run filter. Repeat for 3 months.
+        reftime = reftime_init
+        for attempt in range(25930):
+            print('\n\n\n\nattempt %s' % (attempt, ))
 
-                # Fast-forward 5 minutes.
-                reftime = reftime + 300
+            # Fast-forward 5 minutes.
+            reftime = reftime + 300
 
-                # Add an item.
-                items.insert(0, FilterItem(modtime=reftime))
+            # Add an item.
+            items.insert(0, FilterItem(modtime=reftime))
 
-                # Run filter.
-                items, _ = TimeFilter(rules, reftime=reftime).filter(items)
+            # Run filter.
+            items, _ = TimeFilter(rules, reftime=reftime).filter(items)
+
+            try:
                 assert len(items) == expected_bucketcount
                 deltas = inspect_item_deltas(items)
-                print(sort_items(items))
-                print(deltas)
+            except Exception:
+                # plot the items from after first run
+                plot_items(items_after_first_run, reftime_init, '1st_filter')
 
-                # The delta between the oldest and the 2ndoldest can be the
-                # largest delta in the item collection. At some point in time
-                # the oldest gets deleted:
-                #
-                # x       x    x  x x x xxx (nth filter run)
-                #
-                #         x    x  x x x xxx ((n+1)th filter run)
-                #
-                # That is why the leftmost delta must not be used for comparion
-                # in this test. I think.
-                assert deltas_reference[1:] == deltas[:-1]
-        except Exception:
-            plot_items(items, reftime, attempt)
-            ymin, ymax = plt.ylim()
-            xmin, xmax = plt.xlim()
-            plt.ylim((ymin-1, ymax+1))
-            plt.xlim((xmin, xmax+100))#timedelta(seconds=60*60*24*12)))
-            plt.legend(loc='upper right')
-            plt.tight_layout()
-            plt.show()
-            raise
+                for p_attempt, p_reftime, p_items in last_10_itemsets:
+                    plot_items(p_items, p_reftime, p_attempt)
+
+                # plot the current one for which the exception happened
+                plot_items(items, reftime, 'run with error')
+
+                ymin, ymax = plt.ylim()
+                xmin, xmax = plt.xlim()
+                plt.ylim((ymin-1, ymax+1))
+                plt.xlim((xmin, xmax+100))
+                plt.legend(loc='upper right')
+                plt.tight_layout()
+                plt.show()
+                raise
+
+            print(sort_items(items))
+            print(deltas)
+
+            last_10_itemsets.append((attempt, reftime, items))
+
+            # Some prior art for the "the time difference between adjacent items
+            # must remain constant." invariant:
+            #
+            # The delta between the oldest and the 2ndoldest can be the largest
+            # delta in the item collection. At some point in time the oldest
+            # gets deleted:
+            #
+            # x       x    x  x x x xxx (nth filter run)
+            #
+            #         x    x  x x x xxx ((n+1)th filter run)
+            #
+            # That is why the leftmost delta must not be used for comparion
+            # in this test. I think.
+            # TODO(jp): this needs to be thought through much more, I think
+            # the diff monotonicity test is easier to reason about.
+            #print(deltas)
+            #print(deltas_reference)
+            #assert deltas_reference == deltas
 
 
     def test_simulate_scenario_D(self):
@@ -946,13 +982,29 @@ def pairwise(iterable):
     return zip(a, b)
 
 
-def np_is_descending(array):
-    return np.all(array[:-1] >= array[1:])
+def np_is_ascending(array):
+    return np.all(array[:-1] <= array[1:])
 
 
 def sort_items(items):
+    # Sort items from newest (first) to oldest (last). `sorted()` by default
+    # sorts from small to large, i.e. in ascending direction, i.e. from older to
+    # newer. Reverse that.
+    return sorted(items, key=lambda i: i.modtime, reverse=True)
+
+
+def inspect_item_deltas(items):
     # Sort items from newest (first) to oldest (last).
-    return sorted(items, key=lambda i: i.modtime)
+    # (that is not so far an API guarantee, but maybe it should be one)
+    # Calculate time difference between adjacent items.
+    sorted_items = sort_items(items)
+    deltas = [a.modtime - b.modtime for a, b in pairwise(sorted_items)]
+
+    # Test for invariant: the filtered items, sorted by time from newest to
+    # oldest, must have a time difference between adjacent items that only grows
+    # towards the past, and never shrinks. (is monotonic, ascending).
+    assert np_is_ascending(np.array(deltas))
+    return deltas
 
 
 """
@@ -984,6 +1036,9 @@ Moaaar test ideas after test runs:
 
 
 """
+
+If the item creation rate is constant, then:
+
 Invariants, from a mathematical point of view:
 
 - The filtered items, sorted by time from newst to oldest, must have a time
