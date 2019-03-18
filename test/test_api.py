@@ -38,28 +38,28 @@ else:
 from py.test import raises, mark
 
 
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format='%(asctime)s,%(msecs)-5.1f %(levelname)5s %(funcName)s# %(message)s',
-#     datefmt='%H:%M:%S'
-#     )
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s,%(msecs)-5.1f %(levelname)5s %(funcName)s# %(message)s',
+    datefmt='%H:%M:%S'
+    )
 
-# print()
-# print(logging.NOTSET)
-# print(logging.DEBUG)
-# print(logging.INFO)
+print()
+print(logging.NOTSET)
+print(logging.DEBUG)
+print(logging.INFO)
 
-# tl = logging.getLogger("timefilter")
-# l = tl.getEffectiveLevel()
-# print("timefilter level: %s " % l)
+tl = logging.getLogger("timefilter")
+l = tl.getEffectiveLevel()
+print("timefilter level: %s " % l)
 
-# tl = logging.getLogger("")
-# l = tl.getEffectiveLevel()
-# print("root level: %s " % l)
+tl = logging.getLogger("")
+l = tl.getEffectiveLevel()
+print("root level: %s " % l)
 
-# tl = logging.getLogger("timefilter")
-# l = tl.getEffectiveLevel()
-# print("timefilter level: %s " % l)
+tl = logging.getLogger("timefilter")
+l = tl.getEffectiveLevel()
+print("timefilter level: %s " % l)
 
 # sys.exit(1)
 
@@ -69,14 +69,14 @@ from timegaps.timefilter import TimeFilter, _Timedelta, TimeFilterError
 
 
 
-# tl = logging.getLogger("timefilter")
-# l = tl.getEffectiveLevel()
-# print("timefilter level: %s " % l)
+tl = logging.getLogger("timefilter")
+l = tl.getEffectiveLevel()
+print("timefilter level: %s " % l)
 
 #sys.exit(1)
 #getEff
-#log = logging.getLogger()
-#log.setLevel(logging.INFO)
+log = logging.getLogger()
+log.setLevel(logging.INFO)
 
 
 WINDOWS = sys.platform == "win32"
@@ -882,9 +882,11 @@ class TestNewtests:
 
         last_10_itemsets = collections.deque(maxlen=10)
 
+        log.setLevel(logging.DEBUG)
+
         # After 5 minutes, add an item and run filter. Repeat for 3 months.
         reftime = reftime_init
-        for attempt in range(25930):
+        for attempt in range(2, 25930):
             print('\n\n\n\nattempt %s' % (attempt, ))
 
             # Fast-forward 5 minutes.
@@ -938,9 +940,96 @@ class TestNewtests:
             # in this test. I think.
             # TODO(jp): this needs to be thought through much more, I think
             # the diff monotonicity test is easier to reason about.
+            for da, db in zip(deltas_reference[:-1], deltas[1:]):
+                print(f"{da} -- {db}")
             #print(deltas)
             #print(deltas_reference)
-            #assert deltas_reference == deltas
+            assert deltas_reference[:-1] == deltas[1:]
+
+
+    def test_simulate_scenario_E(self):
+        """
+        Goal: similar as C, but simplified, and with a focus on understanding
+        the violation of the monotonicity invariant.
+
+        Start out with a single item. Should be the same scenario as I hand-drew
+        in my notebook, page 1.
+
+        """
+        # Set reference time arbitrarily, generate items.
+        #reftime_init = 1514000000.0
+        #modtimes = (reftime_init - n * 300 for n in range(0, 25930+1))
+        #items = [FilterItem(modtime=t) for t in modtimes]
+
+        rules = {
+            "hours": 5,
+            "recent": 5
+            }
+
+        #expected_bucketcount = sum(v for k, v in rules.items())
+        #shuffle(items)
+
+        # Create first item.
+        reftime_init = 1514000000.0
+        items= [FilterItem(modtime=reftime_init)]
+
+        # Perform first filter run.
+        items, _ = TimeFilter(rules, reftime=reftime_init).filter(items)
+        #assert len(items) == expected_bucketcount
+
+        deltas_reference = inspect_item_deltas(items)
+        print(f"deltas after first run:\n{deltas_reference}")
+
+        items_after_first_run = items
+
+        last_10_itemsets = collections.deque(maxlen=10)
+
+        log.setLevel(logging.DEBUG)
+
+        # After 15 minutes, add an item and run filter. Repeat for 3 months.
+        reftime = reftime_init
+        for attempt in range(2, 25930):
+            print('\n\n\n\nattempt %s' % (attempt, ))
+
+            # Fast-forward 5 minutes.
+            reftime = reftime + 15*60
+
+            # Add an item.
+            items.insert(
+                0,
+                FilterItem(
+                    text=f"added right before run {attempt}", modtime=reftime)
+            )
+
+            # Run filter.
+            items, _ = TimeFilter(rules, reftime=reftime).filter(items)
+
+            try:
+                #assert len(items) == expected_bucketcount
+                deltas = inspect_item_deltas(items)
+            except Exception:
+                # plot the items from after first run
+                plot_items(items_after_first_run, reftime_init, '1st_filter')
+
+                for p_attempt, p_reftime, p_items in last_10_itemsets:
+                    plot_items(p_items, p_reftime, p_attempt)
+
+                # plot the current one for which the exception happened
+                plot_items(items, reftime, 'run with error')
+
+                ymin, ymax = plt.ylim()
+                xmin, xmax = plt.xlim()
+                plt.ylim((ymin-1, ymax+1))
+                plt.xlim((xmin, xmax+100))
+                plt.legend(loc='upper right')
+                plt.tight_layout()
+                plt.show()
+                raise
+
+            print(sort_items(items))
+            print(deltas)
+
+            last_10_itemsets.append((attempt, reftime, items))
 
 
     def test_simulate_scenario_D(self):
