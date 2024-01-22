@@ -247,7 +247,6 @@ def main():
 
     log.debug("Options namespace:\n%s", options)
 
-
     # STAGE I: bootstrap, validate and process certain command line arguments.
 
     # argparse does not catch when the user misses to provide RULES or (one)
@@ -292,6 +291,14 @@ def main():
         timefilter = TimeFilter(rules, reference_time)
     except TimeFilterError as e:
         err("Error upon time filter setup: %s" % e)
+
+    if options.time_regex:
+        try:
+            options.time_regex = re.compile(options.time_regex)
+            if options.time_regex.groups != 1:
+                err("Error regex does not have one capturing group")
+        except TimeFilterError as e:
+            err("Error regex could not compile '%s': %s" % (options.time_regex, e))
 
     if options.move is not None:
         if not os.path.isdir(options.move):
@@ -477,7 +484,7 @@ def prepare_input():
         items = []
         for s in itemstrings:
             log.debug("Parsing seconds since epoch from item: %r", s)
-            mtime = seconds_since_epoch_from_localtime_string(s, fmt)
+            mtime = seconds_since_epoch_from_localtime_string(s, fmt, options.time_regex)
             log.debug("Seconds since epoch: %s", mtime)
             items.append(FilterItem(modtime=mtime, text=s))
         return items
@@ -512,7 +519,7 @@ def prepare_input():
             bn = os.path.basename(path)
             fmt = options.time_from_basename
             log.debug("Parsing modification time from basename: %r", bn)
-            modtime = seconds_since_epoch_from_localtime_string(bn, fmt)
+            modtime = seconds_since_epoch_from_localtime_string(bn, fmt, options.time_regex)
             log.debug("Modification time (seconds since epoch): %s", modtime)
         try:
             fses.append(FileSystemEntry(path, modtime))
@@ -522,12 +529,22 @@ def prepare_input():
     return fses
 
 
-def seconds_since_epoch_from_localtime_string(s, fmt):
+def seconds_since_epoch_from_localtime_string(s, fmt, regex=None):
     """Extract local time from string `s` according to format string `fmt`.
 
     Return floating point number, indicating seconds since epoch (non-localized
     time, compatible with e.g. stat result st_mtime.
     """
+
+    # Extract date part from string/filename
+    log.debug("Regexp: time part of filename/string: %s", regex)
+    if regex:
+        parts = regex.search(s)
+        if not parts:
+            err("Error regex '%s' did not match when trying to fetch date part of string/filename '%s'." % (regex.pattern, s))
+        log.debug("Regexp: time part of filename/string: %s", parts.groups(1))
+        s = parts.group(1)
+
     try:
         # Python 2.7's strptime can deal with `s` and `fmt` being byte string or
         # unicode. Python 3's strptime requires both to be unicode type. Since
@@ -633,6 +650,13 @@ def parse_options():
         help=("Parse reference time from local time string TIME. Required "
             "format is YYYYmmDD-HHMMSS. Overrides default reference time, "
             "which is the time of program invocation.")
+        )
+
+    parser.add_argument("--time-regex", action="store",
+        metavar="regexp",
+        help=("Regexp for parsing the time part of the filename/string."
+              " Example: .* ([^ ]+ .*), the default behavoir is to extract"
+              "the time only with strptimei from the full filename/string.")
         )
 
     timeparsegroup = parser.add_mutually_exclusive_group()
