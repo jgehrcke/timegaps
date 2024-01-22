@@ -35,7 +35,7 @@ else:
 
 
 RUNDIRTOP = "./cmdline-test"
-TIMEGAPS_RUNNER = "python ../../../timegaps-runner.py"
+TIMEGAPS_RUNNER = "python ../../timegaps-runner.py"
 # On travis, `python setup.py install` has been executed before and the
 # `timegaps` command must be available.
 if os.environ.get("TRAVIS") == "true" and os.environ.get("CI") == "true":
@@ -725,7 +725,7 @@ class TestPeriodicRun(Base):
             # Set virtual time to base time.
             currenttime = starttime
             log.debug("So many invocations planned: %s", n_invocations)
-            for idx in range(1, n_invocations+1):
+            for idx in range(1, int(n_invocations+1)):
                 log.debug("\n\n\n\n ITERATION %s", idx)
                 # Create a test file. Modification time: current virtual time.
                 createfile(modtime=currenttime)

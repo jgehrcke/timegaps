@@ -17,9 +17,13 @@ from base64 import b64encode
 from datetime import datetime
 from itertools import chain
 from random import randint, shuffle
-import collections
 import tempfile
+import collections
 
+try:
+    collections = collections.abc
+except AttributeError:
+    collections = collections
 
 # Make the same code base run with Python 2 and 3.
 if sys.version < '3':
@@ -30,7 +34,7 @@ else:
 
 # py.test runs tests in order of definition. This is useful for running simple,
 # fundamental tests first and more complex tests later.
-from py.test import raises, mark
+from pytest import raises, mark
 
 
 sys.path.insert(0, os.path.abspath('..'))
@@ -87,16 +91,16 @@ class TestBasicFSEntry(object):
 
     Flow for each test_method:
         o = TestClass()
-        o.setup()
+        o.setup_method()
         try:
             o.test_method()
         finally:
-            o.teardown()
+            o.teardown_method()
     """
-    def setup(self):
+    def setup_method(self):
         pass
 
-    def teardown(self):
+    def teardown_method(self):
         pass
 
     def test_invalid_path(self):
@@ -142,10 +146,10 @@ class TestBasicFSEntry(object):
 class TestTimeFilterInit(object):
     """Test TimeFilter initialization logic.
     """
-    def setup(self):
+    def setup_method(self):
         pass
 
-    def teardown(self):
+    def teardown_method(self):
         pass
 
     def test_reftime(self):
@@ -206,10 +210,10 @@ class TestTimeFilterFilterSig(object):
 class TestTimedelta(object):
     """Test Timedelta logic and arithmetic.
     """
-    def setup(self):
+    def setup_method(self):
         pass
 
-    def teardown(self):
+    def teardown_method(self):
         pass
 
     def test_wrongtypes(self):
@@ -280,10 +284,10 @@ class TestTimeFilterBasic(object):
     """Test TimeFilter logic and arithmetics with small, well-defined mock
     object lists.
     """
-    def setup(self):
+    def setup_method(self):
         pass
 
-    def teardown(self):
+    def teardown_method(self):
         pass
 
     def test_minimal_functionality_and_types(self):
@@ -557,10 +561,11 @@ class TestTimeFilterMass(object):
     # Probability: 1 - (61/62)^N = 1 - 3E-9 for N == 1200
     fses62 = list(fsegen(ref=now, N_per_cat=N, max_timecount=62))
     shuffle(fses62)
-    def setup(self):
+
+    def setup_method(self):
         pass
 
-    def teardown(self):
+    def teardown_method(self):
         pass
 
     def test_singlecat_rules(self):
